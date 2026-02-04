@@ -1,47 +1,54 @@
 <script setup lang="ts">
 import { computed, nextTick } from 'vue';
+import { toast, Toaster } from 'vue-sonner';
+import "vue-sonner/style.css"; //
 import { useLogStore } from '../store/logStore';
 import LogCard from './LogCard.vue';
 import LogUploader from './LogUploader.vue';
 import { parseP2PLogs } from '../logic/parser';
 
 const store = useLogStore();
-
-// Usamos computed para que la reactividad de la UI sea instantánea y confiable
 const showUploader = computed(() => store.events.length === 0);
 
 const handleLogProcess = async (payload: string) => {
-  console.log("%c 🚀 EVENTO CAPTURADO ", "background: #4f46e5; color: white; padding: 5px; font-weight: bold; border-radius: 4px;");
-  
-  if (!payload) return;
-
-  try {
-    // 1. Validamos que el parseo sea exitoso antes de tocar el store
-    const dataParsed = parseP2PLogs(payload);
-    console.log(`📦 Parser: ${dataParsed.length} eventos detectados.`);
-    
-    if (dataParsed.length > 0) {
-      // 2. Actualizamos el store
-      store.setLogs(payload); 
+  const promise = () => new Promise((resolve, reject) => {
+    try {
+      const dataParsed = parseP2PLogs(payload);
       
-      // 3. Opcional: Scroll suave hacia arriba al cargar
-      await nextTick();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      
-      console.log("✅ Visualización lista.");
-    } else {
-      alert("No se encontraron eventos válidos en este archivo de log.");
+      if (dataParsed.length > 0) {
+        store.setLogs(payload);
+        resolve(dataParsed.length);
+      } else {
+        reject("No se encontraron eventos");
+      }
+    } catch (e) {
+      reject(e);
     }
-  } catch (error) {
-    console.error("❌ Error procesando el rastro:", error);
-    alert("Hubo un error al procesar el archivo. Revisa la consola.");
-  }
+  });
+
+  toast.promise(promise, {
+    loading: 'Analizando traza de logs...',
+    success: (data: any) => {
+      nextTick().then(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+      return `¡Éxito! ${data} eventos cargados.`;
+    },
+    error: (err: any) => `Error: ${err}`,
+  });
+};
+
+// Función para limpiar con feedback
+const handleReset = () => {
+  store.clearLogs();
+  toast.info("Espacio de trabajo limpio", {
+    description: "Se han borrado los logs actuales."
+  });
 };
 </script>
 
 <template>
+  <Toaster position="top-right" richColors theme="dark" />
+
   <div class="max-w-6xl mx-auto px-6 py-10 min-h-screen">
-    
     <transition name="fade" mode="out-in">
       <div v-if="showUploader" key="uploader">
         <LogUploader @process="handleLogProcess" />
@@ -68,7 +75,7 @@ const handleLogProcess = async (payload: string) => {
               Eventos: <b class="text-indigo-400">{{ store.filteredEvents.length }}</b>
             </span>
             <button 
-              @click="store.clearLogs" 
+              @click="handleReset" 
               class="text-xs text-red-400 font-mono hover:bg-red-500/10 px-4 py-2 rounded-lg border border-red-400/20 uppercase tracking-widest transition-all cursor-pointer active:scale-95"
             >
               [ Resetear ]
@@ -77,7 +84,6 @@ const handleLogProcess = async (payload: string) => {
         </div>
 
         <div class="relative pl-8 before:absolute before:inset-y-0 before:left-3 before:w-px before:bg-linear-to-b before:from-indigo-500/40 before:via-indigo-500/10 before:to-transparent">
-          
           <div v-for="(logs, timeBlock) in store.groupedEvents" :key="timeBlock" class="relative mb-12">
             <div class="absolute -left-8 mt-1.5 w-6 h-6 rounded-full bg-[#0a0a0b] border-2 border-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.4)] z-10 flex items-center justify-center">
               <div class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse"></div>
