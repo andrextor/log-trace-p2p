@@ -9,6 +9,12 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.17.1"
+    "@astrojs/vue": "^5.1.4",
+    "@pinia/testing": "^1.0.3",
+    "@tailwindcss/vite": "^4.1.18",
+    "astro": "^5.17.1",
+    "pinia": "^3.0.4",
+    "tailwindcss": "^4.1.18",
+    "vue": "^3.5.27"
   }
 }
