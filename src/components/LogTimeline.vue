@@ -10,7 +10,20 @@ const emit = defineEmits(['reset']);
   <div class="flex flex-col h-[calc(100vh-140px)] animate-in fade-in slide-in-from-bottom-4 duration-700">
     
     <div class="shrink-0 mb-6 bg-white dark:bg-[#0a0a0b] p-4 border border-slate-200 dark:border-white/5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm transition-colors">
+      
       <div class="flex items-center gap-4 w-full md:w-auto">
+        <button 
+          @click="emit('reset')" 
+          class="flex  items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-white/10 transition-all active:scale-95 group"
+        >
+          <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span class="text-xs">Cambiar logs</span>
+        </button>
+
+        <div class="h-8 w-px bg-slate-200 dark:bg-white/10 hidden md:block"></div>
+
         <div class="relative w-full">
           <span class="absolute left-3 top-2.5 text-slate-400 dark:text-gray-500">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -19,23 +32,17 @@ const emit = defineEmits(['reset']);
           </span>
           <input 
             v-model="store.search" 
-            placeholder="Filtrar por SID, Mensaje o ID..." 
-            class="w-full md:w-80 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-10 py-2 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-400 dark:placeholder:text-gray-600" 
+            placeholder="Buscar en el rastro..." 
+            class="w-full md:w-64 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 px-10 py-2 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all" 
           />
         </div>
       </div>
 
-      <div class="flex items-center gap-4">
-        <span class="text-[10px] font-mono text-slate-500 dark:text-gray-500 uppercase tracking-widest">
-          Eventos Filtrados: <b class="text-indigo-600 dark:text-indigo-400">{{ store.filteredEvents.length }}</b>
-        </span>
-        
-        <button 
-          @click="emit('reset')" 
-          class="text-xs text-red-500 dark:text-red-400 font-mono hover:bg-red-500/10 px-4 py-2 rounded-lg border border-red-400/20 uppercase tracking-widest transition-all cursor-pointer active:scale-95 font-bold"
-        >
-          [ Limpiar logs ]
-        </button>
+      <div class="flex items-center gap-6">
+        <div class="text-right hidden sm:block">
+          <p class="text-[10px] font-mono text-slate-400 dark:text-gray-500 uppercase tracking-widest">Resultados</p>
+          <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ store.filteredEvents.length }} <span class="text-[10px] font-normal text-slate-400">eventos</span></p>
+        </div>
       </div>
     </div>
 
@@ -53,11 +60,9 @@ const emit = defineEmits(['reset']);
               <span class="text-[9px] font-black text-white bg-indigo-600 dark:bg-indigo-500 px-2 py-0.5 rounded uppercase tracking-tighter shadow-sm">
                 {{ data.label }}
               </span>
-              
               <h3 class="text-[11px] font-mono font-black text-indigo-600 dark:text-indigo-400 tracking-widest uppercase">
                 {{ timeKey }}
               </h3>
-              
               <div class="h-px flex-1 bg-slate-200 dark:bg-white/5"></div>
             </div>
           </div>
@@ -76,7 +81,7 @@ const emit = defineEmits(['reset']);
 
       <div v-if="store.filteredEvents.length === 0" class="py-20 text-center border-2 border-dashed border-slate-200 dark:border-white/5 rounded-3xl">
         <p class="text-slate-400 dark:text-gray-500 font-mono text-sm italic">
-          No se encontraron eventos en la zona horaria local.
+          No se encontraron resultados para esta búsqueda.
         </p>
       </div>
     </div>
@@ -91,10 +96,18 @@ const emit = defineEmits(['reset']);
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(99, 102, 241, 0.2);
   border-radius: 10px;
 }
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.4);
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>
