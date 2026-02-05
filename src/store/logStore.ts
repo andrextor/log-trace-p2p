@@ -5,20 +5,25 @@ import { parseP2PLogs } from "../logic/parser"
 
 export type AnalyzerType = "checkout" | "micrositios" | "rest"
 
-// Estructura clara para que el componente Timeline no se rompa
 interface TimeGroup {
   label: string
-  timeDisplay: string // Para mostrar HH:mm en el encabezado del bloque
+  timeDisplay: string
   events: LogEvent[]
 }
 
 export const useLogStore = defineStore("logs", () => {
+  // --- ESTADO ---
   const events = ref<LogEvent[]>([])
   const search = ref("")
   const levelFilter = ref("ALL")
   const currentAnalyzer = ref<AnalyzerType>("checkout")
   const highlightedSessionId = ref<string | number | null>(null)
   const selectedEventId = ref<string | null>(null)
+
+  const isProcessing = ref(false)
+  const progress = ref(0)
+
+  // --- GETTERS ---
 
   const filteredEvents = computed(() => {
     if (events.value.length === 0) return []
@@ -28,8 +33,11 @@ export const useLogStore = defineStore("logs", () => {
       const matchesSearch =
         !searchTerm ||
         event.message.toLowerCase().includes(searchTerm) ||
-        event.details.sessionId?.toString().includes(searchTerm) ||
-        event.details.transactionId?.toString().includes(searchTerm)
+        event.details.sessionId
+          ?.toString()
+          .toLowerCase()
+          .includes(searchTerm) ||
+        event.id?.toString().toLowerCase().includes(searchTerm)
 
       const matchesLevel =
         levelFilter.value === "ALL" || event.level === levelFilter.value
@@ -38,19 +46,20 @@ export const useLogStore = defineStore("logs", () => {
     })
   })
 
-  /**
-   * Agrupador por Bloques (Minuto) y Visualización (Segundos)
-   * Formato Colombia: DD/MM/YYYY, HH:mm:ss
-   */
   const groupedEvents = computed(() => {
     const groups: Record<string, TimeGroup> = {}
     let blockCounter = 1
 
-    filteredEvents.value.forEach((event) => {
+    // 1. Ordenar eventos cronológicamente antes de agrupar (importante al acumular logs)
+    const sorted = [...filteredEvents.value].sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    )
+
+    sorted.forEach((event) => {
       const dateObj = new Date(event.timestamp)
       if (isNaN(dateObj.getTime())) return
 
-      // Formateador completo para Colombia (Bogotá)
       const colombiaFormatter = new Intl.DateTimeFormat("es-CO", {
         timeZone: "America/Bogota",
         year: "numeric",
@@ -62,14 +71,9 @@ export const useLogStore = defineStore("logs", () => {
         hour12: false,
       })
 
-      const formattedDate = colombiaFormatter.format(dateObj)
-
-      /**
-       * LLAVE DE AGRUPACIÓN: Por Minuto
-       * formattedDate es "04/02/2026, 22:15:30"
-       * timeKey será "04/02/2026, 22:15" (Cortamos antes de los segundos)
-       */
-      const timeKey = formattedDate.substring(0, 17)
+      const formattedFull = colombiaFormatter.format(dateObj)
+      // Agrupamos por minuto (primeros 17 caracteres de "DD/MM/YYYY HH:mm:ss")
+      const timeKey = formattedFull.substring(0, 17)
 
       if (!groups[timeKey]) {
         groups[timeKey] = {
@@ -79,19 +83,64 @@ export const useLogStore = defineStore("logs", () => {
         }
       }
 
-      // Sobrescribimos con el formato completo (incluyendo segundos) para la Card
-      event.timestamp = formattedDate
-
-      groups[timeKey].events.push(event)
+      // IMPORTANTE: No mutar el objeto original de forma descontrolada
+      // Solo actualizamos el formato para la vista si es necesario
+      const displayEvent = { ...event, timestamp: formattedDate(dateObj) }
+      groups[timeKey].events.push(displayEvent)
     })
 
     return groups
   })
 
-  function setLogs(rawText: string) {
-    const result = parseP2PLogs(rawText, currentAnalyzer.value)
-    events.value = result.events
-    return result
+  // Helper para formatear fecha individualmente
+  function formattedDate(date: Date) {
+    return new Intl.DateTimeFormat("es-CO", {
+      timeZone: "America/Bogota",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(date)
+  }
+
+  const stats = computed(() => {
+    return {
+      total: events.value.length,
+      filtered: filteredEvents.value.length,
+      errors: events.value.filter((e) => e.level === "ERROR").length,
+    }
+  })
+
+  // --- ACCIONES ---
+
+  async function setLogs(rawText: string) {
+    isProcessing.value = true
+    progress.value = 0
+
+    const interval = setInterval(() => {
+      if (progress.value < 95) progress.value += 5
+    }, 100)
+
+    try {
+      const result = await parseP2PLogs(rawText, currentAnalyzer.value)
+
+      // CAMBIO CLAVE: Acumular logs en lugar de reemplazarlos
+      // Usamos un Map o Set si quisiéramos evitar duplicados exactos,
+      // pero aquí simplemente los añadimos al final.
+      events.value = [...events.value, ...result.events]
+
+      progress.value = 100
+      return result
+    } finally {
+      clearInterval(interval)
+      setTimeout(() => {
+        isProcessing.value = false
+        progress.value = 0
+      }, 500)
+    }
   }
 
   function clearLogs() {
@@ -106,10 +155,6 @@ export const useLogStore = defineStore("logs", () => {
     highlightedSessionId.value = highlightedSessionId.value === sid ? null : sid
   }
 
-  function selectEvent(id: string) {
-    selectedEventId.value = selectedEventId.value === id ? null : id
-  }
-
   return {
     events,
     search,
@@ -117,11 +162,13 @@ export const useLogStore = defineStore("logs", () => {
     currentAnalyzer,
     highlightedSessionId,
     selectedEventId,
+    isProcessing,
+    progress,
     filteredEvents,
     groupedEvents,
+    stats,
     setLogs,
     clearLogs,
     toggleHighlight,
-    selectEvent,
   }
 })
