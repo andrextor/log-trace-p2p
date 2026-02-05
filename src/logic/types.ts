@@ -22,7 +22,9 @@ export interface LogEvent {
     sessionId?: string | number
     transactionId?: string | number
     subType?: string | null
+    source?: string | null
   }
   context: any
   rawStream?: string
 }
+

@@ -1,4 +1,4 @@
-import { CheckoutMapper } from "./mappers/CheckoutMapper"
+import { CheckoutMapper } from "./mappers/checkout/CheckoutMapper"
 import { GenericMapper } from "./mappers/GenericMapper"
 import type { LogEvent } from "./types"
 
