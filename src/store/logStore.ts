@@ -15,18 +15,16 @@ export const useLogStore = defineStore("logs", () => {
   // --- ESTADO ---
   const events = ref<LogEvent[]>([])
   const search = ref("")
-  const levelFilter = ref("ALL") // Puede ser 'ALL', 'ERROR', 'INFO', etc.
+  const levelFilter = ref("ALL")
   const currentAnalyzer = ref<AnalyzerType>("checkout")
   const highlightedSessionId = ref<string | number | null>(null)
   const selectedEventId = ref<string | null>(null)
 
-  // Estado para la barra de progreso
   const isProcessing = ref(false)
   const progress = ref(0)
 
   // --- GETTERS ---
 
-  // Filtrado principal de eventos
   const filteredEvents = computed(() => {
     if (events.value.length === 0) return []
     const searchTerm = search.value.toLowerCase()
@@ -48,12 +46,17 @@ export const useLogStore = defineStore("logs", () => {
     })
   })
 
-  // Agrupador por bloques de tiempo (Minuto)
   const groupedEvents = computed(() => {
     const groups: Record<string, TimeGroup> = {}
     let blockCounter = 1
 
-    filteredEvents.value.forEach((event) => {
+    // 1. Ordenar eventos cronológicamente antes de agrupar (importante al acumular logs)
+    const sorted = [...filteredEvents.value].sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    )
+
+    sorted.forEach((event) => {
       const dateObj = new Date(event.timestamp)
       if (isNaN(dateObj.getTime())) return
 
@@ -68,9 +71,9 @@ export const useLogStore = defineStore("logs", () => {
         hour12: false,
       })
 
-      const formattedDate = colombiaFormatter.format(dateObj)
-      // Agrupamos por minuto (los primeros 17 caracteres: "DD/MM/YYYY HH:mm")
-      const timeKey = formattedDate.substring(0, 17)
+      const formattedFull = colombiaFormatter.format(dateObj)
+      // Agrupamos por minuto (primeros 17 caracteres de "DD/MM/YYYY HH:mm:ss")
+      const timeKey = formattedFull.substring(0, 17)
 
       if (!groups[timeKey]) {
         groups[timeKey] = {
@@ -80,15 +83,29 @@ export const useLogStore = defineStore("logs", () => {
         }
       }
 
-      // El timestamp del evento mantiene los segundos para el detalle
-      event.timestamp = formattedDate
-      groups[timeKey].events.push(event)
+      // IMPORTANTE: No mutar el objeto original de forma descontrolada
+      // Solo actualizamos el formato para la vista si es necesario
+      const displayEvent = { ...event, timestamp: formattedDate(dateObj) }
+      groups[timeKey].events.push(displayEvent)
     })
 
     return groups
   })
 
-  // Estadísticas rápidas
+  // Helper para formatear fecha individualmente
+  function formattedDate(date: Date) {
+    return new Intl.DateTimeFormat("es-CO", {
+      timeZone: "America/Bogota",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(date)
+  }
+
   const stats = computed(() => {
     return {
       total: events.value.length,
@@ -103,15 +120,18 @@ export const useLogStore = defineStore("logs", () => {
     isProcessing.value = true
     progress.value = 0
 
-    // Simulación de progreso para archivos grandes
     const interval = setInterval(() => {
       if (progress.value < 95) progress.value += 5
     }, 100)
 
     try {
-      // Ejecutamos el parseo usando el analizador seleccionado
       const result = await parseP2PLogs(rawText, currentAnalyzer.value)
-      events.value = result.events
+
+      // CAMBIO CLAVE: Acumular logs en lugar de reemplazarlos
+      // Usamos un Map o Set si quisiéramos evitar duplicados exactos,
+      // pero aquí simplemente los añadimos al final.
+      events.value = [...events.value, ...result.events]
+
       progress.value = 100
       return result
     } finally {

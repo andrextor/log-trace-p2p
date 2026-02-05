@@ -3,7 +3,12 @@ import { useLogStore } from '../store/logStore';
 import LogCard from './LogCard.vue';
 
 const store = useLogStore();
-const emit = defineEmits(['reset']);
+
+/**
+ * @back: Regresa al uploader sin tocar los datos.
+ * @clearAll: Borra todo el historial del store.
+ */
+const emit = defineEmits(['back', 'clearAll']);
 </script>
 
 <template>
@@ -13,13 +18,14 @@ const emit = defineEmits(['reset']);
       
       <div class="flex items-center gap-4 w-full md:w-auto">
         <button 
-          @click="emit('reset')" 
-          class="flex  items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-white/10 transition-all active:scale-95 group"
+          @click="emit('back')" 
+          class="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 rounded-xl border border-indigo-200 dark:border-indigo-500/20 transition-all active:scale-95 group"
+          title="Añadir más logs al análisis actual"
         >
           <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          <span class="text-xs">Cambiar logs</span>
+          <span class="text-xs font-bold uppercase tracking-tight">Añadir más logs</span>
         </button>
 
         <div class="h-8 w-px bg-slate-200 dark:bg-white/10 hidden md:block"></div>
@@ -32,7 +38,7 @@ const emit = defineEmits(['reset']);
           </span>
           <input 
             v-model="store.search" 
-            placeholder="Buscar en el rastro..." 
+            placeholder="Filtrar por mensaje, ID..." 
             class="w-full md:w-64 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 px-10 py-2 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all" 
           />
         </div>
@@ -40,9 +46,22 @@ const emit = defineEmits(['reset']);
 
       <div class="flex items-center gap-6">
         <div class="text-right hidden sm:block">
-          <p class="text-[10px] font-mono text-slate-400 dark:text-gray-500 uppercase tracking-widest">Resultados</p>
-          <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ store.filteredEvents.length }} <span class="text-[10px] font-normal text-slate-400">eventos</span></p>
+          <p class="text-[10px] font-mono text-slate-400 dark:text-gray-500 uppercase tracking-widest">Vista actual</p>
+          <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+            {{ store.filteredEvents.length }} <span class="text-[10px] font-normal text-slate-400 uppercase">eventos</span>
+          </p>
         </div>
+        
+        <button 
+          @click="emit('clearAll')"
+          class="flex items-center gap-2 p-2 px-3 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
+          title="Borrar todos los logs actuales"
+        >
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          <span class="text-[10px] font-bold uppercase hidden lg:inline">Reset</span>
+        </button>
       </div>
     </div>
 
@@ -51,11 +70,11 @@ const emit = defineEmits(['reset']);
         
         <div v-for="(data, timeKey) in store.groupedEvents" :key="timeKey" class="relative mb-12">
           
-          <div class="absolute -left-8 mt-1.5 w-6 h-6 rounded-full bg-slate-50 dark:bg-[#0a0a0b] border-2 border-indigo-500 z-10 flex items-center justify-center shadow-sm">
+          <div class="absolute -left-8 mt-1.5 w-6 h-6 rounded-full bg-white dark:bg-[#0a0a0b] border-2 border-indigo-500 z-10 flex items-center justify-center shadow-sm">
             <div class="w-1.5 h-1.5 bg-indigo-500 dark:bg-indigo-400 rounded-full animate-pulse"></div>
           </div>
           
-          <div class="flex flex-col gap-1 mb-6 sticky top-0 z-10 py-2 bg-slate-50/90 dark:bg-[#030304]/90 backdrop-blur-sm transition-colors">
+          <div class="flex flex-col gap-1 mb-6 sticky top-0 z-20 py-2 bg-slate-50/90 dark:bg-[#030304]/90 backdrop-blur-sm transition-colors">
             <div class="flex items-center gap-3">
               <span class="text-[9px] font-black text-white bg-indigo-600 dark:bg-indigo-500 px-2 py-0.5 rounded uppercase tracking-tighter shadow-sm">
                 {{ data.label }}
@@ -64,6 +83,7 @@ const emit = defineEmits(['reset']);
                 {{ timeKey }}
               </h3>
               <div class="h-px flex-1 bg-slate-200 dark:bg-white/5"></div>
+              <span class="text-[9px] font-mono text-slate-400">{{ data.events.length }} ops</span>
             </div>
           </div>
 
@@ -101,13 +121,5 @@ const emit = defineEmits(['reset']);
 }
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
   background: rgba(99, 102, 241, 0.4);
-}
-
-.fade-in {
-  animation: fadeIn 0.5s ease-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 </style>
