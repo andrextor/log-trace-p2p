@@ -6,7 +6,6 @@ type Theme = 'light' | 'dark' | 'system';
 const theme = ref<Theme>('system');
 
 onMounted(() => {
-  // Al montar, leemos qué tema hay guardado
   const savedTheme = localStorage.getItem('theme') as Theme | null;
   if (savedTheme) {
     theme.value = savedTheme;
@@ -29,11 +28,15 @@ const setTheme = (newTheme: Theme) => {
 </script>
 
 <template>
-  <div class="flex items-center gap-1 bg-white/5 border border-white/10 p-1 rounded-lg">
+  <div class="flex items-center gap-1 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-1 rounded-lg transition-colors">
     <button 
       @click="setTheme('light')"
-      :class="[theme === 'light' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300']"
-      class="p-1.5 rounded transition-all cursor-pointer"
+      :class="[
+        theme === 'light' 
+          ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200' 
+          : 'text-slate-500 hover:text-slate-800 dark:hover:text-gray-300'
+      ]"
+      class="p-1.5 rounded-md transition-all cursor-pointer"
       title="Modo Claro"
     >
       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -43,8 +46,12 @@ const setTheme = (newTheme: Theme) => {
 
     <button 
       @click="setTheme('dark')"
-      :class="[theme === 'dark' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300']"
-      class="p-1.5 rounded transition-all cursor-pointer"
+      :class="[
+        theme === 'dark' 
+          ? 'bg-slate-800 dark:bg-white/10 text-white dark:text-white shadow-inner' 
+          : 'text-slate-500 hover:text-slate-800 dark:hover:text-gray-300'
+      ]"
+      class="p-1.5 rounded-md transition-all cursor-pointer"
       title="Modo Oscuro"
     >
       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -54,8 +61,12 @@ const setTheme = (newTheme: Theme) => {
 
     <button 
       @click="setTheme('system')"
-      :class="[theme === 'system' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300']"
-      class="p-1.5 rounded transition-all cursor-pointer"
+      :class="[
+        theme === 'system' 
+          ? 'bg-white dark:bg-white/10 text-indigo-600 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-0' 
+          : 'text-slate-500 hover:text-slate-800 dark:hover:text-gray-300'
+      ]"
+      class="p-1.5 rounded-md transition-all cursor-pointer"
       title="Tema del Sistema"
     >
       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
