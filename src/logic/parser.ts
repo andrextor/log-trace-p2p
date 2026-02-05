@@ -126,8 +126,7 @@ function inferCategory(
   // Prioridad 2: Requests HTTP
   if (
     m.includes("http req") ||
-    m.includes("[gw_lib] http req") ||
-    m.includes("calling")
+    m.includes("[gw_lib] http req")
   ) {
     return "HTTP_REQ"
   }
@@ -146,7 +145,11 @@ function inferCategory(
     m.includes("update") ||
     m.includes("updating") ||
     m.includes("db") ||
-    m.includes("save")
+    m.includes("save") ||
+    m.includes("calling") ||
+    m.includes("job") ||
+    m.includes("transaction") ||
+    m.includes("executed")
   ) {
     return "DB_OP"
   }
