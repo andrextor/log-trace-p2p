@@ -21,7 +21,7 @@ const categoryStyles: Record<string, string> = {
   HTTP_RES: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   DB_OP: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
   NOTIFICATION: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  EVENT: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
+  BACKEND_LOG: 'bg-green-500/10 text-green-400 border-green-500/20',
   GENERIC: 'bg-gray-500/10 text-gray-400 border-gray-500/20'
 };
 
@@ -31,7 +31,7 @@ const copyToClipboard = async (text: string) => {
     isCopied.value = true;
     setTimeout(() => {
       isCopied.value = false;
-    }, 2000); // El efecto dura 2 segundos
+    }, 2000);
   } catch (err) {
     console.error('Error al copiar: ', err);
   }

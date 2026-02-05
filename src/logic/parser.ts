@@ -111,6 +111,6 @@ function inferCategory(msg: string): LogEvent["category"] {
   if (m.includes("notify") || m.includes("notification")) return "NOTIFICATION"
   if (m.includes("update") || m.includes("updating")) return "DB_OP"
   if (m.includes("placetopay_event") || m.includes("executed event"))
-    return "EVENT"
+    return "BACKEND_LOG"
   return "GENERIC"
 }

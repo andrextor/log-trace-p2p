@@ -1,4 +1,6 @@
-export type LogLevel = "INFO" | "ERROR" | "WARNING" | "DEBUG"
+// src/logic/types.ts
+
+export type LogLevel = "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL"
 
 export interface LogEvent {
   id: string
@@ -15,11 +17,12 @@ export interface LogEvent {
   details: {
     method?: string
     url?: string
-    statusCode?: number
+    statusCode?: number | null
     duration?: string
     sessionId?: string | number
     transactionId?: string | number
+    subType?: string | null
   }
   context: any
-  rawStream: string
+  rawStream?: string
 }
