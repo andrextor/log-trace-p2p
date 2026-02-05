@@ -32,7 +32,6 @@ const handleLogProcess = async (payload: string) => {
   parseErrors.value = [];
 
   try {
-    // La acción setLogs del store ahora acumula ([...viejos, ...nuevos])
     const result = await store.setLogs(payload);
     parseErrors.value = result.errors; 
 

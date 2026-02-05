@@ -5,7 +5,6 @@ const store = useLogStore();
 
 const analyzers = [
   { id: 'checkout' as AnalyzerType, name: 'Checkout', icon: '🛒' },
-  { id: 'micrositios' as AnalyzerType, name: 'Micrositios (Próximamente)', disabled: true, icon: '🌐' },
   { id: 'rest' as AnalyzerType, name: 'REST API (Próximamente)', disabled: true, icon: '💻' },
 ];
 </script>

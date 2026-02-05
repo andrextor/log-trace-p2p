@@ -69,7 +69,7 @@ const copyToClipboard = async (text: string) => {
             </time>
           </div>
           
-          <h4 class="text-[13px] text-slate-800 dark:text-gray-100 font-bold leading-snug break-words tracking-tight">
+          <h4 class="text-[13px] text-slate-800 dark:text-gray-100 font-bold leading-snug wrap-break-words tracking-tight">
             {{ log.message }}
           </h4>
         </div>
@@ -96,7 +96,7 @@ const copyToClipboard = async (text: string) => {
           <span 
             v-if="log.details.statusCode" 
             :class="log.details.statusCode >= 400 ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'"
-            class="px-2 py-1.5 font-black min-w-[40px] text-center"
+            class="px-2 py-1.5 font-black min-w-10 text-center"
           >
             {{ log.details.statusCode }}
           </span>
