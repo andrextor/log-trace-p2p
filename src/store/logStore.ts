@@ -35,9 +35,14 @@ export const useLogStore = defineStore("logs", () => {
   // ACCIONES
   function setLogs(rawText: string) {
     console.log("Store: Recibiendo logs para procesar...")
-    const parsed = parseP2PLogs(rawText)
-    console.log(`✅ Parser completado. Eventos encontrados: ${result.length}`)
-    events.value = parsed
+
+    const { events: parsedEvents, errors } = parseP2PLogs(rawText)
+
+    console.log(
+      `✅ Store: Procesado. Eventos: ${parsedEvents.length}, Errores: ${errors.length}`
+    )
+    events.value = parsedEvents
+    return { events: parsedEvents, errors }
   }
 
   function clearLogs() {

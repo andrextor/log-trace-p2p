@@ -1,63 +1,126 @@
-export function parseP2PLogs(raw: string): LogEvent[] {
-  if (!raw) return []
+// src/logic/parser.ts
+import type { LogEvent, LogLevel } from "./types"
 
-  const cleanRaw = raw.trim().replace(/^\uFEFF/, "")
-  const rows = cleanRaw.split(/\r?\n/)
-  const results: LogEvent[] = []
+export interface ParseResult {
+  events: LogEvent[]
+  errors: { line: number; reason: string; content: string }[]
+}
 
-  console.log(`🔍 Iniciando parseo de ${rows.length} líneas...`)
+/**
+ * Entry point
+ */
+export function parseP2PLogs(raw: string): ParseResult {
+  if (!raw) return { events: [], errors: [] }
 
-  rows.forEach((row, index) => {
-    const line = row.trim()
+  const rows = sanitizeRaw(raw)
+  const events: LogEvent[] = []
+  const errors: ParseResult["errors"] = []
 
-    // Saltamos cabeceras o líneas vacías
-    if (!line || line.includes("@timestamp,@message")) return
-
+  rows.forEach((line, index) => {
     try {
-      // Intentamos encontrar el bloque JSON
-      const startIdx = line.indexOf("{")
-      const endIdx = line.lastIndexOf("}")
+      const json = extractJson(line)
+      if (!json) return
 
-      if (startIdx === -1) return // No hay JSON en esta línea, saltar
+      const data = JSON.parse(json)
+      const event = mapToEvent(data, line, index)
 
-      let rawJson = line.substring(startIdx, endIdx + 1)
-
-      // Limpieza crítica para CSV de AWS: "" -> "
-      const cleanJson = rawJson.replace(/""/g, '"')
-
-      // DEBUG: Solo para la primera línea para no inundar la consola
-      if (results.length === 0) {
-        console.log("📝 Ejemplo de JSON limpio:", cleanJson.substring(0, 100))
-      }
-
-      const data = JSON.parse(cleanJson)
-      const ctx = data.context || {}
-
-      results.push({
-        id: ctx.aws_request_id || `idx-${index}-${Date.now()}`,
-        timestamp: data.datetime || line.substring(0, 23).replace(/"/g, ""),
-        level: (data.level_name as LogLevel) || "INFO",
-        message: data.message || "Sin mensaje",
-        category: inferCategory(data.message || ""),
-        details: {
-          method: ctx.request?.method || ctx.action_method || "",
-          url: ctx.request?.url || ctx.response?.url || "",
-          statusCode: ctx.response?.status_code || data.level || null,
-          sessionId: ctx.session_id || ctx.data?.session_id || "",
-          transactionId: ctx.transaction_id || ctx.placetopay_id || "",
-        },
-        context: ctx,
-        rawStream: line.substring(0, 50),
-      })
+      events.push(event)
     } catch (err) {
-      // Si falla una línea, queremos saber POR QUÉ
-      console.error(
-        `❌ Error en línea ${index}:`,
-        err instanceof Error ? err.message : err
-      )
+      errors.push({
+        line: index + 1,
+        reason: err instanceof Error ? err.message : "Unknown parsing error",
+        content: line.slice(0, 80) + "...",
+      })
     }
   })
 
-  console.log(`✅ Parseo terminado. Eventos creados: ${results.length}`)
-  return results
+  // Timeline coherente
+  events.sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
+
+  return { events, errors }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                     */
+/* -------------------------------------------------------------------------- */
+
+function sanitizeRaw(raw: string): string[] {
+  return raw
+    .trim()
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && l !== '"' && !l.includes("@timestamp,@message"))
+}
+
+function extractJson(line: string): string | null {
+  const start = line.indexOf("{")
+  const end = line.lastIndexOf("}")
+
+  if (start === -1 || end === -1 || end <= start) return null
+
+  // Limpieza típica de CSV AWS
+  return line.substring(start, end + 1).replace(/""/g, '"')
+}
+
+function mapToEvent(data: any, rawLine: string, index: number): LogEvent {
+  const ctx = data.context ?? {}
+
+  return {
+    id: buildEventId(ctx, index),
+    timestamp: extractTimestamp(data, rawLine),
+    level: (data.level_name as LogLevel) ?? "INFO",
+    message: data.message ?? "No message",
+    category: inferCategory(data.message ?? ""),
+    details: {
+      method: ctx.request?.method ?? ctx.action_method ?? "",
+      url: ctx.request?.url ?? ctx.response?.url ?? ctx.notification_url ?? "",
+      statusCode: ctx.response?.status_code ?? data.level ?? null,
+      sessionId: ctx.session_id ?? ctx.data?.session_id ?? "",
+      transactionId: ctx.transaction_id ?? ctx.placetopay_id ?? "",
+    },
+    context: ctx,
+    rawStream: rawLine.slice(0, 80),
+  }
+}
+
+function buildEventId(ctx: any, index: number): string {
+  return (
+    ctx.aws_request_id ??
+    ctx.transaction_id ??
+    ctx.session_id ??
+    `line-${index}-${Date.now()}`
+  )
+}
+
+function extractTimestamp(data: any, line: string): string {
+  if (data.datetime) return data.datetime
+
+  // fallback CSV timestamp
+  return line.substring(0, 23).replace(/"/g, "")
+}
+
+/* -------------------------------------------------------------------------- */
+/* Categorization                                                             */
+/* -------------------------------------------------------------------------- */
+
+function inferCategory(msg: string): LogEvent["category"] {
+  const m = msg.toLowerCase()
+
+  if (m.includes("http req") || m.includes("[gw_lib] http req"))
+    return "HTTP_REQ"
+
+  if (m.includes("http res") || m.includes("[gw_lib] http res"))
+    return "HTTP_RES"
+
+  if (m.includes("notify") || m.includes("notification")) return "NOTIFICATION"
+
+  if (m.includes("update") || m.includes("updating")) return "DB_OP"
+
+  if (m.includes("placetopay_event") || m.includes("executed event"))
+    return "EVENT"
+
+  return "GENERIC"
 }
