@@ -3,11 +3,17 @@ import { ref, computed } from "vue"
 import type { LogEvent } from "../logic/types"
 import { parseP2PLogs } from "../logic/parser"
 
+// Definimos los tipos de analizadores para TypeScript
+export type AnalyzerType = "checkout" | "micrositios" | "rest"
+
 export const useLogStore = defineStore("logs", () => {
-  // Estado
+  // --- ESTADO ---
   const events = ref<LogEvent[]>([])
   const search = ref("")
   const levelFilter = ref("ALL")
+
+  // Nuevo: Controla qué estrategia de parseo se usará
+  const currentAnalyzer = ref<AnalyzerType>("checkout")
 
   /** * highlightedSessionId: Resalta visualmente todos los logs de una misma sesión.
    * selectedEventId: Controla qué log específico tiene abierto su detalle de data (JSON).
@@ -15,7 +21,7 @@ export const useLogStore = defineStore("logs", () => {
   const highlightedSessionId = ref<string | number | null>(null)
   const selectedEventId = ref<string | null>(null)
 
-  // Getters (Computed)
+  // --- GETTERS (Computed) ---
   const filteredEvents = computed(() => {
     if (events.value.length === 0) return []
 
@@ -48,11 +54,17 @@ export const useLogStore = defineStore("logs", () => {
     return groups
   })
 
-  // Acciones
+  // --- ACCIONES ---
+
+  /**
+   * Ahora setLogs toma el valor de currentAnalyzer del estado
+   * para pasarlo al orquestador del parser.
+   */
   function setLogs(rawText: string) {
-    const result = parseP2PLogs(rawText)
+    // Pasamos el valor actual del analizador seleccionado en la UI
+    const result = parseP2PLogs(rawText, currentAnalyzer.value)
     events.value = result.events
-    return result // Retorna { events, errors } para el componente Analyzer
+    return result
   }
 
   function clearLogs() {
@@ -61,18 +73,13 @@ export const useLogStore = defineStore("logs", () => {
     levelFilter.value = "ALL"
     highlightedSessionId.value = null
     selectedEventId.value = null
+    // Nota: No reseteamos currentAnalyzer para mantener la selección del usuario
   }
 
-  /**
-   * Resalta visualmente todos los eventos que pertenecen a la misma sesión.
-   */
   function toggleHighlight(sid: string | number) {
     highlightedSessionId.value = highlightedSessionId.value === sid ? null : sid
   }
 
-  /**
-   * Selecciona un único evento para mostrar su detalle técnico (context/data).
-   */
   function selectEvent(id: string) {
     selectedEventId.value = selectedEventId.value === id ? null : id
   }
@@ -82,6 +89,7 @@ export const useLogStore = defineStore("logs", () => {
     events,
     search,
     levelFilter,
+    currentAnalyzer,
     highlightedSessionId,
     selectedEventId,
     // Getters
