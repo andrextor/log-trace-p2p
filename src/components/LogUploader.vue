@@ -58,7 +58,7 @@ function triggerProcess() {
 
       <textarea
         class="w-full min-h-80 bg-transparent p-6 text-sm font-mono text-slate-800 dark:text-indigo-100/90 outline-none placeholder:text-slate-400 dark:placeholder:text-gray-600 resize-y"
-        placeholder="Pega los logs aquí o arrastra un archivo .txt / .log..."
+        placeholder="Pega los logs aquí o arrastra un archivo .csv / .log..."
         v-model="raw"
         @paste="onPaste"
       />
