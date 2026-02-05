@@ -1,3 +1,4 @@
+// src/logic/parser.ts
 import type { LogEvent, LogLevel } from "./types"
 
 export interface ParseResult {
@@ -24,18 +25,21 @@ export function parseP2PLogs(raw: string): ParseResult {
     } catch (err) {
       errors.push({
         line: index + 1,
-        reason: err instanceof Error ? err.message : "Unknown parsing error",
-        content: line.slice(0, 80) + "...",
+        reason: err instanceof Error ? err.message : "Error de sintaxis JSON",
+        content: line.slice(0, 80),
       })
     }
   })
 
+  // Ordenamos para que la línea de tiempo sea ascendente
   events.sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   )
 
   return { events, errors }
 }
+
+/* --- Helpers de Limpieza --- */
 
 function sanitizeRaw(raw: string): string[] {
   return raw
@@ -53,9 +57,8 @@ function extractJson(line: string): string | null {
   return line.substring(start, end + 1).replace(/""/g, '"')
 }
 
-/**
- * Mapea la data JSON al objeto de evento de la interfaz
- */
+/* --- Lógica de Mapeo --- */
+
 function mapToEvent(data: any, rawLine: string, index: number): LogEvent {
   const ctx = data.context ?? {}
 
@@ -63,9 +66,9 @@ function mapToEvent(data: any, rawLine: string, index: number): LogEvent {
   const subType = data.type ?? ctx.type ?? null
   let displayMessage = data.message ?? "No message"
 
-  // Mejoramos mensajes genéricos de placetopay_event
+  // Si el mensaje es el genérico de P2P, usamos el subType como título principal
   if (displayMessage === "placetopay_event" && subType) {
-    displayMessage = `${subType}`
+    displayMessage = subType
   }
 
   return {
@@ -73,16 +76,15 @@ function mapToEvent(data: any, rawLine: string, index: number): LogEvent {
     timestamp: extractTimestamp(data, rawLine),
     level: (data.level_name as LogLevel) ?? "INFO",
     message: displayMessage,
-    category: inferCategory(data.message ?? ""),
+    category: inferCategory(data.message ?? "", subType),
     details: {
       method: ctx.request?.method ?? ctx.action_method ?? "",
       url: ctx.request?.url ?? ctx.response?.url ?? ctx.notification_url ?? "",
       statusCode: ctx.response?.status_code ?? data.level ?? null,
       sessionId: ctx.session_id ?? ctx.data?.session_id ?? "",
       transactionId: ctx.transaction_id ?? ctx.placetopay_id ?? "",
-      subType, // Añadimos el subtipo a los detalles
+      subType
     },
-    // Guardamos 'data' completo en lugar de solo 'ctx' para no perder campos raíz
     context: data,
     rawStream: rawLine.slice(0, 80),
   }
@@ -102,15 +104,61 @@ function extractTimestamp(data: any, line: string): string {
   return line.substring(0, 23).replace(/"/g, "")
 }
 
-function inferCategory(msg: string): LogEvent["category"] {
+/**
+ * Mapea el mensaje a las categorías que espera el LogCard
+ */
+function inferCategory(
+  msg: string,
+  subType: string | null
+): LogEvent["category"] {
   const m = msg.toLowerCase()
-  if (m.includes("http req") || m.includes("[gw_lib] http req"))
+  const s = (subType ?? "").toLowerCase()
+
+  // Prioridad 1: Notificaciones
+  if (
+    m.includes("notify") ||
+    m.includes("notification") ||
+    s.includes("notification")
+  ) {
+    return "NOTIFICATION"
+  }
+
+  // Prioridad 2: Requests HTTP
+  if (
+    m.includes("http req") ||
+    m.includes("[gw_lib] http req") ||
+    m.includes("calling")
+  ) {
     return "HTTP_REQ"
-  if (m.includes("http res") || m.includes("[gw_lib] http res"))
+  }
+
+  // Prioridad 3: Responses HTTP
+  if (
+    m.includes("http res") ||
+    m.includes("[gw_lib] http res") ||
+    m.includes("response")
+  ) {
     return "HTTP_RES"
-  if (m.includes("notify") || m.includes("notification")) return "NOTIFICATION"
-  if (m.includes("update") || m.includes("updating")) return "DB_OP"
-  if (m.includes("placetopay_event") || m.includes("executed event"))
+  }
+
+  // Prioridad 4: Base de Datos u Operaciones de persistencia
+  if (
+    m.includes("update") ||
+    m.includes("updating") ||
+    m.includes("db") ||
+    m.includes("save")
+  ) {
+    return "DB_OP"
+  }
+
+  if (
+    m.includes("trace") ||
+    m.includes("executed event") ||
+    m.includes("placetopay_event") ||
+    m.includes("executed action")
+  ) {
     return "BACKEND_LOG"
+  }
+
   return "GENERIC"
 }
