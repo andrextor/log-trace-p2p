@@ -10,19 +10,38 @@ const props = defineProps<{
 const emit = defineEmits(['highlightSession']);
 
 const isLocalOpen = ref(false);
-const isCopied = ref(false); // Estado para el efecto de click al copiar
+const isCopied = ref(false);
 
 const toggleOpen = () => {
   isLocalOpen.value = !isLocalOpen.value;
 };
 
-const categoryStyles: Record<string, string> = {
-  HTTP_REQ: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  HTTP_RES: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  DB_OP: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-  NOTIFICATION: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  BACKEND_LOG: 'bg-green-500/10 text-green-400 border-green-500/20',
-  GENERIC: 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+// Mapeo de Títulos y Estilos
+const categoryConfig: Record<string, { label: string, classes: string }> = {
+  HTTP_REQ: { 
+    label: 'Petición Http', 
+    classes: 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
+  },
+  HTTP_RES: { 
+    label: 'Respuesta Http', 
+    classes: 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
+  },
+  DB_OP: { 
+    label: 'Proceso backend / db', 
+    classes: 'bg-orange-500/10 text-orange-400 border-orange-500/20' 
+  },
+  NOTIFICATION: { 
+    label: 'Notificación', 
+    classes: 'bg-purple-500/10 text-purple-400 border-purple-500/20' 
+  },
+  BACKEND_LOG: { 
+    label: 'Registro Backend', 
+    classes: 'bg-green-500/10 text-green-400 border-green-500/20' 
+  },
+  GENERIC: { 
+    label: 'Registro', 
+    classes: 'bg-gray-500/10 text-gray-400 border-gray-500/20' 
+  }
 };
 
 const copyToClipboard = async (text: string) => {
@@ -57,10 +76,10 @@ const copyToClipboard = async (text: string) => {
       <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div class="flex items-center gap-2">
           <span 
-            :class="categoryStyles[log.category] || categoryStyles.GENERIC" 
-            class="text-[9px] font-black px-2 py-0.5 rounded border uppercase tracking-tighter"
+            :class="categoryConfig[log.category]?.classes || categoryConfig.GENERIC.classes" 
+            class="text-[9px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider font-mono"
           >
-            {{ log.category.replace('_', ' ') }}
+            {{ categoryConfig[log.category]?.label || categoryConfig.GENERIC.label }}
           </span>
 
           <span 
@@ -81,12 +100,12 @@ const copyToClipboard = async (text: string) => {
             @click.stop="emit('highlightSession', log.details.sessionId)"
             class="flex items-center bg-black/40 border border-white/10 rounded-md overflow-hidden hover:border-indigo-500/50 transition-colors"
           >
-            <span class="px-1.5 py-0.5 text-[8px] font-bold bg-white/5 text-gray-500 border-r border-white/10 uppercase tabular-nums">Session ID</span>
+            <span class="px-1.5 py-0.5 text-[8px] font-bold bg-white/5 text-gray-500 border-r border-white/10 uppercase tabular-nums">SID</span>
             <span class="px-2 py-0.5 text-[10px] font-mono text-indigo-300">{{ log.details.sessionId }}</span>
           </button>
           
           <div v-if="log.id" class="flex items-center bg-black/40 border border-white/10 rounded-md overflow-hidden">
-            <span class="px-1.5 py-0.5 text-[8px] font-bold bg-white/5 text-gray-500 border-r border-white/10 uppercase tabular-nums">Aws request id</span>
+            <span class="px-1.5 py-0.5 text-[8px] font-bold bg-white/5 text-gray-500 border-r border-white/10 uppercase tabular-nums">RID</span>
             <span class="px-2 py-0.5 text-[10px] font-mono text-cyan-300">{{ log.id.toString().slice(-8) }}</span>
           </div>
         </div>
@@ -98,7 +117,7 @@ const copyToClipboard = async (text: string) => {
         </p>
 
         <div v-if="log.details.url" class="flex items-center gap-2 font-mono text-[10px] bg-black/30 p-2 rounded border border-white/5 overflow-hidden">
-          <span class="text-indigo-400 font-bold shrink-0">{{ log.details.method }}</span>
+          <span class="text-indigo-400 font-bold shrink-0 uppercase italic text-[9px]">{{ log.details.method }}</span>
           <span class="text-gray-500 truncate flex-1">{{ log.details.url }}</span>
           <span 
             v-if="log.details.statusCode" 
@@ -132,7 +151,7 @@ const copyToClipboard = async (text: string) => {
           {{ isCopied ? 'Copied!' : 'Copy JSON' }}
         </button>
       </div>
-      <pre class="text-[11px] font-mono text-indigo-200/70 overflow-x-auto p-3 bg-black/20 rounded-lg border border-white/5 leading-relaxed">{{ JSON.stringify(log.context, null, 2) }}</pre>
+      <pre class="text-[11px] font-mono text-indigo-200/70 overflow-x-auto p-3 bg-black/20 rounded-lg border border-white/5 leading-relaxed ">{{ JSON.stringify(log.context, null, 2) }}</pre>
     </div>
 
     <div class="absolute right-4 top-6 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
