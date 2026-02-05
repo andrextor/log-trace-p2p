@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref } from 'vue'; // Importamos ref para el estado local
 import type { LogEvent } from '../logic/types';
 
 const props = defineProps<{
   log: LogEvent;
-  isHighlighted: boolean; // Resaltado de grupo (Sesión)
-  isSelected: boolean;    // Selección individual (Detalle JSON)
+  isHighlighted: boolean; // Mantenemos esto para el resaltado por sesión
 }>();
 
-const emit = defineEmits(['highlightSession', 'selectEvent']);
+const emit = defineEmits(['highlightSession']);
 
-// Mapeo de estilos por categoría
+// Estado local: Solo afecta a ESTA tarjeta
+const isLocalOpen = ref(false);
+
+const toggleOpen = () => {
+  isLocalOpen.value = !isLocalOpen.value;
+};
+
 const categoryStyles: Record<string, string> = {
   HTTP_REQ: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   HTTP_RES: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -20,12 +25,8 @@ const categoryStyles: Record<string, string> = {
   GENERIC: 'bg-gray-500/10 text-gray-400 border-gray-500/20'
 };
 
-/**
- * Copia el contenido al portapapeles con feedback visual
- */
 const copyToClipboard = (text: string) => {
   navigator.clipboard.writeText(text);
-  // Aquí podrías disparar un toast pequeño si quisieras
 };
 </script>
 
@@ -36,7 +37,7 @@ const copyToClipboard = (text: string) => {
       isHighlighted 
         ? 'bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_20px_-5px_rgba(79,70,229,0.2)]' 
         : 'bg-white/2 border-white/5 hover:border-white/10 hover:bg-white/4',
-      isSelected ? 'ring-2 ring-indigo-400/50 border-transparent' : ''
+      isLocalOpen ? 'ring-1 ring-indigo-400/30' : ''
     ]"
   >
     <div 
@@ -44,7 +45,7 @@ const copyToClipboard = (text: string) => {
       class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 shadow-[0_0_10px_#4f46e5] z-10"
     ></div>
 
-    <div @click="emit('selectEvent', log.id)" class="p-4 cursor-pointer">
+    <div @click="toggleOpen" class="p-4 cursor-pointer">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div class="flex items-center gap-3">
           <span 
@@ -95,11 +96,11 @@ const copyToClipboard = (text: string) => {
     </div>
 
     <div 
-      v-if="isSelected" 
-      class="bg-black/40 border-t border-white/5 p-4 animate-in slide-in-from-top-2 duration-300"
+      v-if="isLocalOpen" 
+      class="bg-black/40 border-t border-white/5 p-4 animate-in slide-in-from-top-2 duration-200"
     >
       <div class="flex justify-between items-center mb-2">
-        <span class="text-[10px] font-mono text-indigo-400 uppercase tracking-widest font-bold">Raw Context Data</span>
+        <span class="text-[10px] font-mono text-indigo-400 uppercase tracking-widest font-bold">Context Payload</span>
         <button 
           @click="copyToClipboard(JSON.stringify(log.context, null, 2))"
           class="text-[9px] bg-white/5 hover:bg-white/10 text-gray-400 px-2 py-1 rounded border border-white/10 transition-colors"
@@ -110,10 +111,10 @@ const copyToClipboard = (text: string) => {
       <pre class="text-[11px] font-mono text-indigo-200/70 overflow-x-auto p-3 bg-black/20 rounded-lg border border-white/5 leading-relaxed">{{ JSON.stringify(log.context, null, 2) }}</pre>
     </div>
 
-    <div class="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+    <div class="absolute right-4 top-6 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
       <svg 
         class="w-4 h-4 text-white/20 transition-transform duration-300" 
-        :class="isSelected ? 'rotate-180' : ''"
+        :class="isLocalOpen ? 'rotate-180' : ''"
         fill="none" viewBox="0 0 24 24" stroke="currentColor"
       >
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
