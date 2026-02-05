@@ -6,46 +6,37 @@ import { useLogStore } from '../store/logStore';
 import AnalyzerSelector from './AnalyzerSelector.vue';
 import LogUploader from './LogUploader.vue';
 import LogTimeline from './LogTimeline.vue';
+import AnalysisProgress from './AnalysisProgress.vue';
 
 const store = useLogStore();
 
-// Estado local para los errores encontrados durante el parseo
+// Estado local para los errores de sintaxis encontrados por el parser
 const parseErrors = ref<{ line: number; reason: string; content: string }[]>([]);
 
-// Determinamos si mostramos el cargador o la línea de tiempo
+// UI: Determina si mostrar carga o resultados
 const showUploader = computed(() => store.events.length === 0);
 
 /**
- * Gestiona el procesamiento del log delegando al store
+ * Procesa los logs usando la acción asíncrona del store
  */
 const handleLogProcess = async (payload: string) => {
   parseErrors.value = [];
 
-  const promise = () => new Promise((resolve, reject) => {
-    try {
-      const { events, errors } = store.setLogs(payload);
-      parseErrors.value = errors; 
+  try {
+    // Llamamos a la acción del store que maneja el progreso
+    const result = await store.setLogs(payload);
+    parseErrors.value = result.errors; 
 
-      if (events.length > 0) {
-        resolve({ count: events.length, errorCount: errors.length });
-      } else {
-        reject("No se extrajeron eventos válidos.");
-      }
-    } catch (e) {
-      reject(e);
-    }
-  });
-
-  toast.promise(promise, {
-    loading: 'Analizando rastro de logs...',
-    success: (data: any) => {
+    if (result.events.length > 0) {
+      toast.success(`Análisis completo: ${result.events.length} eventos procesados.`);
       nextTick().then(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
-      return data.errorCount > 0 
-        ? `Cargados ${data.count} eventos (${data.errorCount} errores de línea).`
-        : `¡Éxito! ${data.count} eventos cargados.`;
-    },
-    error: (err: any) => `Error: ${err}`,
-  });
+    } else {
+      toast.error("No se encontraron eventos válidos en el rastro.");
+    }
+  } catch (e) {
+    toast.error("Ocurrió un error crítico durante el análisis.");
+    console.error(e);
+  }
 };
 
 const analyzerNames = {
@@ -59,15 +50,16 @@ const currentAnalyzerName = computed(() => analyzerNames[store.currentAnalyzer])
 const handleReset = () => {
   store.clearLogs();
   parseErrors.value = []; 
-  toast.info("Espacio de trabajo limpio");
+  toast.info("Espacio de trabajo reiniciado");
 };
 </script>
 
 <template>
-  <Toaster 
-    position="top-right" 
-    richColors 
-    theme="system" 
+  <Toaster position="top-right" richColors theme="system" />
+
+  <AnalysisProgress 
+    :is-processing="store.isProcessing" 
+    :progress="store.progress" 
   />
 
   <div class="max-w-6xl mx-auto px-6 py-10 min-h-screen transition-colors duration-500">
@@ -79,13 +71,13 @@ const handleReset = () => {
             Analizador de <span class="text-indigo-600 dark:text-indigo-400">Trazas P2P</span>
           </h1>
           <p class="text-slate-500 dark:text-slate-400 max-w-lg mx-auto text-sm sm:text-base italic">
-            Configuración de mapeo optimizada para {{ currentAnalyzerName }}.
+            Configuración activa: <b>{{ currentAnalyzerName }}</b>.
           </p>
         </div>
 
         <div class="max-w-2xl mx-auto">
-        <AnalyzerSelector />
-      </div>
+          <AnalyzerSelector />
+        </div>
   
         <LogUploader @process="handleLogProcess" />
 
@@ -96,7 +88,7 @@ const handleReset = () => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h2 class="font-mono text-sm uppercase tracking-widest font-bold">Reporte de Errores de Parseo</h2>
+            <h2 class="font-mono text-sm uppercase tracking-widest font-bold">Líneas no reconocidas</h2>
           </div>
           
           <div class="bg-white dark:bg-red-500/5 border border-slate-200 dark:border-red-500/10 rounded-2xl overflow-hidden shadow-sm backdrop-blur-sm">
@@ -104,30 +96,40 @@ const handleReset = () => {
               <thead class="bg-slate-50 dark:bg-red-500/10 text-slate-500 dark:text-red-300/60 uppercase tracking-tighter text-[10px]">
                 <tr>
                   <th class="px-6 py-3 border-b border-slate-100 dark:border-red-500/10 w-20">Línea</th>
-                  <th class="px-6 py-3 border-b border-slate-100 dark:border-red-500/10">Descripción</th>
-                  <th class="px-6 py-3 border-b border-slate-100 dark:border-red-500/10">Contenido Parcial</th>
+                  <th class="px-6 py-3 border-b border-slate-100 dark:border-red-500/10">Error</th>
+                  <th class="px-6 py-3 border-b border-slate-100 dark:border-red-500/10">Contenido</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-red-500/10">
                 <tr v-for="err in parseErrors.slice(0, 10)" :key="err.line" class="hover:bg-slate-50 dark:hover:bg-red-500/2 transition-colors">
                   <td class="px-6 py-3 text-red-600 dark:text-red-400/80 font-bold">#{{ err.line }}</td>
                   <td class="px-6 py-3 text-slate-600 dark:text-red-200/50 italic">{{ err.reason }}</td>
-                  <td class="px-6 py-3">
-                    <code class="text-red-700 dark:text-red-300/30 bg-red-50 dark:bg-red-950/20 px-2 py-0.5 rounded truncate block max-w-md font-mono">
-                      {{ err.content }}
-                    </code>
-                  </td>
+                  <td class="px-6 py-3 text-xs opacity-60 truncate max-w-xs">{{ err.content }}</td>
                 </tr>
               </tbody>
             </table>
-            <div v-if="parseErrors.length > 10" class="p-3 bg-slate-50 dark:bg-red-500/5 border-t border-slate-100 dark:border-red-500/10 text-center text-[10px] text-slate-400 dark:text-red-400/40 uppercase tracking-widest font-bold">
-              + {{ parseErrors.length - 10 }} errores adicionales detectados
-            </div>
           </div>
         </div>
       </div>
 
-      <LogTimeline v-else key="results" @reset="handleReset" />
+      <div v-else key="results" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div class="bg-white dark:bg-white/5 p-4 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm">
+            <p class="text-[10px] text-slate-500 dark:text-gray-400 uppercase font-bold tracking-widest">Total Eventos</p>
+            <p class="text-2xl font-black text-indigo-600 dark:text-indigo-400">{{ store.stats.total }}</p>
+          </div>
+          <div class="bg-white dark:bg-white/5 p-4 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm">
+            <p class="text-[10px] text-slate-500 dark:text-gray-400 uppercase font-bold tracking-widest">Errores</p>
+            <p class="text-2xl font-black text-red-600 dark:text-red-400">{{ store.stats.errors }}</p>
+          </div>
+          <div class="bg-white dark:bg-white/5 p-4 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm">
+            <p class="text-[10px] text-slate-500 dark:text-gray-400 uppercase font-bold tracking-widest">Analizador Activo</p>
+            <p class="text-2xl font-black text-slate-700 dark:text-slate-200">{{ currentAnalyzerName }}</p>
+          </div>
+        </div>
+
+        <LogTimeline @reset="handleReset" />
+      </div>
 
     </transition>
   </div>
