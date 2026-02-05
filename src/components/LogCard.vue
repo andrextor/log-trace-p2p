@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import type { LogEvent } from '../logic/types';
+import { CATEGORY_STYLES } from '../logic/mappers/checkout/checkoutConfig';
 
 const props = defineProps<{
   log: LogEvent;
@@ -14,46 +15,6 @@ const isCopied = ref(false);
 
 const toggleOpen = () => {
   isLocalOpen.value = !isLocalOpen.value;
-};
-
-// Mapeo de Títulos y Estilos Actualizado
-const categoryConfig: Record<string, { label: string, classes: string }> = {
-  USER_ACTION: { 
-    label: 'acción del usuario', 
-    classes: 'bg-pink-500/10 text-pink-400 border-pink-500/20' 
-  },
-  BROWSER_LOAD: { 
-    label: 'carga en el browser', 
-    classes: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' 
-  },
-  HTTP_REQ_IN: { 
-    label: 'solicitud recibida api', 
-    classes: 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
-  },
-  HTTP_REQ_OUT: { 
-    label: 'Request Rest Http', 
-    classes: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-  },
-  HTTP_RES: { 
-    label: 'Response Rest Http ', 
-    classes: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-  },
-  DB_OP: { 
-    label: 'proceso backend / db', 
-    classes: 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
-  },
-  NOTIFICATION: { 
-    label: 'notificación al comercio', 
-    classes: 'bg-purple-500/10 text-purple-400 border-purple-500/20' 
-  },
-  BACKEND_LOG: { 
-    label: 'registro traza backend', 
-    classes: 'bg-green-500/10 text-green-400 border-green-500/20' 
-  },
-  GENERIC: { 
-    label: 'registro general', 
-    classes: 'bg-gray-500/10 text-gray-400 border-gray-500/20' 
-  }
 };
 
 const copyToClipboard = async (text: string) => {
@@ -88,10 +49,10 @@ const copyToClipboard = async (text: string) => {
       <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div class="flex items-center gap-2">
           <span 
-            :class="categoryConfig[log.category]?.classes || categoryConfig.GENERIC.classes" 
-            class="text-[9px] font-normal px-2 py-0.5 rounded border uppercase tracking-wider font-mono"
+            :class="CATEGORY_STYLES[log.category]?.classes || CATEGORY_STYLES.GENERIC.classes" 
+            class="text-[9px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider font-mono"
           >
-            {{ categoryConfig[log.category]?.label || categoryConfig.GENERIC.label }}
+            {{ CATEGORY_STYLES[log.category]?.label || CATEGORY_STYLES.GENERIC.label }}
           </span>
 
           <span 
