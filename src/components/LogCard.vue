@@ -70,19 +70,18 @@ const copyToClipboard = async (text: string) => {
           </time>
         </div>
 
-        <div class="flex items-center gap-2">
-          <button 
+        <div class="flex items-center gap-2 pr-6"> <button 
             v-if="log.details.sessionId" 
             @click.stop="emit('highlightSession', log.details.sessionId)"
             class="flex items-center bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-md overflow-hidden hover:border-indigo-500/50 transition-colors"
           >
-            <span class="px-1.5 py-0.5 text-[8px] font-bold bg-white dark:bg-white/5 text-slate-400 dark:text-gray-500 border-r border-slate-200 dark:border-white/10 uppercase tabular-nums">SID</span>
-            <span class="px-2 py-0.5 text-[10px] font-mono text-indigo-600 dark:text-indigo-300">{{ log.details.sessionId }}</span>
+            <span class="px-2 py-0.5 text-xs font-medium bg-white dark:bg-white/5 text-slate-400 dark:text-gray-500 border-r border-slate-200 dark:border-white/10">Session id:</span>
+            <span class="px-2 py-0.5 text-xs font-mono text-indigo-600 dark:text-indigo-300">{{ log.details.sessionId }}</span>
           </button>
           
           <div v-if="log.id" class="flex items-center bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-md overflow-hidden">
-            <span class="px-1.5 py-0.5 text-[8px] font-bold bg-white dark:bg-white/5 text-slate-400 dark:text-gray-500 border-r border-slate-200 dark:border-white/10 uppercase">RID</span>
-            <span class="px-2 py-0.5 text-[10px] font-mono text-cyan-600 dark:text-cyan-300">{{ log.id.toString().slice(-8) }}</span>
+            <span class="px-2 py-0.5 text-xs font-medium bg-white dark:bg-white/5 text-slate-400 dark:text-gray-500 border-r border-slate-200 dark:border-white/10">request_aws_id:</span>
+            <span class="px-2 py-0.5 text-xs font-mono text-cyan-600 dark:text-cyan-300">{{ log.id.toString().slice(-8) }}</span>
           </div>
         </div>
       </div>
@@ -130,9 +129,9 @@ const copyToClipboard = async (text: string) => {
       <pre class="text-[11px] font-mono text-slate-600 dark:text-indigo-200/70 overflow-x-auto p-3 bg-white dark:bg-black/20 rounded-lg border border-slate-200 dark:border-white/5 leading-relaxed">{{ JSON.stringify(log.context, null, 2) }}</pre>
     </div>
 
-    <div class="absolute right-4 top-6 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+    <div class="absolute right-3 top-5 opacity-40 group-hover:opacity-100 transition-opacity pointer-events-none">
       <svg 
-        class="w-4 h-4 text-slate-300 dark:text-white/20 transition-transform duration-300" 
+        class="w-4 h-4 text-slate-400 dark:text-white/40 transition-transform duration-300" 
         :class="isLocalOpen ? 'rotate-180' : ''"
         fill="none" viewBox="0 0 24 24" stroke="currentColor"
       >
