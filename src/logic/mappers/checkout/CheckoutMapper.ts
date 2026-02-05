@@ -1,6 +1,11 @@
 import type { LogEvent, LogLevel, LogCategory } from "../../types"
 import type { LogMapper } from "../BaseMapper"
-import { buildEventId, extractTimestamp } from "../mapperUtils"
+import {
+  buildEventId,
+  extractTimestamp,
+  normalizePath,
+  extractHttpFromMessage,
+} from "../mapperUtils"
 import { ACTION_MAP } from "./CheckoutConfigMap"
 
 export class CheckoutMapper implements LogMapper {
@@ -18,15 +23,16 @@ export class CheckoutMapper implements LogMapper {
     const subType = data.type ?? ctx.type ?? null
     const action = ctx.action_method
 
-    // 1. Identificar acción (Prioridad a subType de creación, luego action_method)
+    // 1. Identificar acción (prioridad a subType)
     const actionKey = subType === "checkout.session.created" ? subType : action
     const knownAction = actionKey ? ACTION_MAP[actionKey] : null
 
-    // 2. Construcción de Mensaje dinámico
+    // 2. Mensaje de display
     let displayMessage = data.message ?? "Sin mensaje"
+
     if (knownAction) {
       displayMessage = knownAction.message
-      // Plus: Si es procesamiento, mostramos el gateway (pse, card, etc)
+
       if (action === "process" && ctx.body?.gateway) {
         displayMessage += ` vía ${ctx.body.gateway.toUpperCase()}`
       }
@@ -38,6 +44,23 @@ export class CheckoutMapper implements LogMapper {
     const source =
       knownAction?.source ??
       (data.channel === "frontend" ? "FRONTEND" : "BACKEND")
+
+    // 4. Extraer info HTTP desde el message (cuando no viene en context)
+    const httpInfo = extractHttpFromMessage(data.message ?? "")
+
+    // 5. Resolver método y URL normalizada
+    const method =
+      ctx.request?.method ??
+      httpInfo.method ??
+      this.resolveMethod(ctx, action, subType)
+
+    const url = ctx.request?.url
+      ? normalizePath(ctx.request.url)
+      : ctx.response?.url
+      ? normalizePath(ctx.response.url)
+      : ctx.notification_url
+      ? normalizePath(ctx.notification_url)
+      : httpInfo.path ?? ""
 
     return {
       id: buildEventId(ctx, index),
@@ -51,9 +74,8 @@ export class CheckoutMapper implements LogMapper {
         knownAction?.category
       ),
       details: {
-        method: this.resolveMethod(ctx, action, subType),
-        url:
-          ctx.request?.url ?? ctx.response?.url ?? ctx.notification_url ?? "",
+        method,
+        url,
         statusCode: ctx.response?.status_code ?? data.level ?? null,
         sessionId: ctx.session_id ?? ctx.data?.session_id ?? "",
         transactionId: ctx.transaction_id ?? ctx.placetopay_id ?? "",
@@ -90,6 +112,7 @@ export class CheckoutMapper implements LogMapper {
       m.includes("[gw_lib] http req")
     )
       return "HTTP_REQ_OUT"
+
     if (m.includes("http res") || m.includes("response")) return "HTTP_RES"
     if (
       m.includes("update") ||
@@ -97,9 +120,9 @@ export class CheckoutMapper implements LogMapper {
       m.includes("save") ||
       m.includes("resolving") ||
       m.includes("last_resolve_data") ||
-      m.includes("transaction query by direct service") || 
+      m.includes("transaction query by direct service") ||
       m.includes("define session trace") ||
-      m.includes("updateSessionStateAction")
+      m.includes("updatesessionstateaction")
     )
       return "DB_OP"
 
