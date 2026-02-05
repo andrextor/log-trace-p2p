@@ -6,7 +6,7 @@ const store = useLogStore();
 const MAX_LINES = 3000;
 const raw = ref("");
 const isDragging = ref(false);
-const fileInput = ref<HTMLInputElement | null>(null); // Referencia para el input oculto
+const fileInput = ref<HTMLInputElement | null>(null);
 
 const emit = defineEmits(['process', 'viewResults']);
 
@@ -40,26 +40,8 @@ async function handleFileSelect(e: Event) {
   if (file) {
     const text = await file.text();
     raw.value = text;
-    // Reseteamos el valor para permitir subir el mismo archivo dos veces si se desea
     target.value = '';
   }
-}
-
-/**
- * Genera el mock ajustado al espacio restante
- */
-function loadStressMock() {
-  const levels = ['INFO', 'ERROR', 'WARN'];
-  const baseTime = new Date();
-  let result = "";
-  const linesToGenerate = remainingSlots.value > 0 ? remainingSlots.value : 100;
-
-  for (let i = 0; i < linesToGenerate; i++) {
-    const timestamp = new Date(baseTime.getTime() + i * 1000).toISOString();
-    const level = levels[Math.floor(Math.random() * levels.length)];
-    result += `[${timestamp}] ${level}: {"message": "Log de prueba línea ${i+1}", "details": {"sessionId": "SID-99", "statusCode": 200}}\n`;
-  }
-  raw.value = result;
 }
 
 function onPaste(e: ClipboardEvent) {
@@ -133,31 +115,20 @@ function triggerProcess() {
           <span class="text-xs font-mono uppercase tracking-widest text-slate-500 dark:text-gray-400">Editor de Logs</span>
         </div>
         
-        <div class="flex gap-4 items-center">
-          <button 
-            @click="loadStressMock"
-            type="button"
-            :disabled="remainingSlots <= 0"
-            class="text-[9px] px-2 py-1 bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20 rounded hover:bg-slate-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-bold uppercase"
+        <div class="flex gap-4 items-center text-right">
+          <span 
+            class="text-[10px] font-mono font-bold"
+            :class="isOverLimit ? 'text-red-600 dark:text-red-400' : 'text-indigo-600 dark:text-indigo-400'"
           >
-            Llenar hasta el límite
-          </button>
-          
-          <div class="flex flex-col items-end">
-            <span 
-              class="text-[10px] font-mono font-bold"
-              :class="isOverLimit ? 'text-red-600 dark:text-red-400' : 'text-indigo-600 dark:text-indigo-400'"
-            >
-              Total: {{ totalAccumulatedLines.toLocaleString() }} / {{ MAX_LINES.toLocaleString() }}
-            </span>
-          </div>
+            Total Acumulado: {{ totalAccumulatedLines.toLocaleString() }} / {{ MAX_LINES.toLocaleString() }}
+          </span>
         </div>
       </div>
 
       <textarea
         class="w-full min-h-80 bg-transparent p-6 text-sm font-mono text-slate-800 dark:text-indigo-100/90 outline-none placeholder:text-slate-400 dark:placeholder:text-gray-600 resize-y"
         :class="{'text-red-400 opacity-60': isOverLimit}"
-        placeholder="Pega nuevos logs aquí..."
+        placeholder="Pega nuevos logs aquí o arrastra un archivo..."
         v-model="raw"
         @paste="onPaste"
       />
@@ -165,7 +136,7 @@ function triggerProcess() {
       <div v-if="isOverLimit" class="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-[2px] rounded-2xl">
         <div class="bg-red-600 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-2xl flex flex-col items-center gap-1">
           <span>EXCESO DE CAPACIDAD</span>
-          <span class="font-normal opacity-90 font-mono text-[10px]">Total actual: {{ totalAccumulatedLines }} líneas</span>
+          <span class="font-normal opacity-90 font-mono text-[10px]">Total: {{ totalAccumulatedLines }} líneas</span>
         </div>
       </div>
     </div>
