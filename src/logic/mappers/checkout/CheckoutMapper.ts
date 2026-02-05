@@ -87,12 +87,20 @@ export class CheckoutMapper implements LogMapper {
       return "NOTIFICATION"
     if (
       m.includes("http req") ||
-      m.includes("[gw_lib] http req") ||
-      m.includes("calling")
+      m.includes("[gw_lib] http req")
     )
       return "HTTP_REQ_OUT"
     if (m.includes("http res") || m.includes("response")) return "HTTP_RES"
-    if (m.includes("update") || m.includes("db") || m.includes("save"))
+    if (
+      m.includes("update") ||
+      m.includes("db") ||
+      m.includes("save") ||
+      m.includes("resolving") ||
+      m.includes("last_resolve_data") ||
+      m.includes("transaction query by direct service") || 
+      m.includes("define session trace") ||
+      m.includes("updateSessionStateAction")
+    )
       return "DB_OP"
 
     return "BACKEND_LOG"
