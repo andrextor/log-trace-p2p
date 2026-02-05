@@ -1,4 +1,3 @@
-// src/logic/parser.ts
 import type { LogEvent, LogLevel } from "./types"
 
 export interface ParseResult {

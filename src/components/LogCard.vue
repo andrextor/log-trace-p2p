@@ -65,12 +65,12 @@ const copyToClipboard = (text: string) => {
             @click.stop="emit('highlightSession', log.details.sessionId)"
             class="flex items-center bg-black/40 border border-white/10 rounded-md overflow-hidden hover:border-indigo-500/50 transition-colors"
           >
-            <span class="px-1.5 py-0.5 text-[8px] font-bold bg-white/5 text-gray-500 border-r border-white/10 uppercase">SID</span>
+            <span class="px-1.5 py-0.5 text-[8px] font-bold bg-white/5 text-gray-500 border-r border-white/10 uppercase">Session ID</span>
             <span class="px-2 py-0.5 text-[10px] font-mono text-indigo-300">{{ log.details.sessionId }}</span>
           </button>
           
           <div v-if="log.id" class="flex items-center bg-black/40 border border-white/10 rounded-md overflow-hidden">
-            <span class="px-1.5 py-0.5 text-[8px] font-bold bg-white/5 text-gray-500 border-r border-white/10 uppercase">RID</span>
+            <span class="px-1.5 py-0.5 text-[8px] font-bold bg-white/5 text-gray-500 border-r border-white/10 uppercase">Aws request id</span>
             <span class="px-2 py-0.5 text-[10px] font-mono text-cyan-300">{{ log.id.toString().slice(-8) }}</span>
           </div>
         </div>
