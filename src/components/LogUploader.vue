@@ -9,21 +9,35 @@ const isDragging = ref(false);
 
 const emit = defineEmits(['process', 'viewResults']);
 
-const lineCount = computed(() => {
+// Líneas en el editor actual
+const currentInputLineCount = computed(() => {
   if (!raw.value) return 0;
   return raw.value.split('\n').filter(l => l.trim() !== "").length;
 });
 
-const isOverLimit = computed(() => lineCount.value > MAX_LINES);
+// Total de líneas (Ya cargadas + Nuevas)
+const totalAccumulatedLines = computed(() => {
+  return store.events.length + currentInputLineCount.value;
+});
+
+// El límite se basa en el total acumulado
+const isOverLimit = computed(() => totalAccumulatedLines.value > MAX_LINES);
+
+// Cuántas líneas le quedan disponibles al usuario
+const remainingSlots = computed(() => Math.max(0, MAX_LINES - store.events.length));
 
 /**
- * Genera el mock de 3000 líneas
+ * Genera el mock ajustado al espacio restante
  */
 function loadStressMock() {
   const levels = ['INFO', 'ERROR', 'WARN'];
   const baseTime = new Date();
   let result = "";
-  for (let i = 0; i < 3000; i++) {
+  
+  // Generamos solo hasta completar el límite de 3000
+  const linesToGenerate = remainingSlots.value > 0 ? remainingSlots.value : 100;
+
+  for (let i = 0; i < linesToGenerate; i++) {
     const timestamp = new Date(baseTime.getTime() + i * 1000).toISOString();
     const level = levels[Math.floor(Math.random() * levels.length)];
     result += `[${timestamp}] ${level}: {"message": "Log de prueba línea ${i+1}", "details": {"sessionId": "SID-99", "statusCode": 200}}\n`;
@@ -52,24 +66,31 @@ function clear() {
 function triggerProcess() {
   if (!raw.value || isOverLimit.value) return;
   emit('process', raw.value);
+  raw.value = ""; // Limpiamos el editor tras enviar al proceso
 }
 </script>
 
 <template>
   <div class="space-y-6">
     
-    <div v-if="store.events.length > 0" class="flex justify-center animate-in fade-in zoom-in duration-300">
+    <div v-if="store.events.length > 0" class="flex flex-col items-center gap-3 animate-in fade-in zoom-in duration-300">
       <button 
         @click="emit('viewResults')"
         type="button"
-        class="group cursor-auto flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-lg shadow-indigo-500/30 transition-all active:scale-95 text-sm font-bold"
+        class="group flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-lg shadow-indigo-500/30 transition-all active:scale-95 text-sm font-bold"
       >
-        <svg class="w-4 h-4 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
         Ver análisis actual ({{ store.events.length }} logs)
       </button>
+      <p v-if="remainingSlots > 0" class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
+        Espacio disponible: <span class="text-indigo-500 font-bold">{{ remainingSlots.toLocaleString() }} líneas</span>
+      </p>
+      <p v-else class="text-[10px] font-mono text-red-500 uppercase font-bold tracking-widest">
+        Capacidad máxima alcanzada (3,000/3,000)
+      </p>
     </div>
 
     <div 
@@ -95,9 +116,10 @@ function triggerProcess() {
           <button 
             @click="loadStressMock"
             type="button"
-            class="text-[9px] px-2 py-1 bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20 rounded hover:bg-slate-500/20 transition-all font-bold uppercase"
+            :disabled="remainingSlots <= 0"
+            class="text-[9px] px-2 py-1 bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20 rounded hover:bg-slate-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-bold uppercase"
           >
-            Cargar Límite (3k)
+            Llenar hasta el límite
           </button>
           
           <div class="flex flex-col items-end">
@@ -105,7 +127,7 @@ function triggerProcess() {
               class="text-[10px] font-mono font-bold"
               :class="isOverLimit ? 'text-red-600 dark:text-red-400' : 'text-indigo-600 dark:text-indigo-400'"
             >
-              {{ lineCount.toLocaleString() }} / {{ MAX_LINES.toLocaleString() }} LÍNEAS
+              Total: {{ totalAccumulatedLines.toLocaleString() }} / {{ MAX_LINES.toLocaleString() }}
             </span>
           </div>
         </div>
@@ -114,14 +136,15 @@ function triggerProcess() {
       <textarea
         class="w-full min-h-80 bg-transparent p-6 text-sm font-mono text-slate-800 dark:text-indigo-100/90 outline-none placeholder:text-slate-400 dark:placeholder:text-gray-600 resize-y"
         :class="{'text-red-400 opacity-60': isOverLimit}"
-        placeholder="Pega los logs aquí..."
+        placeholder="Pega nuevos logs aquí..."
         v-model="raw"
         @paste="onPaste"
       />
 
-      <div v-if="isOverLimit" class="absolute bottom-4 right-6 animate-in slide-in-from-bottom-2 duration-300">
-        <div class="bg-red-600 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold shadow-xl">
-          CAPACIDAD EXCEDIDA
+      <div v-if="isOverLimit" class="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-[2px] rounded-2xl">
+        <div class="bg-red-600 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-2xl flex flex-col items-center gap-1">
+          <span>EXCESO DE CAPACIDAD</span>
+          <span class="font-normal opacity-90 font-mono text-[10px]">Total actual: {{ totalAccumulatedLines }} líneas</span>
         </div>
       </div>
     </div>
@@ -134,7 +157,7 @@ function triggerProcess() {
           :disabled="!raw || isOverLimit"
           class="flex-1 sm:flex-none cursor-pointer group relative px-8 py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold transition-all hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed shadow-lg active:scale-95"
         >
-          {{ isOverLimit ? 'Reducir tamaño' : 'Iniciar Análisis' }}
+          {{ isOverLimit ? 'Límite excedido' : (store.events.length > 0 ? 'Añadir al análisis' : 'Iniciar Análisis') }}
         </button>
 
         <button
@@ -142,11 +165,11 @@ function triggerProcess() {
           type="button"
           @click="clear"
         >
-          Limpiar
+          Limpiar editor
         </button>
       </div>
       <p class="text-[11px] font-mono italic" :class="isOverLimit ? 'text-red-500 font-bold' : 'text-slate-400 dark:text-slate-500'">
-        {{ isOverLimit ? 'Error: Máximo 3,000 líneas.' : 'Límite: 3,000 líneas.' }}
+         Máximo global permitido: 3,000 líneas.
       </p>
     </div>
   </div>
