@@ -3,15 +3,13 @@ import { useLogStore } from '../store/logStore';
 import LogCard from './LogCard.vue';
 
 const store = useLogStore();
-
-// Definimos el evento reset para limpiar el estado en el componente padre (LogAnalyzer)
 const emit = defineEmits(['reset']);
 </script>
 
 <template>
-  <div class="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+  <div class="flex flex-col h-[calc(100vh-140px)] animate-in fade-in slide-in-from-bottom-4 duration-700">
     
-    <div class="sticky top-20 z-40 bg-white/80 dark:bg-[#0a0a0b]/80 backdrop-blur-md p-4 border border-slate-200 dark:border-white/5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl dark:shadow-2xl transition-colors">
+    <div class="shrink-0 mb-6 bg-white dark:bg-[#0a0a0b] p-4 border border-slate-200 dark:border-white/5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm transition-colors">
       <div class="flex items-center gap-4 w-full md:w-auto">
         <div class="relative w-full">
           <span class="absolute left-3 top-2.5 text-slate-400 dark:text-gray-500">
@@ -41,37 +39,62 @@ const emit = defineEmits(['reset']);
       </div>
     </div>
 
-    <div class="relative pl-8 before:absolute before:inset-y-0 before:left-3 before:w-px before:bg-linear-to-b before:from-indigo-500/40 before:via-indigo-500/10 dark:before:via-indigo-500/10 before:to-transparent">
-      
-      <div v-for="(logs, timeBlock) in store.groupedEvents" :key="timeBlock" class="relative mb-12">
+    <div class="flex-1 overflow-y-auto pr-4 custom-scrollbar scroll-smooth">
+      <div class="relative pl-8 before:absolute before:inset-y-0 before:left-3 before:w-px before:bg-linear-to-b before:from-indigo-500/40 before:via-indigo-500/10 dark:before:via-indigo-500/10 before:to-transparent">
         
-        <div class="absolute -left-8 mt-1.5 w-6 h-6 rounded-full bg-slate-50 dark:bg-[#0a0a0b] border-2 border-indigo-500 z-10 flex items-center justify-center shadow-sm">
-          <div class="w-1.5 h-1.5 bg-indigo-500 dark:bg-indigo-400 rounded-full animate-pulse"></div>
-        </div>
-        
-        <div class="flex items-center gap-4 mb-6">
-          <h3 class="text-[11px] font-mono font-black text-indigo-600 dark:text-indigo-400 bg-indigo-500/5 dark:bg-indigo-500/10 px-3 py-1 rounded-md border border-indigo-500/20 tracking-widest uppercase shadow-sm dark:shadow-[0_0_15px_rgba(79,70,229,0.1)]">
-            {{ timeBlock }}
-          </h3>
-          <div class="h-px flex-1 bg-slate-200 dark:bg-white/5"></div>
-        </div>
+        <div v-for="(data, timeKey) in store.groupedEvents" :key="timeKey" class="relative mb-12">
+          
+          <div class="absolute -left-8 mt-1.5 w-6 h-6 rounded-full bg-slate-50 dark:bg-[#0a0a0b] border-2 border-indigo-500 z-10 flex items-center justify-center shadow-sm">
+            <div class="w-1.5 h-1.5 bg-indigo-500 dark:bg-indigo-400 rounded-full animate-pulse"></div>
+          </div>
+          
+          <div class="flex flex-col gap-1 mb-6 sticky top-0 z-10 py-2 bg-slate-50/90 dark:bg-[#030304]/90 backdrop-blur-sm transition-colors">
+            <div class="flex items-center gap-3">
+              <span class="text-[9px] font-black text-white bg-indigo-600 dark:bg-indigo-500 px-2 py-0.5 rounded uppercase tracking-tighter shadow-sm">
+                {{ data.label }}
+              </span>
+              
+              <h3 class="text-[11px] font-mono font-black text-indigo-600 dark:text-indigo-400 tracking-widest uppercase">
+                {{ timeKey }}
+              </h3>
+              
+              <div class="h-px flex-1 bg-slate-200 dark:bg-white/5"></div>
+            </div>
+          </div>
 
-        <div class="grid grid-cols-1 gap-4">
-          <LogCard 
-            v-for="event in logs" 
-            :key="event.id" 
-            :log="event" 
-            :is-highlighted="store.highlightedSessionId === event.details.sessionId"
-            @highlight-session="store.toggleHighlight"
-          />
+          <div class="grid grid-cols-1 gap-4">
+            <LogCard 
+              v-for="event in data.events" 
+              :key="event.id" 
+              :log="event" 
+              :is-highlighted="store.highlightedSessionId === event.details.sessionId"
+              @highlight-session="store.toggleHighlight"
+            />
+          </div>
         </div>
       </div>
-    </div>
 
-    <div v-if="store.filteredEvents.length === 0" class="py-20 text-center border-2 border-dashed border-slate-200 dark:border-white/5 rounded-3xl animate-in fade-in zoom-in duration-500 transition-colors">
-      <p class="text-slate-400 dark:text-gray-500 font-mono text-sm italic tracking-tight">
-        No se encontraron eventos que coincidan con los filtros actuales.
-      </p>
+      <div v-if="store.filteredEvents.length === 0" class="py-20 text-center border-2 border-dashed border-slate-200 dark:border-white/5 rounded-3xl">
+        <p class="text-slate-400 dark:text-gray-500 font-mono text-sm italic">
+          No se encontraron eventos en la zona horaria local.
+        </p>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 10px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+}
+</style>

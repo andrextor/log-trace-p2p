@@ -22,6 +22,11 @@ export const ACTION_MAP: Record<string, ActionDetail> = {
     category: "BROWSER_LOAD",
     source: "FRONTEND",
   },
+  state: {
+    message: "Vista resultado sesión",
+    category: "BROWSER_LOAD",
+    source: "FRONTEND",
+  },
   process: {
     message: "Acción del usuario: Procesar pago",
     category: "USER_ACTION",
@@ -34,6 +39,11 @@ export const ACTION_MAP: Record<string, ActionDetail> = {
   },
   "checkout.session.created": {
     message: "Solicitud de creación de sesión: Inicialización de flujo de pago",
+    category: "HTTP_REQ_IN",
+    source: "BACKEND",
+  },
+  sessionInformation: {
+    message: "Solicitud información de sesión (Api Publica)",
     category: "HTTP_REQ_IN",
     source: "BACKEND",
   },
@@ -69,7 +79,7 @@ export const CATEGORY_STYLES: Record<LogCategory, { label: string; classes: stri
     HTTP_RES: {
       label: "Respuesta Rest http",
       classes:
-        "bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan/5 dark:text-cyan-400 dark:border-cyan/10",
+        "bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20",
     },
     DB_OP: {
       label: "proceso backend / db",

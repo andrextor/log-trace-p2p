@@ -3,6 +3,7 @@ import { ref, computed, nextTick } from 'vue';
 import { toast, Toaster } from 'vue-sonner';
 import "vue-sonner/style.css"; 
 import { useLogStore } from '../store/logStore';
+import AnalyzerSelector from './AnalyzerSelector.vue';
 import LogUploader from './LogUploader.vue';
 import LogTimeline from './LogTimeline.vue';
 
@@ -47,6 +48,14 @@ const handleLogProcess = async (payload: string) => {
   });
 };
 
+const analyzerNames = {
+  checkout: 'Checkout',
+  micrositios: 'Micrositios',
+  rest: 'REST API'
+};
+
+const currentAnalyzerName = computed(() => analyzerNames[store.currentAnalyzer]);
+
 const handleReset = () => {
   store.clearLogs();
   parseErrors.value = []; 
@@ -69,8 +78,15 @@ const handleReset = () => {
            <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
             Analizador de <span class="text-indigo-600 dark:text-indigo-400">Trazas P2P</span>
           </h1>
+          <p class="text-slate-500 dark:text-slate-400 max-w-lg mx-auto text-sm sm:text-base italic">
+            Configuración de mapeo optimizada para {{ currentAnalyzerName }}.
+          </p>
         </div>
 
+        <div class="max-w-2xl mx-auto">
+        <AnalyzerSelector />
+      </div>
+  
         <LogUploader @process="handleLogProcess" />
 
         <div v-if="parseErrors.length > 0" class="animate-in fade-in slide-in-from-top-4 duration-500">

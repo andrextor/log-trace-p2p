@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 120 48" width="120" height="48">
+  <path fill="url(#p2p-gradient)" d="M12 34c-4.42 0-8-3.58-8-8s3.58-8 8-8c1.35 0 2.61.34 3.71.93.85-1.42 2.1-2.58 3.59-3.29C17.34 14.6 14.81 14 12 14c-6.63 0-12 5.37-12 12s5.37 12 12 12c2.81 0 5.34-.6 7.3-1.64-1.49-.71-2.74-1.87-3.59-3.29-1.1.59-2.36.93-3.71.93Z"/>
+  <circle cx="28" cy="26" r="5" fill="#6366f1" class="dark:fill-indigo-400"/>
+  <path stroke="url(#p2p-gradient)" stroke-width="2" stroke-linecap="round" d="M16 26h8m4 0h6"/>
+  <path fill="#6366f1" d="M22 23l-3 3 3 3V23Z"/>
+
+  <g class="fill-slate-900 dark:fill-white" style="font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 14px; letter-spacing: -0.5px;">
+    <text x="42" y="24">P2P</text>
+    <text x="42" y="38" style="font-size: 10px; font-weight: 400; opacity: 0.7; letter-spacing: 1px;">ANALIZER</text>
+  </g>
+
+  <defs>
+    <linearGradient id="p2p-gradient" x1="4" x2="32" y1="38" y2="14" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+</svg>
