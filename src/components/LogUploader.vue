@@ -6,6 +6,7 @@ const store = useLogStore();
 const MAX_LINES = 3000;
 const raw = ref("");
 const isDragging = ref(false);
+const fileInput = ref<HTMLInputElement | null>(null); // Referencia para el input oculto
 
 const emit = defineEmits(['process', 'viewResults']);
 
@@ -20,11 +21,29 @@ const totalAccumulatedLines = computed(() => {
   return store.events.length + currentInputLineCount.value;
 });
 
-// El límite se basa en el total acumulado
 const isOverLimit = computed(() => totalAccumulatedLines.value > MAX_LINES);
-
-// Cuántas líneas le quedan disponibles al usuario
 const remainingSlots = computed(() => Math.max(0, MAX_LINES - store.events.length));
+
+/**
+ * Abre el explorador de archivos
+ */
+function openFilePicker() {
+  fileInput.value?.click();
+}
+
+/**
+ * Procesa el archivo seleccionado desde el explorador
+ */
+async function handleFileSelect(e: Event) {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    const text = await file.text();
+    raw.value = text;
+    // Reseteamos el valor para permitir subir el mismo archivo dos veces si se desea
+    target.value = '';
+  }
+}
 
 /**
  * Genera el mock ajustado al espacio restante
@@ -33,8 +52,6 @@ function loadStressMock() {
   const levels = ['INFO', 'ERROR', 'WARN'];
   const baseTime = new Date();
   let result = "";
-  
-  // Generamos solo hasta completar el límite de 3000
   const linesToGenerate = remainingSlots.value > 0 ? remainingSlots.value : 100;
 
   for (let i = 0; i < linesToGenerate; i++) {
@@ -66,13 +83,20 @@ function clear() {
 function triggerProcess() {
   if (!raw.value || isOverLimit.value) return;
   emit('process', raw.value);
-  raw.value = ""; // Limpiamos el editor tras enviar al proceso
+  raw.value = ""; 
 }
 </script>
 
 <template>
   <div class="space-y-6">
-    
+    <input 
+      type="file" 
+      ref="fileInput" 
+      class="hidden" 
+      accept=".log,.txt,.csv,.json"
+      @change="handleFileSelect"
+    />
+
     <div v-if="store.events.length > 0" class="flex flex-col items-center gap-3 animate-in fade-in zoom-in duration-300">
       <button 
         @click="emit('viewResults')"
@@ -87,9 +111,6 @@ function triggerProcess() {
       </button>
       <p v-if="remainingSlots > 0" class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
         Espacio disponible: <span class="text-indigo-500 font-bold">{{ remainingSlots.toLocaleString() }} líneas</span>
-      </p>
-      <p v-else class="text-[10px] font-mono text-red-500 uppercase font-bold tracking-widest">
-        Capacidad máxima alcanzada (3,000/3,000)
       </p>
     </div>
 
@@ -161,6 +182,17 @@ function triggerProcess() {
         </button>
 
         <button
+          class="flex items-center justify-center gap-2 cursor-pointer px-6 py-3 rounded-xl border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-sm font-bold hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all active:scale-95"
+          type="button"
+          @click="openFilePicker"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          Subir archivo
+        </button>
+
+        <button
           class="cursor-pointer px-6 py-3 rounded-xl border border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-400 text-sm font-medium hover:bg-slate-100 dark:hover:bg-white/5 transition-all active:scale-95"
           type="button"
           @click="clear"
@@ -168,8 +200,8 @@ function triggerProcess() {
           Limpiar editor
         </button>
       </div>
-      <p class="text-[11px] font-mono italic" :class="isOverLimit ? 'text-red-500 font-bold' : 'text-slate-400 dark:text-slate-500'">
-         Máximo global permitido: 3,000 líneas.
+      <p class="text-[11px] font-mono italic text-slate-400 dark:text-slate-500">
+         Máximo global: 3,000 líneas.
       </p>
     </div>
   </div>
