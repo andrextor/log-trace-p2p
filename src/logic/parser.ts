@@ -5,9 +5,6 @@ export interface ParseResult {
   errors: { line: number; reason: string; content: string }[]
 }
 
-/**
- * Entry point
- */
 export function parseP2PLogs(raw: string): ParseResult {
   if (!raw) return { events: [], errors: [] }
 
@@ -33,17 +30,12 @@ export function parseP2PLogs(raw: string): ParseResult {
     }
   })
 
-  // Timeline coherente
   events.sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   )
 
   return { events, errors }
 }
-
-/* -------------------------------------------------------------------------- */
-/* Helpers                                                                     */
-/* -------------------------------------------------------------------------- */
 
 function sanitizeRaw(raw: string): string[] {
   return raw
@@ -57,21 +49,30 @@ function sanitizeRaw(raw: string): string[] {
 function extractJson(line: string): string | null {
   const start = line.indexOf("{")
   const end = line.lastIndexOf("}")
-
   if (start === -1 || end === -1 || end <= start) return null
-
-  // Limpieza típica de CSV AWS
   return line.substring(start, end + 1).replace(/""/g, '"')
 }
 
+/**
+ * Mapea la data JSON al objeto de evento de la interfaz
+ */
 function mapToEvent(data: any, rawLine: string, index: number): LogEvent {
   const ctx = data.context ?? {}
+
+  // Extraemos el subtipo (ej: checkout.session.created)
+  const subType = data.type ?? ctx.type ?? null
+  let displayMessage = data.message ?? "No message"
+
+  // Mejoramos mensajes genéricos de placetopay_event
+  if (displayMessage === "placetopay_event" && subType) {
+    displayMessage = `${subType}`
+  }
 
   return {
     id: buildEventId(ctx, index),
     timestamp: extractTimestamp(data, rawLine),
     level: (data.level_name as LogLevel) ?? "INFO",
-    message: data.message ?? "No message",
+    message: displayMessage,
     category: inferCategory(data.message ?? ""),
     details: {
       method: ctx.request?.method ?? ctx.action_method ?? "",
@@ -79,8 +80,10 @@ function mapToEvent(data: any, rawLine: string, index: number): LogEvent {
       statusCode: ctx.response?.status_code ?? data.level ?? null,
       sessionId: ctx.session_id ?? ctx.data?.session_id ?? "",
       transactionId: ctx.transaction_id ?? ctx.placetopay_id ?? "",
+      subType, // Añadimos el subtipo a los detalles
     },
-    context: ctx,
+    // Guardamos 'data' completo en lugar de solo 'ctx' para no perder campos raíz
+    context: data,
     rawStream: rawLine.slice(0, 80),
   }
 }
@@ -96,30 +99,18 @@ function buildEventId(ctx: any, index: number): string {
 
 function extractTimestamp(data: any, line: string): string {
   if (data.datetime) return data.datetime
-
-  // fallback CSV timestamp
   return line.substring(0, 23).replace(/"/g, "")
 }
 
-/* -------------------------------------------------------------------------- */
-/* Categorization                                                             */
-/* -------------------------------------------------------------------------- */
-
 function inferCategory(msg: string): LogEvent["category"] {
   const m = msg.toLowerCase()
-
   if (m.includes("http req") || m.includes("[gw_lib] http req"))
     return "HTTP_REQ"
-
   if (m.includes("http res") || m.includes("[gw_lib] http res"))
     return "HTTP_RES"
-
   if (m.includes("notify") || m.includes("notification")) return "NOTIFICATION"
-
   if (m.includes("update") || m.includes("updating")) return "DB_OP"
-
   if (m.includes("placetopay_event") || m.includes("executed event"))
     return "EVENT"
-
   return "GENERIC"
 }
