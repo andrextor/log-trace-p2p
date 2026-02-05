@@ -69,9 +69,6 @@ const handleReset = () => {
            <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
             Analizador de <span class="text-indigo-600 dark:text-indigo-400">Trazas P2P</span>
           </h1>
-          <p class="text-slate-500 dark:text-slate-400 max-w-lg mx-auto text-sm sm:text-base">
-            Optimiza la depuración de transacciones visualizando flujos complejos de logs en una línea de tiempo humana.
-          </p>
         </div>
 
         <LogUploader @process="handleLogProcess" />
