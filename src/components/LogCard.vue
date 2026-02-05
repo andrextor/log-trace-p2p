@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import type { LogEvent } from '../logic/types';
-import { CATEGORY_STYLES } from '../logic/mappers/checkout/CheckoutConfig';
+import { CATEGORY_STYLES } from '../logic/mappers/checkout/checkoutConfigMap';
 
 const props = defineProps<{
   log: LogEvent;
