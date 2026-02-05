@@ -1,7 +1,7 @@
 import type { LogEvent, LogLevel, LogCategory } from "../../types"
 import type { LogMapper } from "../BaseMapper"
 import { buildEventId, extractTimestamp } from "../mapperUtils"
-import { ACTION_MAP } from "./CheckoutConfig"
+import { ACTION_MAP } from "./CheckoutConfigMap"
 
 export class CheckoutMapper implements LogMapper {
   canHandle(data: any): boolean {
