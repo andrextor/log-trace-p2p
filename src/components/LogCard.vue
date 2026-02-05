@@ -109,7 +109,7 @@ const copyToClipboard = async (text: string) => {
           @click.stop="emit('highlightSession', log.details.sessionId)"
           class="flex items-center group/btn"
         >
-          <div class="px-1.5 py-0.5 text-[9px] font-bold bg-slate-100 dark:bg-white/5 text-slate-500 rounded-l border border-slate-200 dark:border-white/10">SID</div>
+          <div class="px-1.5 py-0.5 text-[9px] font-bold bg-slate-100 dark:bg-white/5 text-slate-500 rounded-l border border-slate-200 dark:border-white/10">Session ID:</div>
           <div class="px-2 py-0.5 text-[9px] font-mono text-indigo-600 dark:text-indigo-400 border-y border-r border-slate-200 dark:border-white/10 rounded-r group-hover/btn:border-indigo-400 transition-colors">
             {{ log.details.sessionId }}
           </div>
