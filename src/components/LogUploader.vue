@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useLogStore } from "../store/logStore";
+import ConfirmationModal from "./ConfirmationModal.vue"; // <--- Importar el Modal
 
 const store = useLogStore();
 const MAX_LINES = 3000;
@@ -8,15 +9,17 @@ const raw = ref("");
 const isDragging = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 
+// Estado para controlar el Modal
+const showDeleteModal = ref(false);
+
 const emit = defineEmits(['process', 'viewResults']);
 
-// Líneas en el editor actual
+// --- COMPUTADOS ---
 const currentInputLineCount = computed(() => {
   if (!raw.value) return 0;
   return raw.value.split('\n').filter(l => l.trim() !== "").length;
 });
 
-// Total de líneas (Ya cargadas + Nuevas)
 const totalAccumulatedLines = computed(() => {
   return store.events.length + currentInputLineCount.value;
 });
@@ -24,16 +27,12 @@ const totalAccumulatedLines = computed(() => {
 const isOverLimit = computed(() => totalAccumulatedLines.value > MAX_LINES);
 const remainingSlots = computed(() => Math.max(0, MAX_LINES - store.events.length));
 
-/**
- * Abre el explorador de archivos
- */
+// --- FUNCIONES ---
+
 function openFilePicker() {
   fileInput.value?.click();
 }
 
-/**
- * Procesa el archivo seleccionado desde el explorador
- */
 async function handleFileSelect(e: Event) {
   const target = e.target as HTMLInputElement;
   const file = target.files?.[0];
@@ -58,8 +57,20 @@ async function handleFileDrop(e: DragEvent) {
   }
 }
 
-function clear() {
+function clearEditor() {
   raw.value = "";
+}
+
+// 1. Acción inicial: Abrir el modal en lugar de borrar directo
+function requestClearAll() {
+  showDeleteModal.value = true;
+}
+
+// 2. Acción confirmada: Ejecutar borrado
+function confirmClearAll() {
+  store.clearLogs();
+  raw.value = "";
+  showDeleteModal.value = false;
 }
 
 function triggerProcess() {
@@ -80,17 +91,33 @@ function triggerProcess() {
     />
 
     <div v-if="store.events.length > 0" class="flex flex-col items-center gap-3 animate-in fade-in zoom-in duration-300">
-      <button 
-        @click="emit('viewResults')"
-        type="button"
-        class="group flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-lg shadow-indigo-500/30 transition-all active:scale-95 text-sm font-bold"
-      >
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-        </svg>
-        Ver análisis actual ({{ store.events.length }} logs)
-      </button>
+      
+      <div class="inline-flex rounded-full shadow-lg shadow-indigo-500/30 overflow-hidden group transition-transform active:scale-95">
+        
+        <button 
+          @click="emit('viewResults')"
+          type="button"
+          class="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors text-sm font-bold border-r border-indigo-800/20"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          <span>Ver análisis ({{ store.events.length }})</span>
+        </button>
+
+        <button 
+          @click="requestClearAll"
+          type="button"
+          class="px-3 py-2 bg-indigo-600 hover:bg-red-500 text-white transition-colors flex items-center justify-center"
+          title="Borrar logs actuales y reiniciar"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
+
       <p v-if="remainingSlots > 0" class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
         Espacio disponible: <span class="text-indigo-500 font-bold">{{ remainingSlots.toLocaleString() }} líneas</span>
       </p>
@@ -166,7 +193,7 @@ function triggerProcess() {
         <button
           class="cursor-pointer px-6 py-3 rounded-xl border border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-400 text-sm font-medium hover:bg-slate-100 dark:hover:bg-white/5 transition-all active:scale-95"
           type="button"
-          @click="clear"
+          @click="clearEditor"
         >
           Limpiar editor
         </button>
@@ -175,5 +202,14 @@ function triggerProcess() {
          Máximo global: 3,000 líneas.
       </p>
     </div>
+
+    <ConfirmationModal 
+      :is-open="showDeleteModal"
+      title="¿Borrar historial?"
+      message="Estás a punto de eliminar todos los eventos cargados y el contenido del editor. Esta acción no se puede deshacer."
+      @close="showDeleteModal = false"
+      @confirm="confirmClearAll"
+    />
+
   </div>
 </template>

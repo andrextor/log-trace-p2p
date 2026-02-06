@@ -1,6 +1,14 @@
-import type { LogEvent } from "../types"
+import type { LogEvent } from "./types"
 
 export interface LogMapper {
-  canHandle(data: any): boolean
-  map(data: any, rawLine: string, index: number): LogEvent
+  /**
+   * Pregunta: "¿Puedo leer esta línea?"
+   * Retorna true si el mapper reconoce el formato o el contenido.
+   */
+  canHandle(rawInput: any): boolean
+
+  /**
+   * Acción: Convierte la línea cruda en un evento bonito para el Timeline.
+   */
+  map(rawInput: any, rawLine: string, index: number): LogEvent
 }
