@@ -47,6 +47,11 @@ export const ACTION_MAP: Record<string, ActionDetail> = {
     category: "HTTP_REQ_IN",
     source: "BACKEND",
   },
+  createSession: {
+    message: "Creación de Sesión (API Backend)",
+    category: "HTTP_REQ_IN",
+    source: "BACKEND",
+  },
 }
 
 /**
@@ -57,7 +62,6 @@ export const CATEGORY_STYLES: Record<LogCategory, { label: string; classes: stri
   {
     USER_ACTION: {
       label: "acción del usuario",
-      // Light: Fondo rosa suave, texto fucsia fuerte | Dark: Fondo opaco rosa, texto neón
       classes:
         "bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-500/10 dark:text-pink-400 dark:border-pink-500/20",
     },
@@ -100,6 +104,11 @@ export const CATEGORY_STYLES: Record<LogCategory, { label: string; classes: stri
       label: "notificación de retorno",
       classes:
         "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
+    },
+    ERROR: {
+      label: "ERROR / FALLO",
+      classes:
+        "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-500/50",
     },
     GENERIC: {
       label: "registro general",

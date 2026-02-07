@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { LogEvent } from '../logic/types';
+import type { LogEvent, LogCategory } from '../logic/types';
 import { CATEGORY_STYLES } from '../logic/mappers/checkout/CheckoutConfigMap';
 
 const props = defineProps<{
@@ -13,20 +13,20 @@ const emit = defineEmits(['highlightSession']);
 const isLocalOpen = ref(false);
 const isCopied = ref(false);
 
-const toggleOpen = () => {
-  isLocalOpen.value = !isLocalOpen.value;
-};
+const toggleOpen = () => { isLocalOpen.value = !isLocalOpen.value; };
 
 const copyToClipboard = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text);
     isCopied.value = true;
-    setTimeout(() => {
-      isCopied.value = false;
-    }, 2000);
+    setTimeout(() => { isCopied.value = false; }, 2000);
   } catch (err) {
-    console.error('Error al copiar: ', err);
+    console.error('Error al copiar:', err);
   }
+};
+
+const getCategoryStyle = (category: LogCategory) => {
+  return CATEGORY_STYLES[category] || CATEGORY_STYLES.GENERIC;
 };
 </script>
 
@@ -35,125 +35,116 @@ const copyToClipboard = async (text: string) => {
     class="group relative border transition-all duration-300 rounded-xl overflow-hidden"
     :class="[
       isHighlighted 
-        ? 'bg-indigo-500/5 dark:bg-indigo-500/10 border-indigo-500/50 shadow-lg' 
+        ? 'bg-indigo-50/50 dark:bg-indigo-500/10 border-indigo-500/50 shadow-lg' 
         : 'bg-white dark:bg-[#0d0d0e] border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 hover:shadow-md',
       isLocalOpen ? 'ring-1 ring-indigo-400/30' : ''
     ]"
   >
-    <div 
-      v-if="isHighlighted" 
-      class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 z-10"
-    ></div>
+    <div v-if="isHighlighted" class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 z-10"></div>
 
-    <div @click="toggleOpen" class="p-4 cursor-pointer">
-      <div class="flex items-start justify-between gap-4 mb-3">
-        <div class="flex flex-col gap-2 flex-1">
-          <div class="flex flex-wrap items-center gap-2">
-            <span 
-              :class="CATEGORY_STYLES[log.category]?.classes || CATEGORY_STYLES.GENERIC.classes" 
-              class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter font-mono shadow-sm"
-            >
-              {{ CATEGORY_STYLES[log.category]?.label || CATEGORY_STYLES.GENERIC.label }}
-            </span>
-            <span 
-              v-if="log.details.source"
-              :class="log.details.source === 'FRONTEND' 
-                ? 'text-cyan-600 bg-cyan-50 border-cyan-100 dark:text-cyan-400 dark:bg-cyan-400/10' 
-                : 'text-amber-600 bg-amber-50 border-amber-100 dark:text-amber-400 dark:bg-amber-400/10'"
-              class="text-[8px] font-mono px-1.5 py-0.5 rounded border uppercase font-black"
-            >
-              {{ log.details.source }}
-            </span>
-            <time class="text-[10px] font-mono text-slate-400 dark:text-gray-500 tabular-nums">
-              {{ log.timestamp }}
-            </time>
-          </div>
+    <div @click="toggleOpen" class="p-3 cursor-pointer">
+      
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <div class="flex flex-wrap items-center gap-2">
           
-          <h4 class="text-[13px] text-slate-800 dark:text-gray-100 font-bold leading-snug wrap-break-words tracking-tight">
-            {{ log.message }}
-          </h4>
-        </div>
-
-        <div class="shrink-0 opacity-40 group-hover:opacity-100 transition-opacity pt-1">
-          <svg 
-            class="w-4 h-4 text-slate-400 transition-transform duration-300" 
-            :class="isLocalOpen ? 'rotate-180' : ''"
-            fill="none" viewBox="0 0 24 24" stroke="currentColor"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </div>
-
-      <div v-if="log.details.url" class="mb-3">
-        <div class="flex items-center gap-0 font-mono text-[10px] bg-slate-100 dark:bg-black/40 rounded-lg border border-slate-200 dark:border-white/5 overflow-hidden">
-          <span class="px-2 py-1.5 bg-slate-200 dark:bg-white/10 text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-tighter border-r border-slate-300 dark:border-white/5">
-            {{ log.details.method }}
-          </span>
-          <span class="px-3 py-1.5 text-slate-500 dark:text-gray-400 truncate flex-1 font-medium">
-            {{ log.details.url }}
-          </span>
           <span 
-            v-if="log.details.statusCode" 
-            :class="log.details.statusCode >= 400 ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'"
-            class="px-2 py-1.5 font-black min-w-10 text-center"
+            :class="getCategoryStyle(log.category).classes"
+            class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider font-mono border shadow-sm whitespace-nowrap"
           >
-            {{ log.details.statusCode }}
+            {{ getCategoryStyle(log.category).label }}
+          </span>
+
+          <span 
+            v-if="log.details.source"
+            :class="log.details.source === 'FRONTEND' 
+              ? 'text-fuchsia-600 bg-fuchsia-50 border-fuchsia-100 dark:text-fuchsia-400 dark:bg-fuchsia-500/10 dark:border-fuchsia-500/20' 
+              : 'text-sky-600 bg-sky-50 border-sky-100 dark:text-sky-400 dark:bg-sky-500/10 dark:border-sky-500/20'"
+            class="text-[8px] font-mono px-1.5 py-0.5 rounded border uppercase font-bold tracking-tight"
+          >
+            {{ log.details.source }}
           </span>
         </div>
+
+        <time class="text-[10px] font-mono text-slate-400 dark:text-gray-500 tabular-nums shrink-0 ml-auto">
+          {{ log.timestamp.split(' ')[1] || log.timestamp }}
+        </time>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex items-start justify-between gap-4">
+        <h4 class="text-[13px] text-slate-700 dark:text-gray-200 font-bold leading-snug wrap-break-words tracking-tight w-full">
+          {{ log.message }}
+        </h4>
+        
+        <svg 
+          class="w-4 h-4 text-slate-300 dark:text-gray-600 transition-transform duration-300 shrink-0 mt-0.5" 
+          :class="isLocalOpen ? 'rotate-180' : ''"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      <div v-if="log.details.url" class="mt-2 flex items-center gap-0 overflow-hidden rounded-md border border-slate-100 dark:border-white/5 text-[10px] font-mono max-w-full">
+        <span class="px-1.5 py-0.5 bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-gray-400 font-bold border-r border-slate-200 dark:border-white/5 shrink-0">
+          {{ log.details.method }}
+        </span>
+        <span class="px-2 py-0.5 bg-slate-50 dark:bg-black/20 text-slate-500 dark:text-gray-500 truncate flex-1 min-w-0" :title="log.details.url">
+          {{ log.details.url }}
+        </span>
+        <span 
+          v-if="log.details.statusCode"
+          :class="Number(log.details.statusCode) >= 400 ? 'text-red-500 bg-red-50 dark:bg-red-900/20' : 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'"
+          class="px-1.5 py-0.5 font-bold border-l border-slate-200 dark:border-white/5 shrink-0"
+        >
+          {{ log.details.statusCode }}
+        </span>
+      </div>
+
+      <div class="mt-2 flex flex-wrap gap-3 pt-1 border-t border-dashed border-slate-100 dark:border-white/5 opacity-80 hover:opacity-100 transition-opacity">
         <button 
           v-if="log.details.sessionId" 
           @click.stop="emit('highlightSession', log.details.sessionId)"
-          class="flex items-center group/btn"
+          class="text-[9px] font-mono text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 group/sid"
         >
-          <div class="px-1.5 py-0.5 text-[9px] font-bold bg-slate-100 dark:bg-white/5 text-slate-500 rounded-l border border-slate-200 dark:border-white/10">Session ID:</div>
-          <div class="px-2 py-0.5 text-[9px] font-mono text-indigo-600 dark:text-indigo-400 border-y border-r border-slate-200 dark:border-white/10 rounded-r group-hover/btn:border-indigo-400 transition-colors">
-            {{ log.details.sessionId }}
-          </div>
+          <span class="text-slate-400 dark:text-gray-600 font-bold">SID:</span> 
+          <span class="group-hover/sid:underline decoration-indigo-300">{{ log.details.sessionId }}</span>
         </button>
-
-        <div v-if="log.id" class="flex items-center">
-          <div class="px-1.5 py-0.5 text-[9px] font-bold bg-slate-100 dark:bg-white/5 text-slate-500 rounded-l border border-slate-200 dark:border-white/10">AWS ID</div>
-          <div class="px-2 py-0.5 text-[9px] font-mono text-cyan-600 dark:text-cyan-400 border-y border-r border-slate-200 dark:border-white/10 rounded-r">
-            {{ log.id.toString().slice(-8) }}
-          </div>
-        </div>
+        
+        <span v-if="log.id" class="text-[9px] font-mono text-slate-400 dark:text-gray-600 flex items-center gap-1">
+          <span class="font-bold">ID:</span> {{ String(log.id).slice(-8) }}
+        </span>
       </div>
     </div>
 
     <div 
       v-if="isLocalOpen" 
-      class="bg-slate-50 dark:bg-black/60 border-t border-slate-200 dark:border-white/5 p-4 animate-in slide-in-from-top-2 duration-200"
+      class="bg-slate-50 dark:bg-black/40 border-t border-slate-200 dark:border-white/5 p-3 animate-in slide-in-from-top-1 duration-200"
     >
-      <div class="flex justify-between items-center mb-3">
-        <span class="text-[10px] font-mono text-indigo-500 uppercase tracking-widest font-black flex items-center gap-2">
-          <span class="w-1 h-1 bg-indigo-500 rounded-full animate-pulse"></span>
-          Context Payload
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+          <svg class="w-3 h-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+          Payload JSON
         </span>
         <button 
           @click.stop="copyToClipboard(JSON.stringify(log.context, null, 2))"
-          class="text-[9px] px-3 py-1 rounded-full transition-all duration-200 font-black uppercase tracking-tight shadow-sm border"
-          :class="[
-            isCopied 
-              ? 'bg-emerald-500 text-white border-emerald-500' 
-              : 'bg-white dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/10 hover:border-indigo-500'
-          ]"
+          class="text-[9px] px-2 py-1 rounded border transition-colors bg-white dark:bg-white/5 hover:bg-slate-100 border-slate-200 dark:border-white/10 text-slate-500 active:scale-95"
         >
-          {{ isCopied ? '¡Copiado!' : 'Copiar JSON' }}
+          {{ isCopied ? '¡Copiado!' : 'Copiar' }}
         </button>
       </div>
-      <pre class="text-[10px] font-mono text-slate-600 dark:text-indigo-200/80 overflow-x-auto p-4 bg-white dark:bg-black/40 rounded-xl border border-slate-200 dark:border-white/5 leading-relaxed custom-scrollbar">{{ JSON.stringify(log.context, null, 2) }}</pre>
+      <pre class="text-[10px] font-mono text-slate-600 dark:text-indigo-200/70 overflow-x-auto p-2 bg-white dark:bg-black/20 rounded border border-slate-200 dark:border-white/5 custom-scrollbar max-h-60">{{ JSON.stringify(log.context, null, 2) }}</pre>
     </div>
   </div>
 </template>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar { height: 4px; }
+.custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(79, 70, 229, 0.2);
+  background: rgba(99, 102, 241, 0.2);
   border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.4);
 }
 </style>

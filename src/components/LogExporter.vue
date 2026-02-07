@@ -17,7 +17,6 @@ function downloadJSON() {
       exportDate: new Date().toISOString(),
       analyzerUsed: store.currentAnalyzer,
       totalEvents: store.filteredEvents.length,
-      // Exportamos los eventos filtrados (lo que el usuario ve en pantalla)
       data: store.filteredEvents
     };
 

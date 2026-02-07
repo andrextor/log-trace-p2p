@@ -1,9 +1,8 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
-import type { LogEvent } from "../logic/types"
-import { parseP2PLogs } from "../logic/parser"
-
-export type AnalyzerType = "checkout" | "micrositios" | "rest"
+import type { LogEvent, AnalyzerType } from "../logic/types"
+import { MapperFactory } from "../logic/mappers/MapperFactory"
+import { LogIngestor } from "../logic/parsers/LogIngestor" // <--- IMPORTANTE
 
 interface TimeGroup {
   label: string
@@ -20,6 +19,9 @@ export const useLogStore = defineStore("logs", () => {
   const highlightedSessionId = ref<string | number | null>(null)
   const selectedEventId = ref<string | null>(null)
 
+  // Estado para el Modal de Errores
+  const parsingErrors = ref<string[]>([]) // <--- Aquí guardamos las líneas fallidas
+
   const isProcessing = ref(false)
   const progress = ref(0)
 
@@ -30,6 +32,7 @@ export const useLogStore = defineStore("logs", () => {
     const searchTerm = search.value.toLowerCase()
 
     return events.value.filter((event) => {
+      // Búsqueda por texto, ID de sesión o ID de AWS
       const matchesSearch =
         !searchTerm ||
         event.message.toLowerCase().includes(searchTerm) ||
@@ -46,11 +49,26 @@ export const useLogStore = defineStore("logs", () => {
     })
   })
 
+  // Helper para formatear fechas a Colombia
+  function getColombiaFormatter() {
+    return new Intl.DateTimeFormat("es-CO", {
+      timeZone: "America/Bogota",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    })
+  }
+
   const groupedEvents = computed(() => {
     const groups: Record<string, TimeGroup> = {}
     let blockCounter = 1
+    const formatter = getColombiaFormatter()
 
-    // 1. Ordenar eventos cronológicamente antes de agrupar (importante al acumular logs)
+    // Ordenamos cronológicamente para el agrupamiento
     const sorted = [...filteredEvents.value].sort(
       (a, b) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -60,19 +78,8 @@ export const useLogStore = defineStore("logs", () => {
       const dateObj = new Date(event.timestamp)
       if (isNaN(dateObj.getTime())) return
 
-      const colombiaFormatter = new Intl.DateTimeFormat("es-CO", {
-        timeZone: "America/Bogota",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      })
-
-      const formattedFull = colombiaFormatter.format(dateObj)
-      // Agrupamos por minuto (primeros 17 caracteres de "DD/MM/YYYY HH:mm:ss")
+      const formattedFull = formatter.format(dateObj)
+      // Agrupamos por minuto (DD/MM/YYYY HH:mm)
       const timeKey = formattedFull.substring(0, 17)
 
       if (!groups[timeKey]) {
@@ -83,59 +90,92 @@ export const useLogStore = defineStore("logs", () => {
         }
       }
 
-      // IMPORTANTE: No mutar el objeto original de forma descontrolada
-      // Solo actualizamos el formato para la vista si es necesario
-      const displayEvent = { ...event, timestamp: formattedDate(dateObj) }
+      // Creamos copia visual con fecha formateada
+      const displayEvent = { ...event, timestamp: formattedFull }
       groups[timeKey].events.push(displayEvent)
     })
 
     return groups
   })
 
-  // Helper para formatear fecha individualmente
-  function formattedDate(date: Date) {
-    return new Intl.DateTimeFormat("es-CO", {
-      timeZone: "America/Bogota",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }).format(date)
-  }
-
   const stats = computed(() => {
     return {
       total: events.value.length,
       filtered: filteredEvents.value.length,
-      errors: events.value.filter((e) => e.level === "ERROR").length,
+      errors: events.value.filter(
+        (e) => e.level === "ERROR" || e.level === "CRITICAL"
+      ).length,
+      parsingErrors: parsingErrors.value.length, // <--- Para mostrar badge rojo
     }
   })
 
   // --- ACCIONES ---
 
+  /**
+   * Procesa texto crudo, detecta formato, mapea y acumula.
+   */
   async function setLogs(rawText: string) {
     isProcessing.value = true
     progress.value = 0
 
-    const interval = setInterval(() => {
-      if (progress.value < 95) progress.value += 5
-    }, 100)
+    // Limpiamos errores de la carga anterior (opcional, o los acumulas también)
+    parsingErrors.value = []
+
+    const activeMapper = MapperFactory.getMapper(currentAnalyzer.value)
+    const newEvents: LogEvent[] = []
+
+    // Pequeño delay para UI
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
     try {
-      const result = await parseP2PLogs(rawText, currentAnalyzer.value)
+      const lines = rawText.split("\n")
+      const totalLines = lines.length
 
-      // CAMBIO CLAVE: Acumular logs en lugar de reemplazarlos
-      // Usamos un Map o Set si quisiéramos evitar duplicados exactos,
-      // pero aquí simplemente los añadimos al final.
-      events.value = [...events.value, ...result.events]
+      for (let i = 0; i < totalLines; i++) {
+        const line = lines[i].trim()
 
-      progress.value = 100
-      return result
+        // Ignorar líneas muy cortas o vacías
+        if (!line || line.length < 5) continue
+
+        // 1. INGESTIÓN (Strategy Pattern)
+        // Intentamos detectar el formato (AWS, Local, Insights)
+        const normalizedData = LogIngestor.parse(line, currentAnalyzer.value)
+
+        if (normalizedData) {
+          // 2. MAPEO (Factory Pattern)
+          // Si se entendió el formato, pasamos la data al Mapper de negocio
+          if (activeMapper.canHandle(normalizedData)) {
+            try {
+              const event = activeMapper.map(normalizedData, line, i + 1)
+              newEvents.push(event)
+            } catch (err) {
+              console.error(`Error mapeando línea ${i + 1}`, err)
+              // Si falla el mapeo lógico, también es un error de parsing visual
+              parsingErrors.value.push(line)
+            }
+          } else {
+            // El ingestor lo entendió, pero el Mapper dice "no es mío" (raro, pero posible)
+            // Lo tratamos como genérico o lo ignoramos.
+          }
+        } else {
+          // 3. ERROR: Ninguna estrategia pudo leer la línea
+          parsingErrors.value.push(line)
+        }
+
+        // Barra de progreso
+        if (i % 500 === 0) {
+          progress.value = Math.round((i / totalLines) * 100)
+          await new Promise((resolve) => setTimeout(resolve, 0))
+        }
+      }
+
+      // 4. ACUMULACIÓN
+      // Sumamos lo nuevo a lo viejo
+      events.value = [...events.value, ...newEvents]
+    } catch (e) {
+      console.error("Error crítico en setLogs:", e)
     } finally {
-      clearInterval(interval)
+      progress.value = 100
       setTimeout(() => {
         isProcessing.value = false
         progress.value = 0
@@ -145,6 +185,7 @@ export const useLogStore = defineStore("logs", () => {
 
   function clearLogs() {
     events.value = []
+    parsingErrors.value = [] // Limpiamos errores
     search.value = ""
     levelFilter.value = "ALL"
     highlightedSessionId.value = null
@@ -157,6 +198,7 @@ export const useLogStore = defineStore("logs", () => {
 
   return {
     events,
+    parsingErrors,
     search,
     levelFilter,
     currentAnalyzer,
