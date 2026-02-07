@@ -21,65 +21,69 @@ export interface NormalizedLogData {
   level: string
   message: string
   context: Record<string, any>
-  // Añadimos NEW_RELIC_JSON para el nuevo parser de REST
   sourceType?: "AWS_CSV" | "LARAVEL_LOCAL" | "NEW_RELIC_JSON" | "UNKNOWN"
 }
 
 export type LogLevel = "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL"
 
-/**
- * Categorías visuales para el Dashboard
- */
 export type LogCategory =
-  | "HTTP_REQ_OUT" // Peticiones salientes (Guzzle/SDKs)
-  | "HTTP_REQ_IN" // Peticiones entrantes
-  | "HTTP_RES" // Respuestas HTTP
-  | "DB_OP" // Operaciones de Base de Datos
-  | "NOTIFICATION" // Notificaciones o OTPs
-  | "RETURN_NOTIFICATION" // Flujos de retorno
-  | "BROWSER_LOAD" // Eventos de carga SPA
-  | "USER_ACTION" // Interacciones del usuario
-  | "BACKEND_LOG" // Trazas internas de lógica
-  | "ERROR" // Fallos críticos
-  | "GENERIC" // Otros
+  | "HTTP_REQ_OUT"
+  | "HTTP_REQ_IN"
+  | "HTTP_RES"
+  | "DB_OP"
+  | "NOTIFICATION"
+  | "RETURN_NOTIFICATION"
+  | "BROWSER_LOAD"
+  | "USER_ACTION"
+  | "BACKEND_LOG"
+  | "APPLICATION_LOG" // Añadido para diferenciar logs de Laravel
+  | "ERROR"
+  | "PAYMENT"
+  | "GENERIC"
 
 // --- 3. POLIMORFISMO DE DETALLES (App-Specific) ---
 
-export interface CheckoutDetails {
-  method?: string
-  url?: string
+/**
+ * Propiedades que todos los detalles DEBEN compartir para que la UI
+ * principal pueda leerlas sin errores de TypeScript.
+ */
+export interface BaseDetails {
+  method?: string | null
+  endpoint?: string | null // Unificamos URL/Endpoint aquí
   statusCode?: number | string | null
+  payload?: any
+  source?: string | null
+}
+
+export interface CheckoutDetails extends BaseDetails {
+  url?: string // Mantenido por compatibilidad, pero el mapper debería llenar 'endpoint'
   duration?: string
   sessionId?: string | number
   transactionId?: string | number
   subType?: string | null
-  source?: string | null
   aws_request_id?: string | null
-  payload?: any
 }
 
-export interface RestDetails {
+export interface RestDetails extends BaseDetails {
   provider: string
   operation: string
   action: string
-  method: string
-  endpoint: string
-  statusCode?: number | string
   awsRequestId?: string | null
-  payload: any
   exception?: any
-  source: "BACKEND"
+  isLaravel?: boolean
 }
 
-export interface MicrositiosDetails {
+export interface MicrositiosDetails extends BaseDetails {
   siteId: string | number
   formName?: string
+  sessionId?: string | number
 }
 
 /**
- * Tipo discriminado para los detalles
+ * Unión de tipos para los detalles.
+ * Al heredar todos de BaseDetails, resolvemos el error de "Property does not exist".
  */
-export type AppLogDetails = CheckoutDetails | RestDetails
+export type AppLogDetails = CheckoutDetails | RestDetails | MicrositiosDetails
 
 // --- 4. MODELO DE EVENTO FINAL (UI) ---
 
@@ -89,7 +93,7 @@ export interface LogEvent {
   level: LogLevel
   message: string
   category: LogCategory
-  appType: AnalyzerType // Usamos la constante aquí
+  appType: AnalyzerType
   details: AppLogDetails
   context: any
   rawStream?: string

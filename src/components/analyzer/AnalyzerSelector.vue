@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useLogStore } from '../store/logStore';
+import { useLogStore } from '../../store/logStore';
 // Importamos la configuración centralizada (Paso 1)
-import { ANALYZER_NAMES, type AnalyzerType } from '../logic/types';
+import { ANALYZER_NAMES, type AnalyzerType } from '../../logic/types';
 
 const store = useLogStore();
 
