@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, } from 'vue';
+import { ref, computed } from 'vue';
 import { useLogStore } from '../store/logStore'; 
 import { APP_TYPES, type LogEvent } from '../logic/types'; 
 import { CATEGORY_STYLES } from '../logic/mappers/checkout/CheckoutConfigMap';
@@ -13,22 +13,29 @@ const props = defineProps<{
   isHighlighted: boolean;
 }>();
 
-
 const store = useLogStore();
 const isExpanded = ref(false);
+
+// Tipado estricto para los eventos emitidos
 const emit = defineEmits<{
   (e: 'highlight-session', id: string | number): void
 }>();
 
+/**
+ * MAPEO DE COMPONENTES DINÁMICOS
+ * Record<string, any> evita errores de indexación de TypeScript
+ */
 const bodyComponents: Record<string, any> = {
   [APP_TYPES.CHECKOUT]: CheckoutBody,
+  [APP_TYPES.MICROSITIOS]: CheckoutBody,
   [APP_TYPES.REST]: RestBody,
 };
 
 const currentBodyComponent = computed(() => bodyComponents[props.log.appType] || CheckoutBody);
 
 /**
- * EXTRACCIÓN SEGURA DE DATOS (FIX DE TYPESCRIPT)
+ * EXTRACCIÓN SEGURA DE DATOS
+ * Usamos 'as any' para evitar que TS se queje si el tipo de detalle no tiene el campo.
  */
 const displayEndpoint = computed(() => {
   const details = props.log.details as any;
@@ -37,7 +44,7 @@ const displayEndpoint = computed(() => {
 
 const displayProvider = computed(() => {
   const details = props.log.details as any;
-  // Solo mostramos el proveedor si no es el genérico 'API_REST'
+  // Solo mostramos si existe y no es el valor por defecto genérico
   return details?.provider && details.provider !== 'API_REST' ? details.provider : null;
 });
 
@@ -51,12 +58,30 @@ const statusCodeStyle = computed(() => {
 
 const activeTheme = computed(() => {
   if (!props.isHighlighted) return null;
-  const activeId = String(store.highlightedSessionId);
+  
+  const activeId = String(store.highlightedSessionId).toLowerCase();
   const details = props.log.details as any;
-  if (details?.sessionId && String(details.sessionId) === activeId) {
-    return { ring: 'ring-2 ring-indigo-500 border-indigo-500 shadow-indigo-500/20', bg: 'bg-indigo-500' };
+  const payload = details?.payload || {};
+
+  // Condición 1: Es un ID de Sesión de Checkout
+  const isSessionId = details?.sessionId && String(details.sessionId).toLowerCase() === activeId;
+  
+  // Condición 2: Es el Hash de ID de Interdin (El ID largo que pasaste)
+  const isInterdinHash = payload?.id && String(payload.id).toLowerCase().includes(activeId);
+
+  // Si es cualquiera de los dos, aplicamos el color "moradito" (Indigo)
+  if (isSessionId || isInterdinHash) {
+    return { 
+      ring: 'ring-2 ring-indigo-500 border-indigo-500 shadow-indigo-500/20', 
+      bg: 'bg-indigo-500' 
+    };
   }
-  return { ring: 'ring-2 ring-orange-500 border-orange-500 shadow-orange-500/20', bg: 'bg-orange-500' };
+
+  // Fallback para otros rastros (AWS, etc.) en Naranja
+  return { 
+    ring: 'ring-2 ring-orange-500 border-orange-500 shadow-orange-500/20', 
+    bg: 'bg-orange-500' 
+  };
 });
 
 const styles = computed(() => CATEGORY_STYLES[props.log.category] || { 
@@ -64,6 +89,9 @@ const styles = computed(() => CATEGORY_STYLES[props.log.category] || {
   classes: 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-white/5 dark:text-slate-400' 
 });
 
+/**
+ * Función puente para emitir el ID de filtrado capturado desde el Body
+ */
 function handleFilterId(id: string | number) {
   emit('highlight-session', id);
 }
@@ -100,12 +128,12 @@ function handleFilterId(id: string | number) {
       </div>
 
       <div class="space-y-2">
-        <h3 class="font-black text-[13px] leading-tight text-slate-800 dark:text-slate-100 tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+        <h3 class="font-black text-[13px] leading-tight text-slate-800 dark:text-slate-100 uppercase tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
           {{ log.message }}
         </h3>
 
         <div v-if="displayProvider || displayEndpoint" 
-             class="flex flex-wrap items-center gap-1.5">
+             class="flex flex-wrap items-center gap-1.5 animate-in fade-in slide-in-from-left-1">
           
           <span v-if="displayProvider" 
                 class="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[8px] font-black uppercase border border-indigo-500/20">
@@ -136,7 +164,7 @@ function handleFilterId(id: string | number) {
       <div class="p-5">
         <component 
           :is="currentBodyComponent" 
-          :details="log.details as any"
+          :details="log.details"
           :is-highlighted="isHighlighted"
           @filter-id="handleFilterId"
         />
