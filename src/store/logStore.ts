@@ -2,8 +2,9 @@ import { defineStore } from "pinia"
 import { ref, computed, shallowRef } from "vue"
 import { APP_TYPES, type LogEvent, type AnalyzerType } from "../logic/types"
 import { MapperFactory } from "../logic/mappers/MapperFactory"
+import { LogIngestor } from "../logic/parsers/LogIngestor"
 
-export type ViewMode = AnalyzerType | "ALL"
+export type ViewMode = AnalyzerType
 
 interface TimeGroup {
   label: string
@@ -14,14 +15,20 @@ interface TimeGroup {
 
 export const useLogStore = defineStore("logs", () => {
   // --- ESTADO ---
+  // shallowRef es vital para manejar +20,000 líneas sin lag en la UI.
   const events = shallowRef<LogEvent[]>([])
-  const activeTab = ref<ViewMode>("ALL")
+  const activeTab = ref<ViewMode>(APP_TYPES.CHECKOUT)
   const search = ref("")
   const levelFilter = ref("ALL")
   const highlightedSessionId = ref<string | number | null>(null)
   const parsingErrors = ref<string[]>([])
   const isProcessing = ref(false)
   const progress = ref(0)
+
+  /**
+   * Registro de huellas digitales (Fingerprints) para evitar duplicados.
+   */
+  const processedHashes = new Set<string>()
 
   // --- GETTERS ---
 
@@ -45,9 +52,6 @@ export const useLogStore = defineStore("logs", () => {
     }
   })
 
-  /**
-   * Getter principal con lógica de filtrado desacoplada.
-   */
   const filteredEvents = computed(() => {
     const allEvents = events.value
     if (allEvents.length === 0) return []
@@ -57,26 +61,21 @@ export const useLogStore = defineStore("logs", () => {
     const currentTab = activeTab.value
 
     return allEvents.filter((event) => {
-      // 1. Filtro por Aplicación/Pestaña
+      // 1. Filtro de Aplicación: Garantiza que no veas data de Checkout en REST
       if (currentTab !== "ALL" && event.appType !== currentTab) return false
 
-      // 2. Filtro por Nivel de Log
+      // 2. Filtro de Nivel
       if (activeLevel !== "ALL" && event.level !== activeLevel) return false
 
-      // 3. FILTRO DE IDENTIDAD GENÉRICO (Estrategia)
+      // 3. Filtro de Identidad (Sesiones/AWS IDs)
       if (highlightedSessionId.value) {
         const targetId = String(highlightedSessionId.value)
         const mapper = MapperFactory.getMapper(event.appType)
-
-        // Delegamos al mapper la decisión de si el evento coincide con el ID resaltado
-        if (!mapper.isMatch(event, targetId)) {
-          return false
-        }
+        if (!mapper.isMatch(event, targetId)) return false
       }
 
-      // 4. Búsqueda por Texto (General)
+      // 4. Búsqueda Global por texto
       if (!searchTerm) return true
-
       return (
         event.message.toLowerCase().includes(searchTerm) ||
         String(event.id).toLowerCase().includes(searchTerm)
@@ -121,63 +120,113 @@ export const useLogStore = defineStore("logs", () => {
 
   // --- ACCIONES ---
 
-  async function processLogs(rawContent: string, type: AnalyzerType) {
+  /**
+   * Motor de procesamiento universal.
+   *
+   */
+  async function processLogs(rawContent: string, type: AnalyzerType | "ALL") {
     if (!rawContent.trim()) return
 
     isProcessing.value = true
     progress.value = 0
 
-    const mapper = MapperFactory.getMapper(type)
-    const lines = rawContent.split("\n")
-    const totalLines = lines.length
-    const newEvents: LogEvent[] = []
-    const newErrors: string[] = []
-    const CHUNK_SIZE = 500
+    try {
+      const lines = rawContent.split("\n").filter((l) => l.trim().length > 5)
+      const totalLines = lines.length
+      const newEvents: LogEvent[] = []
+      const CHUNK_SIZE = 200
 
-    for (let i = 0; i < totalLines; i++) {
-      const line = lines[i].trim()
-      if (line.length < 5) continue
+      for (let i = 0; i < totalLines; i++) {
+        const line = lines[i].trim()
 
-      if (mapper.canHandle(line)) {
-        try {
-          const event = mapper.map(
-            line,
-            line,
-            events.value.length + newEvents.length + Math.random()
-          )
-          newEvents.push(event)
-        } catch (e) {
-          newErrors.push(line)
+        // 1. Ingestión y detección automática de App
+        const parseResults = LogIngestor.parse(line, type)
+
+        for (const normalizedData of parseResults) {
+          // Si detectamos logs de otra App, actualizamos la pestaña para que la UI viaje al timeline
+          if (
+            activeTab.value !== normalizedData.inferredApp &&
+            activeTab.value !== "ALL"
+          ) {
+            activeTab.value = normalizedData.inferredApp
+          }
+
+          const msgStr = String(normalizedData.message || "")
+          const fingerprint = `${normalizedData.timestamp}_${msgStr.slice(
+            0,
+            60
+          )}`
+
+          if (!processedHashes.has(fingerprint)) {
+            try {
+              // 2. Mapeo Dinámico según lo que detectó el Ingestor
+              const dynamicMapper = MapperFactory.getMapper(
+                normalizedData.inferredApp
+              )
+
+              const event = dynamicMapper.map(
+                normalizedData,
+                line,
+                events.value.length + newEvents.length
+              )
+
+              newEvents.push(event)
+              processedHashes.add(fingerprint)
+            } catch (e) {
+              parsingErrors.value.push(line)
+            }
+          }
         }
-      } else {
-        newErrors.push(line)
+
+        // 3. UI Breathing: Evita que el navegador se bloquee al 0%
+        if (i % CHUNK_SIZE === 0 || i === totalLines - 1) {
+          progress.value = Math.round(((i + 1) / totalLines) * 100)
+          await new Promise((resolve) => setTimeout(resolve, 0))
+        }
       }
 
-      if (i % CHUNK_SIZE === 0) {
-        progress.value = Math.round((i / totalLines) * 100)
-        await new Promise((resolve) => setTimeout(resolve, 0))
-      }
+      // 4. Actualización masiva por concatenación (seguro para memoria)
+      events.value = events.value.concat(newEvents)
+    } catch (criticalError) {
+      console.error("Fallo crítico en el motor de logs:", criticalError)
+    } finally {
+      isProcessing.value = false
+      progress.value = 100
     }
+  }
 
-    events.value = [...events.value, ...newEvents]
-    parsingErrors.value = [...parsingErrors.value, ...newErrors]
-    activeTab.value = type
-    isProcessing.value = false
-    progress.value = 100
+  /**
+   * NUEVO: Borrado Contextual.
+   * Elimina solo los logs de la aplicación actual sin tocar el resto.
+   */
+  function clearLogsByApp(type: AnalyzerType) {
+    // 1. Filtramos para mantener solo lo que NO es de esta aplicación
+    events.value = events.value.filter((e) => e.appType !== type)
+
+    // 2. RE-SINCRONIZACIÓN DE HASHES:
+    // Vaciamos el Set y lo volvemos a llenar con los logs que quedaron.
+    // Esto permite volver a subir el mismo archivo borrado sin que sea ignorado.
+    processedHashes.clear()
+    events.value.forEach((e) => {
+      const fingerprint = `${e.timestamp}_${e.message.slice(0, 60)}`
+      processedHashes.add(fingerprint)
+    })
+
+    // Limpiamos errores de parseo (opcional)
+    parsingErrors.value = []
   }
 
   function clearLogs() {
     events.value = []
     parsingErrors.value = []
+    processedHashes.clear()
     search.value = ""
     levelFilter.value = "ALL"
     highlightedSessionId.value = null
     progress.value = 0
-    activeTab.value = "ALL"
   }
 
   function toggleHighlight(id: string | number) {
-    // Si el ID ya está resaltado, lo quitamos; si no, lo asignamos
     highlightedSessionId.value = highlightedSessionId.value === id ? null : id
     if (highlightedSessionId.value) search.value = ""
   }
@@ -198,6 +247,7 @@ export const useLogStore = defineStore("logs", () => {
     currentAnalyzer: activeTab,
     processLogs,
     clearLogs,
+    clearLogsByApp,
     toggleHighlight,
   }
 })

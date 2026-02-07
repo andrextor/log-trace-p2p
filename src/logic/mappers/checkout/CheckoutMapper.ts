@@ -8,7 +8,7 @@ import {
   type FilterIdentity,
 } from "../../types"
 import type { LogMapper } from "../../BaseMapper"
-import { LogIngestor } from "../../parsers/LogIngestor"
+// IMPORTANTE: Eliminamos LogIngestor de aquí para evitar fallos de inicialización
 import {
   buildEventId,
   normalizePath,
@@ -17,10 +17,10 @@ import {
 import { ACTION_MAP } from "./CheckoutConfigMap"
 
 export class CheckoutMapper implements LogMapper {
-  canHandle(rawInput: any): boolean {
-    const data =
-      typeof rawInput === "string" ? LogIngestor.parse(rawInput) : rawInput
-
+  /**
+   * Evalúa si la data normalizada pertenece a Checkout.
+   */
+  canHandle(data: NormalizedLogData): boolean {
     if (!data) return false
     const ctx = data.context ?? {}
 
@@ -48,14 +48,15 @@ export class CheckoutMapper implements LogMapper {
     )
   }
 
-  map(rawInput: any, rawLine: string, index: number): LogEvent {
-    const data: NormalizedLogData =
-      typeof rawInput === "string" ? LogIngestor.parse(rawInput)! : rawInput
-
+  /**
+   * Transforma la data limpia en un rastro visual para el Timeline.
+   */
+  map(data: NormalizedLogData, rawLine: string, index: number): LogEvent {
+    // [Image of a data transformation diagram: Raw Log String -> Normalized Data Object -> Structured UI Log Event]
     const ctx = data.context ?? {}
-    const subType = data.context?.type ?? ctx.type ?? null
+    const subType = ctx.type ?? null
     const action = ctx.action_method ? String(ctx.action_method).trim() : null
-    // Extraemos el gateway para el título
+
     const gatewayName = ctx.body?.gateway
       ? String(ctx.body.gateway).toUpperCase()
       : null
@@ -92,9 +93,7 @@ export class CheckoutMapper implements LogMapper {
       category = "ERROR"
       visualLevel = "ERROR"
       displayMessage = "Error de Validación (Request Inválido)"
-    }
-    // NUEVA LÓGICA: Solicitud de Bancos
-    else if (action && action.includes("BanksDataController")) {
+    } else if (action && action.includes("BanksDataController")) {
       displayMessage = `Solicitud Bancos${
         gatewayName ? ` vía ${gatewayName}` : ""
       }`
@@ -112,11 +111,11 @@ export class CheckoutMapper implements LogMapper {
       displayMessage = `Evento: ${subType}`
       category = "BACKEND_LOG"
     } else {
-      category = this.inferCheckoutCategory(displayMessage, subType, ctx)
+      category = this.inferCheckoutCategory(displayMessage, subType)
       source = this.determineSource(data, ctx, knownAction)
     }
 
-    // --- Finalización ---
+    // --- FINALIZACIÓN ---
     const httpInfo = extractHttpFromMessage(data.message ?? "")
     const method =
       ctx.request?.method ??
@@ -128,9 +127,9 @@ export class CheckoutMapper implements LogMapper {
       ctx.notification_url ??
       httpInfo.path ??
       ""
+
     const finalLevel =
       visualLevel || (data.level === "ERROR" ? "INFO" : data.level)
-
     const awsRequestId =
       ctx.aws_request_id || ctx.payload?.aws_request_id || null
 
@@ -195,11 +194,8 @@ export class CheckoutMapper implements LogMapper {
 
   private inferCheckoutCategory(
     msg: string,
-    subType: string | null,
-    ctx: any,
-    forced?: LogCategory
+    subType: string | null
   ): LogCategory {
-    if (forced) return forced
     const m = msg.toLowerCase()
     const s = (subType ?? "").toLowerCase()
 
