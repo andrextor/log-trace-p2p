@@ -3,7 +3,10 @@ import { ref, computed } from 'vue';
 import { useLogStore } from '../store/logStore'; 
 import { APP_TYPES, type LogEvent } from '../logic/types'; 
 import { CATEGORY_STYLES } from '../logic/mappers/checkout/CheckoutConfigMap';
+
+// Importación de los cuerpos específicos
 import CheckoutBody from './log-bodies/checkout/CheckoutBody.vue'; 
+import RestBody from './log-bodies/rest/RestBody.vue'; 
 
 const props = defineProps<{
   log: LogEvent;
@@ -12,23 +15,46 @@ const props = defineProps<{
 
 const store = useLogStore();
 const isExpanded = ref(false);
+const emit = defineEmits(['highlight-session']);
 
 /**
- * TÍTULO LIMPIO:
- * Eliminamos la URL de cualquier mensaje de rastro (Browser o API).
+ * MAPEO DE COMPONENTES DINÁMICOS
  */
-const cleanTitle = computed(() => {
-  const msg = props.log.message;
-  // Si contiene una ruta (indicada por un espacio seguido de /), la cortamos
-  if (msg.includes(' /')) {
-    return msg.split(' /')[0];
-  }
-  return msg;
+const bodyComponents = {
+  [APP_TYPES.CHECKOUT]: CheckoutBody,
+  [APP_TYPES.MICROSITIOS]: CheckoutBody,
+  [APP_TYPES.REST]: RestBody,
+};
+
+const currentBodyComponent = computed(() => {
+  return bodyComponents[props.log.appType] || CheckoutBody;
 });
 
 /**
- * LÓGICA DE CAJA DE RUTA:
- * Se muestra SOLAMENTE para peticiones externas o respuestas.
+ * ESTILO SEMÁNTICO PARA EL STATUS CODE
+ * Permite identificar fallos de red o de banco al instante.
+ */
+const statusCodeStyle = computed(() => {
+  const code = Number(props.log.details?.statusCode);
+  if (!code || isNaN(code)) return null;
+
+  if (code >= 500) return 'bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400';
+  if (code >= 400) return 'bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400';
+  if (code >= 200 && code < 300) return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400';
+  
+  return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-white/5 dark:text-slate-400';
+});
+
+/**
+ * LIMPIEZA DE TÍTULO
+ */
+const cleanTitle = computed(() => {
+  const msg = props.log.message;
+  return msg.includes(' /') ? msg.split(' /')[0] : msg;
+});
+
+/**
+ * VISIBILIDAD DE CAJA DE RUTA
  */
 const shouldShowUrlBox = computed(() => {
   const categoriesWithBox = ['HTTP_REQ_OUT', 'HTTP_RES', 'NOTIFICATION'];
@@ -43,7 +69,9 @@ const urlData = computed(() => {
   };
 });
 
-// Lógica de temas para colores Naranja/Púrpura
+/**
+ * TEMAS DE RESALTADO (Highlight)
+ */
 const activeTheme = computed(() => {
   if (!props.isHighlighted) return null;
   const activeId = String(store.highlightedSessionId);
@@ -53,15 +81,23 @@ const activeTheme = computed(() => {
   if (details?.sessionId && String(details.sessionId) === activeId) {
     return { ring: 'ring-2 ring-indigo-500 border-indigo-500 shadow-[0_0_20px_-5px_rgba(79,70,229,0.4)]', text: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-500' };
   }
-  const awsId = details?.aws_request_id || ctx?.aws_request_id || ctx?.payload?.aws_request_id;
+  
+  const awsId = details?.aws_request_id || details?.awsRequestId || ctx?.aws_request_id || ctx?.payload?.aws_request_id;
   if (String(awsId) === activeId || String(props.log.id) === activeId) {
     return { ring: 'ring-2 ring-orange-500 border-orange-500 shadow-[0_0_20px_-5px_rgba(245,158,11,0.4)]', text: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500' };
   }
+  
   return { ring: 'ring-2 ring-indigo-500 border-indigo-500', text: 'text-indigo-500', bg: 'bg-indigo-500' };
 });
 
-const styles = computed(() => CATEGORY_STYLES[props.log.category] || { label: props.log.category, classes: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-white/5 dark:text-slate-400 dark:border-white/10' });
-const emit = defineEmits(['highlight-session']);
+const styles = computed(() => CATEGORY_STYLES[props.log.category] || { 
+  label: props.log.category, 
+  classes: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-white/5 dark:text-slate-400 dark:border-white/10' 
+});
+
+const handleFilterId = (id: any) => {
+  emit('highlight-session', id);
+};
 </script>
 
 <template>
@@ -77,10 +113,18 @@ const emit = defineEmits(['highlight-session']);
                 :class="isHighlighted ? `${activeTheme?.bg} text-white border-white/10` : styles.classes">
             {{ styles.label }}
           </span>
+
           <span v-if="urlData.method" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[10px] font-bold border border-slate-200 dark:border-white/5 uppercase">
             {{ urlData.method }}
           </span>
+
+          <span v-if="log.details?.statusCode" 
+                class="px-2 py-0.5 rounded text-[10px] font-mono font-black border transition-all"
+                :class="statusCodeStyle">
+            {{ log.details.statusCode }}
+          </span>
         </div>
+
         <span class="font-mono text-xs text-slate-400 font-bold opacity-60">
           {{ log.timestamp.split('T')[1]?.split('.')[0] || log.timestamp }}
         </span>
@@ -109,10 +153,11 @@ const emit = defineEmits(['highlight-session']);
 
     <div v-if="isExpanded" class="border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/2 animate-in slide-in-from-top-2 duration-200">
       <div class="p-4">
-        <CheckoutBody 
+        <component 
+          :is="currentBodyComponent" 
           :details="log.details as any"
           :is-highlighted="isHighlighted"
-          @filter-id="(id: string | number) => emit('highlight-session', id)"
+          @filter-id="handleFilterId" 
         />
       </div>
     </div>
@@ -120,6 +165,16 @@ const emit = defineEmits(['highlight-session']);
 </template>
 
 <style scoped>
+/* Transiciones de entrada suaves */
+.animate-in {
+  animation: slide-down 0.2s ease-out;
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.3); border-radius: 3px; }

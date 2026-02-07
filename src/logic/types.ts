@@ -1,10 +1,11 @@
+// --- 1. IDENTIFICADORES DE APLICACIÓN ---
+
 export const APP_TYPES = {
   CHECKOUT: "checkout",
   MICROSITIOS: "micrositios",
   REST: "rest",
 } as const
 
-// Derivamos el tipo automáticamente: "checkout" | "micrositios" | "rest"
 export type AnalyzerType = (typeof APP_TYPES)[keyof typeof APP_TYPES]
 
 export const ANALYZER_NAMES: Record<AnalyzerType, string> = {
@@ -13,36 +14,37 @@ export const ANALYZER_NAMES: Record<AnalyzerType, string> = {
   [APP_TYPES.REST]: "API REST Core",
 }
 
-// --- 2. CONFIGURACIÓN DE LOGS ---
+// --- 2. ESTRUCTURAS DE DATOS CRUDA (Parsers) ---
 
 export interface NormalizedLogData {
   timestamp: string
   level: string
   message: string
   context: Record<string, any>
-  sourceType?: "AWS_CSV" | "LARAVEL_LOCAL" | "UNKNOWN"
+  // Añadimos NEW_RELIC_JSON para el nuevo parser de REST
+  sourceType?: "AWS_CSV" | "LARAVEL_LOCAL" | "NEW_RELIC_JSON" | "UNKNOWN"
 }
 
 export type LogLevel = "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL"
 
-export type LogCategory =
-  | "HTTP_REQ_OUT" // Peticiones salientes (Guzzle)
-  | "HTTP_REQ_IN" // Peticiones entrantes (Controladores)
-  | "HTTP_RES" // Respuestas
-  | "DB_OP" // Operaciones BD
-  | "NOTIFICATION" // Notificación al comercio
-  | "RETURN_NOTIFICATION" // Notificación de retorno
-  | "BROWSER_LOAD" // Carga en frontend
-  | "USER_ACTION" // Click del usuario
-  | "BACKEND_LOG" // Traza interna
-  | "ERROR" // Fallos de sistema (Rojo)
-  | "GENERIC" // Logs generales
-
-// --- 3. DETALLES ESPECÍFICOS (Polimorfismo) ---
-
 /**
- * Detalles exclusivos para CHECKOUT
+ * Categorías visuales para el Dashboard
  */
+export type LogCategory =
+  | "HTTP_REQ_OUT" // Peticiones salientes (Guzzle/SDKs)
+  | "HTTP_REQ_IN" // Peticiones entrantes
+  | "HTTP_RES" // Respuestas HTTP
+  | "DB_OP" // Operaciones de Base de Datos
+  | "NOTIFICATION" // Notificaciones o OTPs
+  | "RETURN_NOTIFICATION" // Flujos de retorno
+  | "BROWSER_LOAD" // Eventos de carga SPA
+  | "USER_ACTION" // Interacciones del usuario
+  | "BACKEND_LOG" // Trazas internas de lógica
+  | "ERROR" // Fallos críticos
+  | "GENERIC" // Otros
+
+// --- 3. POLIMORFISMO DE DETALLES (App-Specific) ---
+
 export interface CheckoutDetails {
   method?: string
   url?: string
@@ -56,31 +58,30 @@ export interface CheckoutDetails {
   payload?: any
 }
 
-/**
- * Detalles exclusivos para API REST (Futuro)
- */
 export interface RestDetails {
+  provider: string
+  operation: string
+  action: string
   method: string
-  route: string
-  clientIp?: string
-  headers?: Record<string, string>
-  payload?: any
+  endpoint: string
+  statusCode?: number | string
+  awsRequestId?: string | null
+  payload: any
+  exception?: any
+  source: "BACKEND"
 }
 
-/**
- * Detalles exclusivos para MICROSITIOS (Futuro)
- */
 export interface MicrositiosDetails {
   siteId: string | number
   formName?: string
 }
 
 /**
- * Unión de todos los posibles detalles
+ * Tipo discriminado para los detalles
  */
-export type AppLogDetails = CheckoutDetails | RestDetails | MicrositiosDetails
+export type AppLogDetails = CheckoutDetails | RestDetails
 
-// --- 4. EVENTO FINAL (UI) ---
+// --- 4. MODELO DE EVENTO FINAL (UI) ---
 
 export interface LogEvent {
   id: string
@@ -88,9 +89,8 @@ export interface LogEvent {
   level: LogLevel
   message: string
   category: LogCategory
-  appType: AnalyzerType
+  appType: AnalyzerType // Usamos la constante aquí
   details: AppLogDetails
-
   context: any
   rawStream?: string
 }

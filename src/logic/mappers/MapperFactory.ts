@@ -1,36 +1,43 @@
 import { APP_TYPES, type AnalyzerType } from "../types"
-import type { LogMapper } from "./mappers/BaseMapper"
-import { CheckoutMapper } from "./checkout/CheckoutMapper"
+import type { LogMapper } from "./BaseMapper"
 
-// import { RestMapper } from "./mappers/rest/RestMapper"; // <--- Descomenta cuando exista
+// Importaciones de los Mappers específicos
+import { CheckoutMapper } from "./checkout/CheckoutMapper"
+import { RestMapper } from "./rest/RestMapper"
 
 export class MapperFactory {
   /**
+   * Registro estático de instancias para reutilización y ahorro de memoria.
+   */
+  private static instances: Record<string, LogMapper> = {
+    [APP_TYPES.CHECKOUT]: new CheckoutMapper(),
+    [APP_TYPES.REST]: new RestMapper(),
+  }
+
+  /**
    * Devuelve la instancia del Mapper correspondiente al tipo de análisis seleccionado.
+   * Si no existe, aplica lógica de fallback o error.
    */
   static getMapper(type: AnalyzerType): LogMapper {
-    switch (type) {
-      case APP_TYPES.CHECKOUT:
-        return new CheckoutMapper()
+    const mapper = this.instances[type]
 
-      case APP_TYPES.MICROSITIOS:
-        console.warn(
-          "⚠️ Mapper Micrositios en construcción. Usando Checkout por defecto."
-        )
-        return new CheckoutMapper() // Fallback temporal
-
-      case APP_TYPES.REST:
-        // return new RestMapper();
-        console.warn(
-          "⚠️ Mapper REST API en construcción. Usando Checkout por defecto."
-        )
-        return new CheckoutMapper() // Fallback temporal
-
-      default:
-        console.error(
-          `Tipo de analizador desconocido: ${type}. Usando Checkout.`
-        )
-        return new CheckoutMapper()
+    // 1. Caso Ideal: El mapper existe en el registro
+    if (mapper) {
+      return mapper
     }
+
+    // 2. Fallback para Micrositios (Comparten lógica con Checkout por ahora)
+    if (type === APP_TYPES.MICROSITIOS) {
+      console.warn(
+        "⚠️ Mapper Micrositios en construcción. Usando CheckoutMapper como fallback."
+      )
+      return this.instances[APP_TYPES.CHECKOUT]
+    }
+
+    // 3. Caso de Error: Tipo desconocido
+    console.error(
+      `❌ Tipo de analizador desconocido: "${type}". Devolviendo Checkout por seguridad.`
+    )
+    return this.instances[APP_TYPES.CHECKOUT]
   }
 }
