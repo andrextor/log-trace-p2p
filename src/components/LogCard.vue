@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, } from 'vue';
 import { useLogStore } from '../store/logStore'; 
 import { APP_TYPES, type LogEvent } from '../logic/types'; 
 import { CATEGORY_STYLES } from '../logic/mappers/checkout/CheckoutConfigMap';
@@ -13,151 +13,132 @@ const props = defineProps<{
   isHighlighted: boolean;
 }>();
 
+
 const store = useLogStore();
 const isExpanded = ref(false);
-const emit = defineEmits(['highlight-session']);
+const emit = defineEmits<{
+  (e: 'highlight-session', id: string | number): void
+}>();
 
-/**
- * MAPEO DE COMPONENTES DINÁMICOS
- */
-const bodyComponents = {
+const bodyComponents: Record<string, any> = {
   [APP_TYPES.CHECKOUT]: CheckoutBody,
-  [APP_TYPES.MICROSITIOS]: CheckoutBody,
   [APP_TYPES.REST]: RestBody,
 };
 
-const currentBodyComponent = computed(() => {
-  return bodyComponents[props.log.appType] || CheckoutBody;
-});
+const currentBodyComponent = computed(() => bodyComponents[props.log.appType] || CheckoutBody);
 
 /**
- * ESTILO SEMÁNTICO PARA EL STATUS CODE
- * Permite identificar fallos de red o de banco al instante.
+ * EXTRACCIÓN SEGURA DE DATOS (FIX DE TYPESCRIPT)
  */
+const displayEndpoint = computed(() => {
+  const details = props.log.details as any;
+  return details?.endpoint && details.endpoint !== 'N/A' ? details.endpoint : null;
+});
+
+const displayProvider = computed(() => {
+  const details = props.log.details as any;
+  // Solo mostramos el proveedor si no es el genérico 'API_REST'
+  return details?.provider && details.provider !== 'API_REST' ? details.provider : null;
+});
+
 const statusCodeStyle = computed(() => {
   const code = Number(props.log.details?.statusCode);
   if (!code || isNaN(code)) return null;
-
-  if (code >= 500) return 'bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400';
+  if (code >= 500) return 'bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400';
   if (code >= 400) return 'bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400';
-  if (code >= 200 && code < 300) return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400';
-  
-  return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-white/5 dark:text-slate-400';
+  return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400';
 });
 
-/**
- * LIMPIEZA DE TÍTULO
- */
-const cleanTitle = computed(() => {
-  const msg = props.log.message;
-  return msg.includes(' /') ? msg.split(' /')[0] : msg;
-});
-
-/**
- * VISIBILIDAD DE CAJA DE RUTA
- */
-const shouldShowUrlBox = computed(() => {
-  const categoriesWithBox = ['HTTP_REQ_OUT', 'HTTP_RES', 'NOTIFICATION'];
-  return categoriesWithBox.includes(props.log.category);
-});
-
-const urlData = computed(() => {
-  const details = props.log.details as any;
-  return {
-    method: details?.method || null,
-    path: details?.url || (props.log.message.includes(' /') ? '/' + props.log.message.split(' /')[1] : null)
-  };
-});
-
-/**
- * TEMAS DE RESALTADO (Highlight)
- */
 const activeTheme = computed(() => {
   if (!props.isHighlighted) return null;
   const activeId = String(store.highlightedSessionId);
   const details = props.log.details as any;
-  const ctx = props.log.context as any;
-
   if (details?.sessionId && String(details.sessionId) === activeId) {
-    return { ring: 'ring-2 ring-indigo-500 border-indigo-500 shadow-[0_0_20px_-5px_rgba(79,70,229,0.4)]', text: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-500' };
+    return { ring: 'ring-2 ring-indigo-500 border-indigo-500 shadow-indigo-500/20', bg: 'bg-indigo-500' };
   }
-  
-  const awsId = details?.aws_request_id || details?.awsRequestId || ctx?.aws_request_id || ctx?.payload?.aws_request_id;
-  if (String(awsId) === activeId || String(props.log.id) === activeId) {
-    return { ring: 'ring-2 ring-orange-500 border-orange-500 shadow-[0_0_20px_-5px_rgba(245,158,11,0.4)]', text: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500' };
-  }
-  
-  return { ring: 'ring-2 ring-indigo-500 border-indigo-500', text: 'text-indigo-500', bg: 'bg-indigo-500' };
+  return { ring: 'ring-2 ring-orange-500 border-orange-500 shadow-orange-500/20', bg: 'bg-orange-500' };
 });
 
 const styles = computed(() => CATEGORY_STYLES[props.log.category] || { 
   label: props.log.category, 
-  classes: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-white/5 dark:text-slate-400 dark:border-white/10' 
+  classes: 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-white/5 dark:text-slate-400' 
 });
 
-const handleFilterId = (id: any) => {
+function handleFilterId(id: string | number) {
   emit('highlight-session', id);
-};
+}
 </script>
 
 <template>
   <div 
-    class="relative bg-white dark:bg-[#161618] border rounded-xl transition-all duration-300 hover:shadow-lg group overflow-hidden"
-    :class="isHighlighted ? activeTheme?.ring + ' z-10' : 'border-slate-200 dark:border-white/10 hover:border-indigo-300 dark:hover:border-indigo-500/30'"
+    class="relative bg-white dark:bg-[#161618] border rounded-2xl transition-all duration-300 hover:shadow-2xl group overflow-hidden"
+    :class="isHighlighted ? (activeTheme?.ring + ' z-10 scale-[1.01]') : 'border-slate-200 dark:border-white/10 hover:border-indigo-300/50'"
   >
     <div class="flex flex-col p-4 gap-3 cursor-pointer select-none" @click="isExpanded = !isExpanded">
       
       <div class="flex justify-between items-center">
         <div class="flex gap-2 items-center">
-          <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border transition-colors" 
+          <span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-colors" 
                 :class="isHighlighted ? `${activeTheme?.bg} text-white border-white/10` : styles.classes">
             {{ styles.label }}
           </span>
 
-          <span v-if="urlData.method" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[10px] font-bold border border-slate-200 dark:border-white/5 uppercase">
-            {{ urlData.method }}
+          <span v-if="log.details?.method" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-500 text-[9px] font-bold border border-slate-200 dark:border-white/5 uppercase font-mono">
+            {{ log.details.method }}
           </span>
 
           <span v-if="log.details?.statusCode" 
-                class="px-2 py-0.5 rounded text-[10px] font-mono font-black border transition-all"
+                class="px-2 py-0.5 rounded-md text-[9px] font-mono font-black border transition-all"
                 :class="statusCodeStyle">
             {{ log.details.statusCode }}
           </span>
         </div>
 
-        <span class="font-mono text-xs text-slate-400 font-bold opacity-60">
+        <span class="font-mono text-[10px] text-slate-400 font-bold opacity-60">
           {{ log.timestamp.split('T')[1]?.split('.')[0] || log.timestamp }}
         </span>
       </div>
 
-      <h3 class="font-bold text-sm leading-snug wrap-break-words text-slate-800 dark:text-slate-100">
-        {{ cleanTitle }}
-      </h3>
+      <div class="space-y-2">
+        <h3 class="font-black text-[13px] leading-tight text-slate-800 dark:text-slate-100 tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+          {{ log.message }}
+        </h3>
 
-      <div v-if="shouldShowUrlBox && urlData.path" 
-           class="bg-slate-50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-white/5 font-mono text-[11px] break-all leading-relaxed shadow-inner"
-           :class="isHighlighted ? activeTheme?.text : 'text-slate-500 dark:text-slate-400'">
-        <span class="text-[8px] uppercase font-black opacity-40 block mb-1 tracking-tighter italic">Outgoing Request Path</span>
-        {{ urlData.path }}
+        <div v-if="displayProvider || displayEndpoint" 
+             class="flex flex-wrap items-center gap-1.5">
+          
+          <span v-if="displayProvider" 
+                class="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[8px] font-black uppercase border border-indigo-500/20">
+            {{ displayProvider }}
+          </span>
+
+          <div v-if="displayEndpoint" 
+               class="flex items-center gap-2 py-1 px-2.5 bg-slate-50 dark:bg-black/30 rounded-lg border border-slate-100 dark:border-white/5 transition-all group-hover:border-indigo-500/20">
+            <div class="w-1 h-1 rounded-full shrink-0" :class="isHighlighted ? activeTheme?.bg : 'bg-indigo-400 dark:bg-indigo-500'"></div>
+            <span class="font-mono text-[10px] break-all leading-relaxed text-slate-500 dark:text-slate-400 italic">
+              {{ displayEndpoint }}
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div class="flex justify-end items-center mt-1">
+      <div class="flex justify-end items-center mt-1 border-t border-slate-50 dark:border-white/5 pt-2">
         <div class="flex items-center gap-2">
-           <div v-if="isHighlighted" class="flex h-2 w-2 rounded-full animate-pulse" :class="activeTheme?.bg"></div>
-           <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-300" :class="{ 'rotate-180': isExpanded }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+           <span v-if="isHighlighted" class="text-[8px] font-black text-indigo-500 uppercase tracking-widest animate-pulse">Tracing Active</span>
+           <svg class="w-4 h-4 text-slate-300 transform transition-transform duration-300" :class="{ 'rotate-180': isExpanded }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
            </svg>
         </div>
       </div>
     </div>
 
-    <div v-if="isExpanded" class="border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/2 animate-in slide-in-from-top-2 duration-200">
-      <div class="p-4">
+    <div v-if="isExpanded" class="border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/2 animate-in slide-in-from-top-1">
+      <div class="p-5">
         <component 
           :is="currentBodyComponent" 
           :details="log.details as any"
           :is-highlighted="isHighlighted"
-          @filter-id="handleFilterId" 
+          @filter-id="handleFilterId"
         />
       </div>
     </div>
@@ -165,18 +146,12 @@ const handleFilterId = (id: any) => {
 </template>
 
 <style scoped>
-/* Transiciones de entrada suaves */
 .animate-in {
-  animation: slide-down 0.2s ease-out;
+  animation: slide-down 0.25s cubic-bezier(0, 0, 0.2, 1);
 }
 
 @keyframes slide-down {
-  from { opacity: 0; transform: translateY(-10px); }
+  from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-.custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.3); border-radius: 3px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(156, 163, 175, 0.5); }
 </style>
