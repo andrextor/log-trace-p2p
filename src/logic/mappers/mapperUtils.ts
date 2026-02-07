@@ -1,7 +1,7 @@
 export function buildEventId(ctx: any, index: number): string {
-  return (
-    ctx.aws_request_id ?? ctx.transaction_id ?? `gen-${index}-${Date.now()}`
-  )
+  const traceId = ctx.aws_request_id ?? ctx.transaction_id ?? "gen"
+
+  return `${traceId}-${index}`
 }
 
 export function extractTimestamp(data: any, line: string): string {

@@ -1,37 +1,35 @@
-import type { LogMapper } from "./BaseMapper"
-import type { AnalyzerType } from "../types"
+import { APP_TYPES, type AnalyzerType } from "../types"
+import type { LogMapper } from "./mappers/BaseMapper"
 import { CheckoutMapper } from "./checkout/CheckoutMapper"
 
-// Aquí importarás los futuros:
-// import { MicrositiosMapper } from "./mappers/micrositios/MicrositiosMapper";
-// import { RestApiMapper } from "./mappers/rest/RestApiMapper";
+// import { RestMapper } from "./mappers/rest/RestMapper"; // <--- Descomenta cuando exista
 
 export class MapperFactory {
   /**
-   * Recibe el tipo de analizador (string) y devuelve la Instancia de la clase
-   * encargada de procesar esa lógica.
+   * Devuelve la instancia del Mapper correspondiente al tipo de análisis seleccionado.
    */
   static getMapper(type: AnalyzerType): LogMapper {
     switch (type) {
-      case "checkout":
+      case APP_TYPES.CHECKOUT:
         return new CheckoutMapper()
 
-      case "micrositios":
-        // return new MicrositiosMapper();
+      case APP_TYPES.MICROSITIOS:
         console.warn(
           "⚠️ Mapper Micrositios en construcción. Usando Checkout por defecto."
         )
-        return new CheckoutMapper()
+        return new CheckoutMapper() // Fallback temporal
 
-      case "rest":
-        // return new RestApiMapper();
+      case APP_TYPES.REST:
+        // return new RestMapper();
         console.warn(
           "⚠️ Mapper REST API en construcción. Usando Checkout por defecto."
         )
-        return new CheckoutMapper()
+        return new CheckoutMapper() // Fallback temporal
 
       default:
-        // Fallback de seguridad
+        console.error(
+          `Tipo de analizador desconocido: ${type}. Usando Checkout.`
+        )
         return new CheckoutMapper()
     }
   }

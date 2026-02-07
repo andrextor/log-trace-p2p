@@ -1,8 +1,11 @@
-import type {
-  LogEvent,
-  LogLevel,
-  LogCategory,
-  NormalizedLogData,
+import {
+  APP_TYPES,
+  type LogEvent,
+  type LogLevel,
+  type LogCategory,
+  type NormalizedLogData,
+  type CheckoutDetails,
+  type FilterIdentity,
 } from "../../types"
 import type { LogMapper } from "../../BaseMapper"
 import { LogIngestor } from "../../parsers/LogIngestor"
@@ -31,6 +34,20 @@ export class CheckoutMapper implements LogMapper {
     )
   }
 
+  isMatch(event: LogEvent, targetId: string): boolean {
+    const details = event.details as CheckoutDetails
+    const ctx = event.context || {}
+
+    return (
+      String(event.id) === targetId ||
+      String(details?.sessionId) === targetId ||
+      String(ctx?.payload?.session_id) === targetId ||
+      String(details?.aws_request_id) === targetId ||
+      String(ctx?.aws_request_id) === targetId ||
+      String(ctx?.payload?.aws_request_id) === targetId
+    )
+  }
+
   map(rawInput: any, rawLine: string, index: number): LogEvent {
     const data: NormalizedLogData =
       typeof rawInput === "string" ? LogIngestor.parse(rawInput)! : rawInput
@@ -38,6 +55,10 @@ export class CheckoutMapper implements LogMapper {
     const ctx = data.context ?? {}
     const subType = data.context?.type ?? ctx.type ?? null
     const action = ctx.action_method ? String(ctx.action_method).trim() : null
+    // Extraemos el gateway para el título
+    const gatewayName = ctx.body?.gateway
+      ? String(ctx.body.gateway).toUpperCase()
+      : null
 
     let displayMessage = data.message ?? "Sin mensaje"
 
@@ -45,53 +66,41 @@ export class CheckoutMapper implements LogMapper {
     const knownAction = actionKey ? ACTION_MAP[actionKey] : null
 
     let category: LogCategory = "GENERIC"
-    let source: "FRONTEND" | "BACKEND" = "BACKEND"
-
-    // Variable para forzar el nivel visual y que el filtro los atrape
+    let source: "FRONTEND" | "BACKEND" | string = "BACKEND"
     let visualLevel: string | null = null
 
-    // --- LÓGICA DE CLASIFICACIÓN DE ERRORES ---
-
-    // 1. Detección de Validaciones (request_not_valid)
-    // Estos son los que quieres ver en ROJO y en el filtro, pero con título diferente.
+    // --- LÓGICA DE CLASIFICACIÓN ---
     const isValidationErr =
       subType === "request_not_valid" ||
       ctx.exception?.reason === "request_not_valid" ||
-      data.message.includes("request_not_valid")
+      (data.message && data.message.includes("request_not_valid"))
 
-    // 2. Detección de Errores de Sistema (Crashes, Exceptions graves)
     const isSystemError =
       (["ERROR", "CRITICAL", "ALERT", "EMERGENCY"].includes(data.level) ||
-        data.message.includes("Exception") ||
         ctx.exception) &&
-      !isValidationErr // Si es validación, ya lo manejamos arriba
+      !isValidationErr
 
     if (isSystemError) {
       category = "ERROR"
-      visualLevel = "ERROR" // Para el filtro
-
-      if (displayMessage.includes("transaction not found")) {
-        displayMessage = "Fallo Crítico: Transacción no encontrada"
-      } else if (ctx.exception?.message) {
-        displayMessage = `Excepción: ${ctx.exception.message.substring(
-          0,
-          80
-        )}...`
-      } else if (
-        displayMessage === "Sin mensaje" ||
-        displayMessage.includes("Request trace")
-      ) {
-        displayMessage = "Error del Sistema (Ver JSON)"
-      }
+      visualLevel = "ERROR"
+      displayMessage = ctx.exception?.message
+        ? `Excepción: ${ctx.exception.message.substring(0, 80)}...`
+        : displayMessage.includes("Request trace")
+        ? "Error del Sistema (Ver JSON)"
+        : displayMessage
     } else if (isValidationErr) {
-      category = "ERROR" // <--- AQUÍ ESTÁ LA CLAVE: Lo dejamos como ERROR visual (Rojo)
-      visualLevel = "ERROR" // <--- Y como ERROR lógico (Filtro)
-
-      // Pero cambiamos el mensaje para que sepas qué es
+      category = "ERROR"
+      visualLevel = "ERROR"
       displayMessage = "Error de Validación (Request Inválido)"
     }
-    // --- Resto del flujo normal ---
-    else if (knownAction) {
+    // NUEVA LÓGICA: Solicitud de Bancos
+    else if (action && action.includes("BanksDataController")) {
+      displayMessage = `Solicitud Bancos${
+        gatewayName ? ` vía ${gatewayName}` : ""
+      }`
+      category = "BACKEND_LOG"
+      source = "BACKEND"
+    } else if (knownAction) {
       displayMessage = knownAction.message
       category = knownAction.category
       source = knownAction.source
@@ -104,7 +113,7 @@ export class CheckoutMapper implements LogMapper {
       category = "BACKEND_LOG"
     } else {
       category = this.inferCheckoutCategory(displayMessage, subType, ctx)
-      source = this.determineSource(data, ctx, knownAction) as any
+      source = this.determineSource(data, ctx, knownAction)
     }
 
     // --- Finalización ---
@@ -119,10 +128,24 @@ export class CheckoutMapper implements LogMapper {
       ctx.notification_url ??
       httpInfo.path ??
       ""
-
-    // Si definimos un nivel visual forzado (ERROR), lo usamos. Si no, usamos el original o INFO.
     const finalLevel =
       visualLevel || (data.level === "ERROR" ? "INFO" : data.level)
+
+    const awsRequestId =
+      ctx.aws_request_id || ctx.payload?.aws_request_id || null
+
+    const details: CheckoutDetails = {
+      method,
+      url: normalizePath(urlRaw),
+      statusCode:
+        ctx.response?.status_code ?? ctx.status_code ?? data.level ?? null,
+      sessionId: ctx.session_id ?? ctx.data?.session_id ?? "",
+      transactionId: ctx.transaction_id ?? ctx.placetopay_id ?? "",
+      aws_request_id: awsRequestId,
+      subType,
+      source,
+      payload: ctx.payload || ctx,
+    }
 
     return {
       id: buildEventId(ctx, index),
@@ -130,22 +153,21 @@ export class CheckoutMapper implements LogMapper {
       level: finalLevel as LogLevel,
       message: displayMessage,
       category,
-      details: {
-        method,
-        url: normalizePath(urlRaw),
-        statusCode:
-          ctx.response?.status_code ?? ctx.status_code ?? data.level ?? null,
-        sessionId: ctx.session_id ?? ctx.data?.session_id ?? "",
-        transactionId: ctx.transaction_id ?? ctx.placetopay_id ?? "",
-        subType,
-        source,
-      },
+      appType: APP_TYPES.CHECKOUT,
+      details,
       context: ctx,
       rawStream: rawLine.slice(0, 100) + (rawLine.length > 100 ? "..." : ""),
     }
   }
 
-  // --- Helpers ---
+  getFilterIdentity(event: LogEvent, targetId: string): FilterIdentity {
+    const details = event.details as CheckoutDetails
+    if (details?.sessionId && String(details.sessionId) === targetId) {
+      return { label: "Sesión", colorClass: "indigo" }
+    }
+    return { label: "AWS / ID", colorClass: "orange" }
+  }
+
   private determineSource(
     data: NormalizedLogData,
     ctx: any,
@@ -158,10 +180,14 @@ export class CheckoutMapper implements LogMapper {
     return "BACKEND"
   }
 
-  private resolveMethod(ctx: any, action: string, subType: string): string {
+  private resolveMethod(
+    ctx: any,
+    action: string | null,
+    subType: string | null
+  ): string {
     if (ctx.request?.method) return ctx.request.method
-    if (subType === "checkout.session.created") return "POST"
-    if (action === "createSession") return "POST"
+    if (subType === "checkout.session.created" || action === "createSession")
+      return "POST"
     if (action === "show" || action === "index") return "GET"
     if (action) return action.toUpperCase()
     return ""
@@ -179,9 +205,10 @@ export class CheckoutMapper implements LogMapper {
 
     if (s.includes("notification") || m.includes("notify"))
       return "NOTIFICATION"
-    if (m.includes("[gw_lib] http req")) return "HTTP_REQ_OUT"
-    if (m.includes("request trace")) return "HTTP_REQ_IN"
-    if (m.includes("http req")) return "HTTP_REQ_OUT"
+    if (m.includes("[gw_lib] http req") || m.includes("http req"))
+      return "HTTP_REQ_OUT"
+    if (m.includes("request trace") || s === "checkout.session.created")
+      return "HTTP_REQ_IN"
     if (m.includes("http res") || m.includes("response")) return "HTTP_RES"
     if (
       m.includes("update") ||
@@ -190,8 +217,6 @@ export class CheckoutMapper implements LogMapper {
       m.includes("resolving")
     )
       return "DB_OP"
-    if (s === "checkout.session.created") return "HTTP_REQ_IN"
-
     return "BACKEND_LOG"
   }
 }

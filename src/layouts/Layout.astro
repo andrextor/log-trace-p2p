@@ -3,41 +3,44 @@ import "../styles/global.css";
 import ThemeSelector from '../components/ThemeSelector.vue';
 
 interface Props {
-	title?: string;
+    title?: string;
 }
 const { title = "log-trace-p2p // Visualizador de Trazas" } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="es">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<title>{title}</title>
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <title>{title}</title>
+        
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+        
         <script is:inline>
-        const theme = (() => {
-            if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-                return localStorage.getItem('theme');
+            // Bloqueamos el renderizado hasta que sepamos el tema para evitar el flash blanco
+            const theme = (() => {
+                const localStorageTheme = localStorage.getItem('theme');
+                if (localStorageTheme !== null && localStorageTheme !== 'system') {
+                    return localStorageTheme;
+                }
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    return 'dark';
+                }
+                return 'light';
+            })();
+          
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
             }
-            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                return 'dark';
-            }
-            return 'light';
-        })();
-      
-        if (theme === 'light') {
-            document.documentElement.classList.remove('dark');
-        } else {
-            document.documentElement.classList.add('dark');
-        }
-        window.localStorage.setItem('theme', theme);
-    </script>
-	</head>
-	<body class="bg-slate-50 text-slate-900 dark:bg-[#030304] dark:text-slate-300 font-sans selection:bg-indigo-500/30 antialiased min-h-screen transition-colors duration-300">
+        </script>
+    </head>
+    <body class="bg-slate-50 text-slate-900 dark:bg-[#030304] dark:text-slate-300 font-sans selection:bg-indigo-500/30 antialiased min-h-screen transition-colors duration-300">
     
     <div 
         class="fixed inset-0 z-[-1] opacity-100" 
@@ -64,7 +67,7 @@ const { title = "log-trace-p2p // Visualizador de Trazas" } = Astro.props;
         </div>
     </nav>
 
-    <main class="relative max-w-7xl mx-auto px-4 py-8 md:px-6">
+    <main class="relative">
         <slot />
     </main>
 </body>
@@ -74,25 +77,22 @@ const { title = "log-trace-p2p // Visualizador de Trazas" } = Astro.props;
     :root {
         --font-sans: 'Inter', sans-serif;
         --font-mono: 'JetBrains Mono', monospace;
-        /* Rejilla para modo claro (líneas grises muy tenues) */
         --grid-pattern: linear-gradient(to right, #00000008 1px, transparent 1px), 
                         linear-gradient(to bottom, #00000008 1px, transparent 1px);
     }
 
-    /* Rejilla para modo oscuro (líneas blancas muy tenues) */
     .dark {
         --grid-pattern: linear-gradient(to right, #ffffff05 1px, transparent 1px), 
                         linear-gradient(to bottom, #ffffff05 1px, transparent 1px);
     }
     
-    /* Scrollbar reactiva */
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { 
         background: #cbd5e1; 
         border-radius: 10px; 
     }
-    .dark ::webkit-scrollbar-thumb { background: #1f2937; }
+    .dark ::-webkit-scrollbar-thumb { background: #1f2937; }
 
     html, body {
         margin: 0;
@@ -100,4 +100,8 @@ const { title = "log-trace-p2p // Visualizador de Trazas" } = Astro.props;
         min-height: 100vh;
         overflow-x: hidden;
     }
+
+    /* Animaciones globales */
+    .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+    .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

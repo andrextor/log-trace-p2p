@@ -18,7 +18,7 @@ export const ACTION_MAP: Record<string, ActionDetail> = {
     source: "FRONTEND",
   },
   index: {
-    message: "Vista iniciar sesión usuario",
+    message: "Vista metodos de pago",
     category: "BROWSER_LOAD",
     source: "FRONTEND",
   },
