@@ -11,4 +11,8 @@ export interface LogMapper {
    * Acción: Convierte la línea cruda en un evento bonito para el Timeline.
    */
   map(rawInput: any, rawLine: string, index: number): LogEvent
+
+  isMatch(event: LogEvent, targetId: string): boolean
+
+  getFilterIdentity(event: LogEvent, targetId: string): FilterIdentity
 }

@@ -10,9 +10,8 @@ const genericMapper = new GenericMapper()
 // Registro de estrategias por tipo de analizador
 const ANALYZER_STRATEGIES: Record<AnalyzerType, any> = {
   checkout: checkoutMapper,
-  rest: genericMapper, // Reemplazar por RestMapper cuando exista
-  micrositios: genericMapper, // Reemplazar por MicrositiosMapper cuando exista
-}
+  rest: genericMapper,
+  micrositios: genericMapper,
 
 /**
  * Procesa el string de entrada y lo convierte en eventos estructurados.
