@@ -11,7 +11,8 @@ export function useSessionFunnel() {
     const cs = Math.floor((ms % 1000) / 10)
 
     const pad = (n: number) => n.toString().padStart(2, "0")
-    return `${h}:${pad(m)}:${pad(s)};${pad(cs)}`
+    // CAMBIADO: Usamos punto (.) en lugar de punto y coma (;) para las centésimas
+    return `${h}:${pad(m)}:${pad(s)}.${pad(cs)}`
   }
 
   const generateReport = (events: LogEvent[]): SessionFunnelRow[] => {
