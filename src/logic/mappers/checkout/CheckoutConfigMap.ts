@@ -53,6 +53,21 @@ export const ACTION_MAP: Record<string, ActionDetail> = {
     source: "BACKEND",
   },
   // --- NUEVAS ACCIONES DETECTADAS ---
+  checkOtp: {
+    message: "Validación de OTP por el Usuario",
+    category: "USER_ACTION",
+    source: "FRONTEND",
+  },
+  interest: {
+    message: "Cálculo de Cuotas e Intereses",
+    category: "HTTP_REQ_IN",
+    source: "BACKEND",
+  },
+  "App\\Http\\Controllers\\Api\\V4\\ReturnController": {
+    message: "Retorno de Pasarela (3DS / Redirección)",
+    category: "RETURN_NOTIFICATION",
+    source: "BACKEND",
+  },
   "App\\Http\\Controllers\\Api\\V4\\BanksDataController": {
     message: "Consulta de lista de bancos",
     category: "HTTP_REQ_IN",

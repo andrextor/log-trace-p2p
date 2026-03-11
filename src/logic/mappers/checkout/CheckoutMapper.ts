@@ -31,7 +31,8 @@ export class CheckoutMapper implements LogMapper {
         (ctx.TENANT_DOMAIN.includes("checkout") ||
           ctx.TENANT_DOMAIN.includes("redirection"))) ||
       msg.includes("Request trace") ||
-      msg.includes("placetopay_event")
+      msg.includes("placetopay_event") ||
+      msg.includes("[GW_LIB]")
     )
   }
 
@@ -62,8 +63,6 @@ export class CheckoutMapper implements LogMapper {
     const action = ctx.action_method ? String(ctx.action_method).trim() : null
     const msgRaw = data.message ?? ""
 
-    // 1. DETERMINAR MENSAJE Y CATEGORÍA
-    // Buscamos en el ACTION_MAP usando el subType o el action (que puede ser el namespace del Controller)
     const actionKey = subType === "checkout.session.created" ? subType : action
     const knownAction = actionKey ? ACTION_MAP[actionKey] : null
 
@@ -71,13 +70,63 @@ export class CheckoutMapper implements LogMapper {
     let category: LogCategory = "BACKEND_LOG"
     let source = "BACKEND"
     let visualLevel: LogLevel | null = null
+    let provider: string | null = null
 
-    if (knownAction) {
+    // --- 1. REGLAS ESPECIALES PARA GATEWAY Y CORE ---
+    const isGatewayLog = msgRaw.includes("[GW_LIB]")
+    const isCoreApiLog = msgRaw === "HTTP Req" || msgRaw === "HTTP Res"
+    const requestUrl = ctx.request?.url || ctx.response?.url || ""
+
+    if (isGatewayLog) {
+      provider =
+        ctx.response?.body?.provider ||
+        ctx.request?.body?.payment?.provider ||
+        "GATEWAY"
+      category = msgRaw.includes("Req") ? "HTTP_REQ_OUT" : "HTTP_RES"
+
+      if (requestUrl.includes("/otp/generate"))
+        displayMessage = "Gateway: Generación de OTP"
+      else if (requestUrl.includes("/otp/validate"))
+        displayMessage = "Gateway: Validación de OTP"
+      else if (requestUrl.includes("/mpi/lookup"))
+        displayMessage = "Gateway: Consulta 3DS (MPI)"
+      else if (requestUrl.includes("/process"))
+        displayMessage = "Gateway: Procesar Pago"
+      else if (requestUrl.includes("/collect"))
+        displayMessage = "Gateway: Cobro / Collect"
+      else if (requestUrl.includes("/information"))
+        displayMessage = "Gateway: Consulta de Instrumento"
+      else
+        displayMessage = `Gateway: ${
+          msgRaw.includes("Req") ? "Petición Saliente" : "Respuesta"
+        }`
+    } else if (isCoreApiLog && requestUrl.includes("/core/tokenize")) {
+      provider = "CORE_API"
+      category = msgRaw.includes("Req") ? "HTTP_REQ_OUT" : "HTTP_RES"
+      displayMessage = msgRaw.includes("Req")
+        ? "Core: Solicitar Tokenización"
+        : "Core: Token Generado"
+
+      // --- 2. REGLAS PARA EVENTOS INTERNOS / BASE DE DATOS ---
+    } else if (
+      msgRaw.includes("Update session state trace") ||
+      msgRaw.includes("Define session trace")
+    ) {
+      category = "DB_OP"
+      displayMessage = "Actualización de Estado (Sesión)"
+    } else if (msgRaw.includes("Update transaction trace")) {
+      category = "DB_OP"
+      displayMessage = "Actualización de Estado (Transacción)"
+    } else if (msgRaw.includes("Opening 3DS lightbox")) {
+      category = "USER_ACTION"
+      displayMessage = "Despliegue de Lightbox 3DS"
+
+      // --- 3. FLUJO NORMAL POR ACTION_MAP ---
+    } else if (knownAction) {
       displayMessage = knownAction.message
       category = knownAction.category
       source = knownAction.source
 
-      // --- ENRIQUECIMIENTO DINÁMICO (Ej: BanksDataController + PSE) ---
       const gateway = ctx.body?.gateway || ctx.gateway || null
       if (gateway) {
         displayMessage += ` vía ${String(gateway).toUpperCase()}`
@@ -89,11 +138,11 @@ export class CheckoutMapper implements LogMapper {
       source = this.determineSource(data, ctx)
     }
 
-    // 2. GESTIÓN DE ERRORES (Validación vs Sistema)
+    // --- 4. GESTIÓN DE ERRORES ---
     const isValidationErr =
       subType === "request_not_valid" ||
       ctx.exception?.reason === "request_not_valid" ||
-      msgRaw.includes("request_not_valid")
+      msgRaw.toLowerCase().includes("error validation")
 
     const exception = ctx.exception || null
 
@@ -101,37 +150,45 @@ export class CheckoutMapper implements LogMapper {
       category = "ERROR"
       visualLevel = "ERROR"
       displayMessage = `Excepción: ${exception.message?.substring(0, 80)}...`
-    } else if (isValidationErr) {
+    } else if (isValidationErr || data.level === 500) {
       category = "ERROR"
       visualLevel = "ERROR"
-      displayMessage = "Error de Validación (Request)"
+      displayMessage = msgRaw.toLowerCase().includes("otp")
+        ? "Error de Validación OTP"
+        : "Error de Validación (Request)"
     }
 
-    // 3. EXTRACCIÓN DE HTTP INFO (Para subtítulo de LogCard)
+    // --- 5. EXTRACCIÓN DE RUTAS LIMPIAS ---
     const httpInfo = extractHttpFromMessage(msgRaw)
-    const rawUrl =
-      ctx.request?.url ||
-      ctx.response?.url ||
-      ctx.notification_url ||
-      httpInfo.path ||
-      ""
+    const rawUrlForEndpoint =
+      requestUrl || ctx.notification_url || httpInfo.path || ""
 
-    // Normalizamos el endpoint para que la UI lo detecte
-    const endpoint = rawUrl
-      ? normalizePath(rawUrl)
-      : isValidationErr
-      ? "Validation Layer"
-      : null
+    let endpoint = null
+    if (isGatewayLog || isCoreApiLog) {
+      try {
+        endpoint = rawUrlForEndpoint
+          ? new URL(rawUrlForEndpoint).pathname
+          : null
+      } catch {
+        endpoint = normalizePath(rawUrlForEndpoint)
+      }
+    } else {
+      endpoint = rawUrlForEndpoint
+        ? normalizePath(rawUrlForEndpoint)
+        : isValidationErr
+        ? "Validation Layer"
+        : null
+    }
 
     const method =
       ctx.request?.method ||
       httpInfo.method ||
       this.resolveMethod(ctx, action, subType)
 
-    // 4. CONSTRUCCIÓN DE DETALLES (Cumpliendo BaseDetails y CheckoutDetails)
-    const details: CheckoutDetails = {
+    // --- 6. CONSTRUCCIÓN DEL EVENTO ---
+    const details = {
       method,
-      endpoint, // <--- Este campo alimenta el subtítulo de la LogCard
+      endpoint,
       url: endpoint || undefined,
       statusCode:
         ctx.response?.status_code ??
@@ -142,8 +199,9 @@ export class CheckoutMapper implements LogMapper {
       aws_request_id: ctx.aws_request_id || ctx.payload?.aws_request_id || null,
       subType,
       source,
+      provider,
       payload: ctx.payload || ctx.data || ctx,
-    }
+    } as CheckoutDetails
 
     return {
       id: buildEventId(ctx, index),
@@ -184,7 +242,7 @@ export class CheckoutMapper implements LogMapper {
     if (subType === "checkout.session.created" || action === "createSession")
       return "POST"
     if (action === "show" || action === "index") return "GET"
-    if (action?.includes("Controller")) return "POST" // Acciones de controladores suelen ser POST
+    if (action?.includes("Controller")) return "POST"
     return "POST"
   }
 

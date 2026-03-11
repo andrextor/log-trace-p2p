@@ -62,6 +62,7 @@ export interface CheckoutDetails extends BaseDetails {
   transactionId?: string | number
   subType?: string | null
   aws_request_id?: string | null
+  provider?: string | null
 }
 
 export interface RestDetails extends BaseDetails {
