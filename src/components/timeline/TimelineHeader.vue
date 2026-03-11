@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import LogExporter from '../LogExporter.vue';
+import { useLogStore } from '../../store/logStore';
+import { APP_TYPES } from '../../logic/types';
 
 defineProps<{
   search: string;
   activeFilterInfo: any;
   visibleCount: number;
+  isFunnelVisible?: boolean; // Nueva prop para cambiar el texto del botón
 }>();
 
-const emit = defineEmits(['update:search', 'clearSearch', 'clearFilter']);
+const emit = defineEmits(['update:search', 'clearSearch', 'clearFilter', 'toggleFunnel']);
+const store = useLogStore();
 </script>
 
 <template>
   <header class="shrink-0 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
     <div class="flex items-center gap-3 w-full md:w-auto flex-1">
-      
       <div class="relative group flex-1 max-w-md">
         <span class="absolute left-3.5 top-3 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -51,8 +54,25 @@ const emit = defineEmits(['update:search', 'clearSearch', 'clearFilter']);
         <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Resultados</span>
         <span class="text-sm font-mono font-bold text-slate-700 dark:text-indigo-400">{{ visibleCount.toLocaleString() }}</span>
       </div>
+      
       <div class="h-8 w-px bg-slate-200 dark:bg-white/10"></div>
-      <LogExporter />
+      
+      <div class="flex items-center gap-2">
+        <button 
+          v-if="store.activeTab === APP_TYPES.CHECKOUT && visibleCount > 0"
+          @click="emit('toggleFunnel')"
+          class="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 rounded-xl border border-indigo-200 dark:border-indigo-500/20 transition-all active:scale-95 group"
+        >
+          <svg class="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          <span class="text-xs font-bold uppercase tracking-tight">
+            {{ isFunnelVisible ? 'Cerrar Funnel' : 'Ver Funnel' }}
+          </span>
+        </button>
+
+        <LogExporter />
+      </div>
     </div>
   </header>
 </template>
