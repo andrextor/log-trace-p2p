@@ -14,6 +14,7 @@ import AnalyzerControlBar from './analyzer/AnalyzerControlBar.vue';
 import LogUploader from './LogUploader.vue';
 import LogTimeline from './LogTimeline.vue';
 import AnalysisProgress from './analyzer/AnalysisProgress.vue';
+import LogExporter from './LogExporter.vue'; // <-- Importamos tu botón original de JSON
 
 const store = useLogStore();
 
@@ -86,7 +87,11 @@ const handleUploadComplete = async () => { await nextTick(); toast.success("Logs
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6  py-2 min-h-screen font-sans text-slate-900 dark:text-slate-100 transition-colors duration-500">
     
-    <AnalyzerHeader :total-events="store.events.length" class="mb-10" />
+    <AnalyzerHeader :total-events="store.events.length" class="mb-10">
+      <template #actions v-if="hasEventsForCurrentTab">
+         <LogExporter />
+      </template>
+    </AnalyzerHeader>
 
     <AnalyzerTabs :active-tab="store.activeTab" :counts="store.counts" @change="setTab" class="mb-10" />
 

@@ -99,3 +99,29 @@ export interface LogEvent {
   context: any
   rawStream?: string
 }
+
+export interface SessionFunnelSteps {
+  created: number
+  entry: number
+  show: number
+  information: number
+  interest: number
+  generateOtp: number
+  threeDS: number
+  process: number
+}
+
+export interface SessionFunnelRow {
+  sessionId: string
+  sessionType: "PAYMENT" | "COLLECT" | "UNKNOWN"
+  steps: SessionFunnelSteps
+  _rawTimestamps: {
+    created: number | null
+    entry: number | null
+    show: number | null
+  }
+  durations: {
+    timeToEntry: string | null
+    timeToShow: string | null
+  }
+}

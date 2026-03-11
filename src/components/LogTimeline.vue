@@ -8,8 +8,12 @@ import TimelineHeader from './timeline/TimelineHeader.vue';
 import TimelineGroup from './timeline/TimelineGroup.vue';
 import ParsingErrorsModal from './ParsingErrorsModal.vue';
 
+// --- 1. NUEVO: Importamos el reporte del funnel ---
+import SessionFunnelReport from './funnels/SessionFunnelReport.vue';
+
 const store = useLogStore();
 const showErrorsModal = ref(false);
+const showFunnel = ref(false); // <-- NUEVO: Variable para abrir/cerrar el panel
 const MAX_INITIAL_GROUPS = 40;
 
 const timelineGroups = computed(() => {
@@ -41,9 +45,17 @@ const isLogHighlighted = (event: any) => {
       v-model:search="store.search"
       :active-filter-info="activeFilterInfo"
       :visible-count="store.filteredEvents.length"
+      :is-funnel-visible="showFunnel"
       @clearSearch="store.search = ''"
       @clearFilter="store.highlightedSessionId = null"
+      @toggleFunnel="showFunnel = !showFunnel"
     />
+
+    <transition name="slide-fade">
+      <div v-if="showFunnel" class="mb-4 shrink-0">
+        <SessionFunnelReport />
+      </div>
+    </transition>
 
     <div class="flex-1 overflow-y-auto px-2 md:px-4 custom-scrollbar scroll-smooth pb-20">
       <div class="relative max-w-5xl mx-auto py-4">
@@ -69,6 +81,14 @@ const isLogHighlighted = (event: any) => {
 /* Las animaciones de transición se mantienen aquí por ser globales del módulo */
 .scale-enter-active, .scale-leave-active { transition: all 0.2s ease; }
 .scale-enter-from, .scale-leave-to { opacity: 0; transform: scale(0.9); }
+
+/* --- NUEVO: Animación para que el Funnel baje suavemente --- */
+.slide-fade-enter-active { transition: all 0.3s ease-out; }
+.slide-fade-leave-active { transition: all 0.2s cubic-bezier(1, 0.5, 0.8, 1); }
+.slide-fade-enter-from, .slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
+}
 
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.2); border-radius: 10px; }
