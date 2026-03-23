@@ -1,84 +1,17 @@
-import type { LogCategory } from "../../types"
+export type LogCategory =
+  | "USER_ACTION"
+  | "BROWSER_LOAD"
+  | "HTTP_REQ_IN"
+  | "HTTP_REQ_OUT"
+  | "HTTP_RES"
+  | "DB_OP"
+  | "NOTIFICATION"
+  | "BACKEND_LOG"
+  | "APPLICATION_LOG"
+  | "RETURN_NOTIFICATION"
+  | "ERROR"
+  | "GENERIC"
 
-export interface ActionDetail {
-  message: string
-  category: LogCategory
-  source: "FRONTEND" | "BACKEND"
-}
-
-export const ACTION_MAP: Record<string, ActionDetail> = {
-  entry: {
-    message: "Visualización de interfaz en el navegador (SPA)",
-    category: "BROWSER_LOAD",
-    source: "FRONTEND",
-  },
-  show: {
-    message: "Sesión cargada correctamente en el SPA",
-    category: "BROWSER_LOAD",
-    source: "FRONTEND",
-  },
-  index: {
-    message: "Vista metodos de pago",
-    category: "BROWSER_LOAD",
-    source: "FRONTEND",
-  },
-  state: {
-    message: "Vista resultado sesión",
-    category: "BROWSER_LOAD",
-    source: "FRONTEND",
-  },
-  process: {
-    message: "Acción del usuario: Procesar pago",
-    category: "USER_ACTION",
-    source: "FRONTEND",
-  },
-  transaction: {
-    message: "Notificación de transacción: Actualización de estado de pago",
-    category: "RETURN_NOTIFICATION",
-    source: "BACKEND",
-  },
-  "checkout.session.created": {
-    message: "Solicitud de creación de sesión: Inicialización de flujo de pago",
-    category: "HTTP_REQ_IN",
-    source: "BACKEND",
-  },
-  sessionInformation: {
-    message: "Solicitud información de sesión (Api Publica)",
-    category: "HTTP_REQ_IN",
-    source: "BACKEND",
-  },
-  createSession: {
-    message: "Creación de Sesión (API Backend)",
-    category: "HTTP_REQ_IN",
-    source: "BACKEND",
-  },
-  // --- NUEVAS ACCIONES DETECTADAS ---
-  checkOtp: {
-    message: "Validación de OTP por el Usuario",
-    category: "USER_ACTION",
-    source: "FRONTEND",
-  },
-  interest: {
-    message: "Cálculo de Cuotas e Intereses",
-    category: "HTTP_REQ_IN",
-    source: "BACKEND",
-  },
-  "App\\Http\\Controllers\\Api\\V4\\ReturnController": {
-    message: "Retorno de Pasarela (3DS / Redirección)",
-    category: "RETURN_NOTIFICATION",
-    source: "BACKEND",
-  },
-  "App\\Http\\Controllers\\Api\\V4\\BanksDataController": {
-    message: "Consulta de lista de bancos",
-    category: "HTTP_REQ_IN",
-    source: "BACKEND",
-  },
-}
-
-/**
- * Configuración de Estilos Adaptativa
- * Usamos clases de Tailwind que reaccionan al modo .dark
- */
 export const CATEGORY_STYLES: Record<
   LogCategory,
   { label: string; classes: string }
@@ -123,7 +56,6 @@ export const CATEGORY_STYLES: Record<
     classes:
       "bg-slate-100 text-slate-600 border-slate-200 dark:bg-green-500/5 dark:text-green-400/80 dark:border-green-500/10",
   },
-  // --- NUEVA CATEGORÍA PARA LARAVEL.LOG ---
   APPLICATION_LOG: {
     label: "log de aplicación",
     classes:

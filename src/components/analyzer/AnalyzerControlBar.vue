@@ -13,7 +13,7 @@ defineEmits(['toggle-errors', 'reset-filters', 'clear-data']);
 
 <template>
   <div
-    class="flex flex-wrap items-center justify-between bg-white/40 dark:bg-[#0a0a0b]/40 backdrop-blur-md p-2 pl-4 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm gap-4"
+    class="flex flex-wrap items-center justify-between w-full gap-4 transition-all"
   >
     <div class="flex items-center gap-4">
       <div class="flex items-center gap-2.5">

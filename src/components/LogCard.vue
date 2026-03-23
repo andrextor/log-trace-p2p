@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { useLogStore } from '../store/logStore'; 
 import { APP_TYPES, type LogEvent } from '../logic/types'; 
-import { CATEGORY_STYLES } from '../logic/mappers/checkout/CheckoutConfigMap';
+import { CATEGORY_STYLES } from '../constants/ui-styles';
 
 // Importación de los cuerpos específicos
 import CheckoutBody from './log-bodies/checkout/CheckoutBody.vue'; 

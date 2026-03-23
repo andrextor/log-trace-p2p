@@ -1,10 +1,10 @@
 import { defineStore } from "pinia"
 import { ref, computed, shallowRef } from "vue"
 import { APP_TYPES, type LogEvent, type AnalyzerType } from "../logic/types"
-import { MapperFactory } from "../logic/mappers/MapperFactory"
-import { LogIngestor } from "../logic/parsers/LogIngestor"
+import { P2PParserEngine } from "@andrextor_ia11012/p2p-log-parser"
+import { LogUIHelper } from "../logic/ui/LogUIHelper"
 
-export type ViewMode = AnalyzerType
+export type ViewMode = AnalyzerType | "ALL"
 
 interface TimeGroup {
   label: string
@@ -24,6 +24,8 @@ export const useLogStore = defineStore("logs", () => {
   const parsingErrors = ref<string[]>([])
   const isProcessing = ref(false)
   const progress = ref(0)
+  const sessionIds = ref<string[]>([])
+  const sessionFilter = ref<string | null>(null)
 
   /**
    * Registro de huellas digitales (Fingerprints) para evitar duplicados.
@@ -61,17 +63,18 @@ export const useLogStore = defineStore("logs", () => {
     const currentTab = activeTab.value
 
     return allEvents.filter((event) => {
-      // 1. Filtro de Aplicación: Garantiza que no veas data de Checkout en REST
       if (currentTab !== "ALL" && event.appType !== currentTab) return false
 
-      // 2. Filtro de Nivel
       if (activeLevel !== "ALL" && event.level !== activeLevel) return false
 
-      // 3. Filtro de Identidad (Sesiones/AWS IDs)
+      if (sessionFilter.value) {
+        const details = event.details as any
+        if (String(details?.sessionId) !== sessionFilter.value) return false
+      }
+
       if (highlightedSessionId.value) {
         const targetId = String(highlightedSessionId.value)
-        const mapper = MapperFactory.getMapper(event.appType)
-        if (!mapper.isMatch(event, targetId)) return false
+        if (!LogUIHelper.isMatch(event, targetId)) return false
       }
 
       // 4. Búsqueda Global por texto
@@ -131,57 +134,45 @@ export const useLogStore = defineStore("logs", () => {
     progress.value = 0
 
     try {
-      const lines = rawContent.split("\n").filter((l) => l.trim().length > 5)
-      const totalLines = lines.length
+      const engine = new P2PParserEngine()
+
+      // Allow UI to update loading state
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      const result = engine.parse(rawContent, type)
+      console.log(result)
       const newEvents: LogEvent[] = []
-      const CHUNK_SIZE = 200
 
-      for (let i = 0; i < totalLines; i++) {
-        const line = lines[i].trim()
-
-        // 1. Ingestión y detección automática de App
-        const parseResults = LogIngestor.parse(line, type)
-
-        for (const normalizedData of parseResults) {
-          // Si detectamos logs de otra App, actualizamos la pestaña para que la UI viaje al timeline
-          if (
-            activeTab.value !== normalizedData.inferredApp &&
-            activeTab.value !== "ALL"
-          ) {
-            activeTab.value = normalizedData.inferredApp
-          }
-
-          const msgStr = String(normalizedData.message || "")
-          const fingerprint = `${normalizedData.timestamp}_${msgStr.slice(
-            0,
-            60
-          )}`
-
-          if (!processedHashes.has(fingerprint)) {
-            try {
-              // 2. Mapeo Dinámico según lo que detectó el Ingestor
-              const dynamicMapper = MapperFactory.getMapper(
-                normalizedData.inferredApp
-              )
-
-              const event = dynamicMapper.map(
-                normalizedData,
-                line,
-                events.value.length + newEvents.length
-              )
-
-              newEvents.push(event)
-              processedHashes.add(fingerprint)
-            } catch (e) {
-              parsingErrors.value.push(line)
-            }
-          }
+      for (const event of result.events) {
+        if (
+          activeTab.value !== event.appType &&
+          activeTab.value !== "ALL"
+        ) {
+          activeTab.value = event.appType
         }
 
-        // 3. UI Breathing: Evita que el navegador se bloquee al 0%
-        if (i % CHUNK_SIZE === 0 || i === totalLines - 1) {
-          progress.value = Math.round(((i + 1) / totalLines) * 100)
-          await new Promise((resolve) => setTimeout(resolve, 0))
+        const msgStr = String(event.message || "")
+        const fingerprint = `${event.timestamp}_${msgStr.slice(0, 60)}`
+
+        if (!processedHashes.has(fingerprint)) {
+          newEvents.push(event)
+          processedHashes.add(fingerprint)
+        }
+      }
+
+      if (result.metadata?.sessionIds?.length) {
+        const existing = new Set(sessionIds.value)
+        for (const sid of result.metadata.sessionIds) {
+          if (!existing.has(sid)) sessionIds.value.push(sid)
+        }
+        if (sessionIds.value.length > 1 && !sessionFilter.value) {
+          sessionFilter.value = sessionIds.value[0]
+        }
+      }
+
+      if (result.errors && result.errors.length > 0) {
+        for (const err of result.errors) {
+          parsingErrors.value.push(`Línea ${err.line}: ${err.reason} - ${err.content}`)
         }
       }
 
@@ -200,19 +191,19 @@ export const useLogStore = defineStore("logs", () => {
    * Elimina solo los logs de la aplicación actual sin tocar el resto.
    */
   function clearLogsByApp(type: AnalyzerType) {
-    // 1. Filtramos para mantener solo lo que NO es de esta aplicación
     events.value = events.value.filter((e) => e.appType !== type)
 
-    // 2. RE-SINCRONIZACIÓN DE HASHES:
-    // Vaciamos el Set y lo volvemos a llenar con los logs que quedaron.
-    // Esto permite volver a subir el mismo archivo borrado sin que sea ignorado.
     processedHashes.clear()
     events.value.forEach((e) => {
       const fingerprint = `${e.timestamp}_${e.message.slice(0, 60)}`
       processedHashes.add(fingerprint)
     })
 
-    // Limpiamos errores de parseo (opcional)
+    if (type === APP_TYPES.CHECKOUT) {
+      sessionIds.value = []
+      sessionFilter.value = null
+    }
+
     parsingErrors.value = []
   }
 
@@ -223,6 +214,8 @@ export const useLogStore = defineStore("logs", () => {
     search.value = ""
     levelFilter.value = "ALL"
     highlightedSessionId.value = null
+    sessionIds.value = []
+    sessionFilter.value = null
     progress.value = 0
   }
 
@@ -240,6 +233,8 @@ export const useLogStore = defineStore("logs", () => {
     highlightedSessionId,
     isProcessing,
     progress,
+    sessionIds,
+    sessionFilter,
     stats,
     counts,
     filteredEvents,

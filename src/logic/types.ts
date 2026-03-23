@@ -56,11 +56,12 @@ export interface BaseDetails {
 }
 
 export interface CheckoutDetails extends BaseDetails {
-  url?: string // Mantenido por compatibilidad, pero el mapper debería llenar 'endpoint'
+  url?: string
   duration?: string
   sessionId?: string | number
   transactionId?: string | number
   subType?: string | null
+  awsRequestId?: string | null
   aws_request_id?: string | null
   provider?: string | null
 }

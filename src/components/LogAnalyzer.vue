@@ -5,21 +5,20 @@ import "vue-sonner/style.css";
 
 import { useLogStore } from '../store/logStore';
 import { APP_TYPES, ANALYZER_NAMES } from '../logic/types';
-import { MapperFactory } from '../logic/mappers/MapperFactory';
+import { LogUIHelper } from '../logic/ui/LogUIHelper';
 
 // Sub-componentes
-import AnalyzerHeader from './analyzer/AnalyzerHeader.vue';
-import AnalyzerTabs from './analyzer/AnalyzerTabs.vue';
 import AnalyzerControlBar from './analyzer/AnalyzerControlBar.vue';
 import LogUploader from './LogUploader.vue';
 import LogTimeline from './LogTimeline.vue';
 import AnalysisProgress from './analyzer/AnalysisProgress.vue';
-import LogExporter from './LogExporter.vue'; // <-- Importamos tu botón original de JSON
+import LogExporter from './LogExporter.vue';
+import ThemeSelector from './ThemeSelector.vue'; 
 
 const store = useLogStore();
 
 /**
- * 1. MEMORIA DE FILTROS POR APLICACIÓN
+ * MEMORIA DE FILTROS POR APLICACIÓN
  */
 const filtersCache = ref({
   [APP_TYPES.CHECKOUT]: { search: '', highlighted: null as any, level: 'ALL' },
@@ -38,19 +37,25 @@ const hasEventsForCurrentTab = computed(() => {
 const activeFilterTheme = computed(() => {
   if (!store.highlightedSessionId) return null;
   const targetId = String(store.highlightedSessionId);
-  const match = store.events.find(e => e.appType === store.activeTab && MapperFactory.getMapper(e.appType).isMatch(e, targetId));
+  const match = store.events.find(e => e.appType === store.activeTab && LogUIHelper.isMatch(e, targetId));
   if (!match) return null;
-  const identity = MapperFactory.getMapper(match.appType).getFilterIdentity(match, targetId);
+  const identity = LogUIHelper.getFilterIdentity(match, targetId);
   return { label: identity.label, color: identity.colorClass, value: targetId };
 });
 
+const formatNumber = (num: number) => {
+  return num > 999 ? (num/1000).toFixed(1) + 'k' : num;
+};
+
 /**
- * 2. CAMBIO DE PESTAÑA SIN CRUCE
+ * CAMBIO DE PESTAÑA SIN CRUCE
  */
 const setTab = (newTab: any) => {
+  if (store.activeTab === newTab) return;
   const oldTab = store.activeTab as keyof typeof filtersCache.value;
   filtersCache.value[oldTab] = { search: store.search, highlighted: store.highlightedSessionId, level: store.levelFilter };
   store.activeTab = newTab;
+  store.sessionFilter = null;
   const cached = filtersCache.value[newTab as keyof typeof filtersCache.value];
   store.search = cached.search; store.highlightedSessionId = cached.highlighted; store.levelFilter = cached.level;
 };
@@ -78,83 +83,139 @@ const handleUploadComplete = async () => { await nextTick(); toast.success("Logs
 
 <template>
   <Toaster position="top-right" richColors theme="system" />
-
+  
   <AnalysisProgress 
     v-if="store.isProcessing" 
     :is-processing="store.isProcessing" 
     :progress="store.progress" 
   />
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6  py-2 min-h-screen font-sans text-slate-900 dark:text-slate-100 transition-colors duration-500">
+  <div class="flex flex-col min-h-screen w-full font-sans text-slate-900 dark:text-slate-100 transition-colors duration-500">
     
-    <AnalyzerHeader :total-events="store.events.length" class="mb-10">
-      <template #actions v-if="hasEventsForCurrentTab">
-         <LogExporter />
-      </template>
-    </AnalyzerHeader>
-
-    <AnalyzerTabs :active-tab="store.activeTab" :counts="store.counts" @change="setTab" class="mb-10" />
-
-    <transition name="fade" mode="out-in">
-      <div v-if="hasEventsForCurrentTab" key="timeline" class="space-y-6">
-        <AnalyzerControlBar 
-          :active-tab="store.activeTab" 
-          :active-filter-theme="activeFilterTheme"
-          :stats="store.stats"
-          :level-filter="store.levelFilter"
-          @toggle-errors="toggleErrorFilter"
-          @reset-filters="() => { store.levelFilter = 'ALL'; store.search = ''; store.highlightedSessionId = null; }"
-          @clear-data="handleClearContext"
-        >
-          <template #filter-chip>
-            <Transition name="scale" mode="out-in">
-              <div v-if="activeFilterTheme" 
-                  class="flex items-center gap-2 px-5 py-2 rounded-2xl border text-[10px] font-black uppercase tracking-widest animate-in zoom-in"
-                  :class="activeFilterTheme.color === 'orange' ? 'bg-orange-500/10 border-orange-500/20 text-orange-500' : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500'">
-                {{ activeFilterTheme.label }}: <span class="font-mono text-xs">{{ activeFilterTheme.value }}</span>
-              </div>
-            </Transition>
-          </template>
-        </AnalyzerControlBar>
-
-        <LogTimeline />
-      </div>
-
-      <div v-else key="uploader" class="flex flex-col items-center py-4 animate-in fade-in slide-in-from-bottom-6 duration-700">
-        <div class="text-center mb-12 space-y-6">
-          
-          <div class="flex items-center justify-center gap-4">
-            <div class="text-indigo-600 dark:text-indigo-400">
-                <svg v-if="store.activeTab === APP_TYPES.CHECKOUT" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <svg v-else class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                </svg>
-            </div>
-            <h2 class="text-2xl font-black uppercase tracking-tighter">
-                Analizador <span class="text-indigo-600 dark:text-indigo-400">{{ ANALYZER_NAMES[store.activeTab as keyof typeof ANALYZER_NAMES] }}</span>
-            </h2>
+    <!-- UNIFIED APP BAR -->
+    <header class="sticky top-0 z-50 bg-white/80 dark:bg-[#0a0a0b]/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/5 transition-colors">
+      <div class="px-4 sm:px-6 h-14 flex items-center justify-between w-full">
+        
+        <!-- Logo & Branding -->
+        <div class="flex items-center gap-3 w-1/4">
+          <button @click="handleClearContext" class="relative w-8 h-8 md:w-7 md:h-7 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-center justify-center shadow-sm hover:scale-105 transition-transform group">
+            <span class="text-indigo-600 dark:text-indigo-400 font-black text-[11px] md:text-[10px] group-hover:block">P2P</span>
+          </button>
+          <div class="hidden md:flex flex-col cursor-default">
+            <span class="font-mono font-bold text-slate-900 dark:text-slate-100 text-[13px] tracking-tight leading-none">log-trace-analyzer</span>
+            <span class="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5">Engine v4</span>
           </div>
-          
-          <p class="text-[11px] text-slate-500 max-w-md mx-auto font-bold uppercase tracking-[0.15em] leading-relaxed opacity-70 border-t border-slate-100 dark:border-white/5 pt-4">
-            <template v-if="store.activeTab === APP_TYPES.CHECKOUT">
-              Analiza flujos de <span class="text-indigo-600">Checkout</span>. Identifica abandonos, errores de sesión y comportamiento del usuario.
-            </template>
-            <template v-else>
-              Analiza respuestas de <span class="text-indigo-600">Proveedores</span>. Depura fallos, errores 5xx y trazabilidad técnica de la API REST.
-            </template>
-          </p>
         </div>
 
-        <LogUploader :target-type="store.activeTab" @viewResults="handleUploadComplete" />
+        <!-- Segmented Tabs (Center) -->
+        <div class="flex-1 flex justify-center w-2/4">
+          <div class="flex items-center p-1 bg-slate-100/60 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-xl shadow-inner backdrop-blur-sm">
+            <button
+              v-for="type in [APP_TYPES.CHECKOUT, APP_TYPES.REST]" :key="type"
+              @click="setTab(type)"
+              class="relative px-3 py-1 sm:px-4 sm:py-1.5 text-[10px] md:text-xs font-black uppercase tracking-widest rounded-lg transition-all duration-300 flex items-center gap-2"
+              :class="store.activeTab === type 
+                ? 'bg-white dark:bg-[#1a1c23] text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-slate-200/50 dark:ring-white/10' 
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+            >
+              <component :is="'svg'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path v-if="type === APP_TYPES.CHECKOUT" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </component>
+              <span class="hidden sm:inline">{{ ANALYZER_NAMES[type as keyof typeof ANALYZER_NAMES] }}</span>
+              <transition name="scale">
+                <span v-if="store.counts[type] > 0"
+                      class="flex items-center justify-center px-1.5 h-4 min-w-[16px] text-[8px] rounded font-mono bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/20">
+                  {{ formatNumber(store.counts[type]) }}
+                </span>
+              </transition>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Actions (Data Export + Theme) -->
+        <div class="flex items-center justify-end gap-2 sm:gap-4 w-1/4">
+          <transition name="fade">
+            <LogExporter v-if="hasEventsForCurrentTab" class="hidden sm:flex" />
+          </transition>
+          <ThemeSelector />
+        </div>
+
       </div>
-    </transition>
+    </header>
+
+    <!-- MAIN VIEW -->
+    <main class="flex-1 w-full bg-slate-50/30 dark:bg-transparent relative">
+      <transition name="fade" mode="out-in">
+        
+        <div v-if="hasEventsForCurrentTab" key="timeline" class="h-full flex flex-col">
+          <!-- Sleek Sub-Header Control Bar -->
+          <div class="sticky top-14 z-40 bg-white/70 dark:bg-[#0a0a0b]/70 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/5 py-3 px-4 sm:px-6 w-full shadow-sm">
+             <div class="max-w-7xl mx-auto w-full">
+               <AnalyzerControlBar 
+                 :active-tab="store.activeTab" 
+                 :active-filter-theme="activeFilterTheme"
+                 :stats="store.stats"
+                 :level-filter="store.levelFilter"
+                 @toggle-errors="toggleErrorFilter"
+                 @reset-filters="() => { store.levelFilter = 'ALL'; store.search = ''; store.highlightedSessionId = null; }"
+                 @clear-data="handleClearContext"
+               >
+                 <template #filter-chip>
+                   <Transition name="scale" mode="out-in">
+                     <div v-if="activeFilterTheme" 
+                         class="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-widest bg-white dark:bg-white/5 shadow-sm"
+                         :class="activeFilterTheme.color === 'orange' ? 'border-orange-500/20 text-orange-500' : 'border-indigo-500/20 text-indigo-500'">
+                       {{ activeFilterTheme.label }}: <span class="font-mono text-[10px]">{{ activeFilterTheme.value }}</span>
+                     </div>
+                   </Transition>
+                 </template>
+               </AnalyzerControlBar>
+             </div>
+          </div>
+
+          <!-- Timeline Content -->
+          <div class="flex-1 w-full px-2 sm:px-6 py-4 custom-scrollbar">
+            <div class="max-w-7xl mx-auto w-full pb-20">
+              <LogTimeline />
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty / Uploader State -->
+        <div v-else key="uploader" class="h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-4 animate-in fade-in slide-in-from-bottom-6 duration-700 w-full max-w-7xl mx-auto">
+          <div class="text-center mb-10 space-y-4">
+            <div class="flex flex-col items-center justify-center gap-4">
+              <div class="p-4 bg-indigo-500/10 rounded-2xl ring-1 ring-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-indigo-500/10">
+                  <svg v-if="store.activeTab === APP_TYPES.CHECKOUT" class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <svg v-else class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                  </svg>
+              </div>
+              <h1 class="text-3xl font-black uppercase tracking-tighter italic">
+                  Analizador <span class="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">{{ ANALYZER_NAMES[store.activeTab as keyof typeof ANALYZER_NAMES] }}</span>
+              </h1>
+            </div>
+            <p class="text-xs text-slate-500 max-w-md mx-auto font-bold uppercase tracking-[0.1em] leading-relaxed opacity-80 pt-2">
+              <template v-if="store.activeTab === APP_TYPES.CHECKOUT">
+                Sube trazas de checkout para analizar conversiones y abandonos.
+              </template>
+              <template v-else>
+                Sube trazas REST para depurar 5xx y fallos técnicos.
+              </template>
+            </p>
+          </div>
+          <LogUploader :target-type="store.activeTab" @viewResults="handleUploadComplete" />
+        </div>
+
+      </transition>
+    </main>
   </div>
 </template>
 
 <style scoped>
-
 .scale-enter-active, .scale-leave-active { transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .scale-enter-from, .scale-leave-to { opacity: 0; transform: scale(0.9); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
