@@ -10,7 +10,6 @@ const props = defineProps<{
 const emit = defineEmits<(e: "filter-id", id: string | number) => void>();
 
 const copiedPayload = ref(false);
-const copiedEndpoint = ref(false);
 
 async function copyToClipboard(
 	text: string | undefined | null,
@@ -54,8 +53,6 @@ const errorDetail = computed(() => {
 	}
 	return null;
 });
-const handleCopyEndpoint = () =>
-	copyToClipboard(props.details.endpoint, copiedEndpoint);
 const handleCopyPayload = () =>
 	copyToClipboard(
 		JSON.stringify(props.details.payload, null, 2),
@@ -86,27 +83,6 @@ const handleCopyPayload = () =>
 
     <!-- Section: Raw Data -->
     <div class="space-y-5 pt-4">
-      <!-- Target Endpoint Box -->
-      <div v-if="details.endpoint" class="space-y-3">
-        <div class="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2">
-          <div class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-            <h4 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Network Target</h4>
-          </div>
-          <button @click="handleCopyEndpoint" 
-                  class="group flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-bold transition-all bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 shadow-sm"
-                  :class="copiedEndpoint ? 'text-emerald-500 border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10' : 'text-slate-500 hover:text-indigo-600 hover:border-indigo-500/30'">
-            <Transition mode="out-in">
-              <svg v-if="!copiedEndpoint" key="copy" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-              <svg v-else key="check" class="w-3.5 h-3.5 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-            </Transition>
-            {{ copiedEndpoint ? 'Copied URL' : 'Copy URL' }}
-          </button>
-        </div>
-        <div class="p-4 bg-slate-50 dark:bg-[#131315] rounded-xl border border-slate-200 dark:border-white/5 font-mono text-[11px] sm:text-xs break-all text-slate-600 dark:text-slate-400 hover:border-indigo-500/40 transition-colors shadow-inner selection:bg-indigo-500/30">
-          {{ details.endpoint }}
-        </div>
-      </div>
 
       <!-- JSON Payload Tool -->
       <div v-if="details.payload" class="space-y-3">
