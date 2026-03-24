@@ -24,27 +24,6 @@ async function copyToClipboard(
 	}, 2000);
 }
 
-const contextChips = computed(() => {
-	const d = props.details;
-	const p = (d.payload || {}) as Record<string, unknown>;
-	const body = (p.body || {}) as Record<string, unknown>;
-	return [
-		{ label: "Session ID", value: d.sessionId, filterable: true },
-		{ label: "Transaction", value: d.transactionId, filterable: true },
-		{ label: "Provider", value: d.provider, filterable: false },
-		{
-			label: "Gateway",
-			value: body?.gateway || p.gateway || null,
-			filterable: false,
-		},
-		{
-			label: "Trace ID",
-			value: d.awsRequestId || d.aws_request_id,
-			filterable: true,
-		},
-	].filter((c) => c.value);
-});
-
 const stateTransition = computed(() => {
 	const p = (props.details.payload || {}) as Record<string, unknown>;
 	const actual = (p.actual_session_state || p.session_state) as
@@ -88,20 +67,7 @@ const handleCopyPayload = () =>
 
 <template>
   <div class="flex flex-col gap-6 w-full max-w-full font-sans">
-    <!-- Header / Identification -->
-    <div class="flex items-center justify-between bg-white dark:bg-white/5 p-3 rounded-xl border border-slate-200/50 dark:border-white/5 shadow-sm">
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2 bg-slate-50 dark:bg-black/20 px-2.5 py-1 rounded-md border border-slate-100 dark:border-white/5">
-          <div class="w-2 h-2 rounded-full animate-pulse" :class="details.source === 'FRONTEND' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]'"></div>
-          <span class="text-[10px] font-black tracking-widest text-slate-600 dark:text-slate-300">{{ details.source || 'BACKEND' }}</span>
-        </div>
-        <div class="w-px h-5 bg-slate-200 dark:bg-white/10"></div>
-        <span class="text-[11px] font-mono font-bold text-slate-500 uppercase flex items-center gap-1.5">
-          <svg class="w-3.5 h-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-          {{ details.subType || 'General Event' }}
-        </span>
-      </div>
-    </div>
+
 
     <!-- Error Banner -->
     <div v-if="errorDetail" class="relative overflow-hidden bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 sm:p-5 shadow-sm">
@@ -120,38 +86,15 @@ const handleCopyPayload = () =>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Section: Context -->
-      <div class="space-y-3" v-if="contextChips.length > 0">
-        <div class="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
-          <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-          <h4 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Execution Context</h4>
-        </div>
-        <div class="bg-white dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-xl divide-y divide-slate-100 dark:divide-white/5 shadow-sm overflow-hidden">
-          <div v-for="chip in contextChips" :key="chip.label" 
-               class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 group/chip hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors gap-2 sm:gap-4">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider w-full sm:w-1/3 shrink-0">{{ chip.label }}</span>
-            <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-2/3">
-              <span class="text-[11px] sm:text-xs font-mono text-slate-700 dark:text-slate-300 truncate font-semibold select-all" :title="String(chip.value)">{{ chip.value }}</span>
-              <button v-if="chip.filterable" @click.stop="emit('filter-id', chip.value as string | number)" 
-                      class="shrink-0 p-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500 hover:text-white rounded-lg transition-all shadow-sm group/btn"
-                      title="Filter by this ID">
-                <svg class="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Section: Flow -->
       <div class="space-y-3" v-if="stateTransition">
         <div class="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
           <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
           <h4 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">State Pipeline</h4>
         </div>
-        <div class="h-[calc(100%-2.25rem)] min-h-[140px] bg-white dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-xl shadow-sm flex flex-col items-center justify-center p-6 gap-4">
+        <div class="min-h-[140px] bg-white dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-xl shadow-sm flex flex-col items-center justify-center p-6 gap-4">
            <!-- Pipeline UI Structure -->
-           <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-3 w-full lg:max-w-xs">
+           <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full max-w-2xl mx-auto">
              <div class="w-full sm:flex-1 text-center bg-slate-50 dark:bg-white/5 py-4 px-3 rounded-xl border border-slate-200 dark:border-white/5 shadow-inner">
                <div class="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1.5">From</div>
                <div class="text-[11px] sm:text-xs font-mono font-bold text-slate-600 dark:text-slate-300 truncate">
@@ -160,7 +103,7 @@ const handleCopyPayload = () =>
              </div>
              
              <div class="shrink-0 flex items-center justify-center transform sm:rotate-0 rotate-90 my-2 sm:my-0">
-                <div class="w-10 sm:w-12 h-0.5 bg-indigo-500/30 relative">
+                <div class="w-10 sm:w-16 h-0.5 bg-indigo-500/30 relative">
                    <div class="absolute top-1/2 left-0 w-full h-0.5 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] -translate-y-1/2"></div>
                    <div class="absolute right-0 top-1/2 -ml-1 w-2.5 h-2.5 border-t-2 border-r-2 border-indigo-500 rotate-45 -translate-y-1/2"></div>
                 </div>
@@ -175,7 +118,6 @@ const handleCopyPayload = () =>
            </div>
         </div>
       </div>
-    </div>
 
     <!-- Section: Raw Data -->
     <div class="space-y-5 pt-4">
