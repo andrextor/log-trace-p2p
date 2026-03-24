@@ -24,37 +24,6 @@ async function copyToClipboard(
 	}, 2000);
 }
 
-const contextChips = computed(() => {
-	const d = props.details;
-	const p = (d.payload || {}) as Record<string, unknown>;
-	const body = (p.body || {}) as Record<string, unknown>;
-	return [
-		{ label: "Session ID", value: d.sessionId, filterable: true },
-		{ label: "Transaction", value: d.transactionId, filterable: true },
-		{ label: "Provider", value: d.provider, filterable: false },
-		{
-			label: "Gateway",
-			value: body?.gateway || p.gateway || null,
-			filterable: false,
-		},
-		{
-			label: "Trace ID",
-			value: d.awsRequestId || d.aws_request_id,
-			filterable: true,
-		},
-	].filter((c) => c.value);
-});
-
-const stateTransition = computed(() => {
-	const p = (props.details.payload || {}) as Record<string, unknown>;
-	const actual = (p.actual_session_state || p.session_state) as
-		| string
-		| undefined;
-	const target = (p.state_to_update || p.new_state) as string | undefined;
-	if (!actual && !target) return null;
-	return { actual: actual || "START", target: target || actual };
-});
-
 const errorDetail = computed(() => {
 	const p = (props.details.payload || {}) as Record<string, unknown>;
 	const exception = p.exception as Record<string, unknown> | undefined;
@@ -63,16 +32,24 @@ const errorDetail = computed(() => {
 		exception ||
 		Number(props.details.statusCode) >= 400
 	) {
+		const title = exception ? "System Exception" : "Validation Failed";
+		const message =
+			(exception?.message as string) ||
+			(p.message as string) ||
+			"Request rejected by validation layer.";
+		const sub = exception
+			? `${exception.file}:${exception.line}`
+			: props.details.endpoint || "Checkout Validator";
+
+		if (title === "Validation Failed" && !props.details.endpoint) {
+			return null;
+		}
+
 		return {
-			title: exception ? "System Exception" : "Validation Failed",
-			message:
-				(exception?.message as string) ||
-				(p.message as string) ||
-				"Request rejected by validation layer.",
+			title,
+			message,
 			code: props.details.statusCode || "ERR",
-			sub: exception
-				? `${exception.file}:${exception.line}`
-				: props.details.endpoint || "Checkout Validator",
+			sub,
 		};
 	}
 	return null;
@@ -87,87 +64,108 @@ const handleCopyPayload = () =>
 </script>
 
 <template>
-  <div class="space-y-5">
-    <div class="flex items-center gap-4 bg-slate-100/50 dark:bg-white/5 p-2 rounded-xl border border-slate-200/50 dark:border-white/5">
-      <div class="flex items-center gap-2 px-2">
-        <div class="w-1.5 h-1.5 rounded-full" :class="details.source === 'FRONTEND' ? 'bg-emerald-500' : 'bg-indigo-500'"></div>
-        <span class="text-[10px] font-black uppercase tracking-tighter dark:text-slate-300">{{ details.source || 'BACKEND' }}</span>
-      </div>
-      <div class="h-4 w-px bg-slate-300 dark:bg-white/10"></div>
-      <span class="text-[10px] font-mono font-bold text-slate-500 uppercase">{{ details.subType || 'General Event' }}</span>
-    </div>
+  <div class="flex flex-col gap-6 w-full max-w-full font-sans">
 
-    <div v-if="contextChips.length > 0" class="grid grid-cols-2 md:grid-cols-3 gap-2">
-      <div v-for="chip in contextChips" :key="chip.label" 
-           class="group/chip flex items-center justify-between p-2 bg-white dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-lg hover:border-indigo-500/30 transition-all">
-        <div class="flex flex-col min-w-0">
-          <span class="text-[7px] font-black text-slate-400 uppercase tracking-widest">{{ chip.label }}</span>
-          <span class="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate">{{ chip.value }}</span>
+
+    <!-- Error Banner -->
+    <div v-if="errorDetail" class="relative overflow-hidden bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 sm:p-5 shadow-sm">
+      <div class="absolute top-0 left-0 w-1 h-full bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.8)]"></div>
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 mt-0.5">
+          <svg class="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
         </div>
-        <button v-if="chip.filterable" @click.stop="emit('filter-id', chip.value as string | number)" 
-                class="p-1 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-500 rounded transition-colors">
-          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
-        </button>
+        <div>
+          <h4 class="text-[11px] sm:text-xs font-black uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-1.5">{{ errorDetail.title }}</h4>
+          <p class="text-[13px] sm:text-sm font-medium text-rose-800 dark:text-rose-300 leading-relaxed">{{ errorDetail.message }}</p>
+          <div class="mt-3 text-[10px] font-mono font-bold text-rose-500/80 bg-rose-500/10 inline-block px-2.5 py-1 rounded border border-rose-500/20">
+            Source: {{ errorDetail.sub }}
+          </div>
+        </div>
       </div>
     </div>
 
-    <div v-if="stateTransition" class="flex items-center justify-center gap-4 py-3 bg-indigo-500/[0.03] rounded-xl border border-indigo-500/10">
-      <span class="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-slate-200 dark:bg-white/10 text-slate-500">{{ stateTransition.actual }}</span>
-      <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-      <span class="text-[9px] font-mono font-black px-2 py-0.5 rounded bg-indigo-500 text-white shadow-sm">{{ stateTransition.target }}</span>
-    </div>
+    <!-- Section: Raw Data -->
+    <div class="space-y-5 pt-4">
+      <!-- Target Endpoint Box -->
+      <div v-if="details.endpoint" class="space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+            <h4 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Network Target</h4>
+          </div>
+          <button @click="handleCopyEndpoint" 
+                  class="group flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-bold transition-all bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 shadow-sm"
+                  :class="copiedEndpoint ? 'text-emerald-500 border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10' : 'text-slate-500 hover:text-indigo-600 hover:border-indigo-500/30'">
+            <Transition mode="out-in">
+              <svg v-if="!copiedEndpoint" key="copy" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+              <svg v-else key="check" class="w-3.5 h-3.5 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+            </Transition>
+            {{ copiedEndpoint ? 'Copied URL' : 'Copy URL' }}
+          </button>
+        </div>
+        <div class="p-4 bg-slate-50 dark:bg-[#131315] rounded-xl border border-slate-200 dark:border-white/5 font-mono text-[11px] sm:text-xs break-all text-slate-600 dark:text-slate-400 hover:border-indigo-500/40 transition-colors shadow-inner selection:bg-indigo-500/30">
+          {{ details.endpoint }}
+        </div>
+      </div>
 
-    <div v-if="errorDetail" class="bg-rose-500/5 border border-rose-500/20 rounded-xl p-3">
-      <div class="flex items-center gap-2 text-rose-500 mb-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        <span class="text-[10px] font-black uppercase tracking-widest">{{ errorDetail.title }}</span>
-      </div>
-      <p class="text-xs font-bold text-rose-800 dark:text-rose-300 ml-6">{{ errorDetail.message }}</p>
-    </div>
-
-    <div v-if="details.endpoint" class="space-y-2">
-      <div class="flex justify-between items-center">
-        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Target Endpoint</span>
-        <button @click="handleCopyEndpoint" 
-                class="group relative flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-black uppercase transition-all"
-                :class="copiedEndpoint ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'">
-          <Transition mode="out-in">
-            <svg v-if="!copiedEndpoint" key="copy" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-            <svg v-else key="check" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-          </Transition>
-          {{ copiedEndpoint ? 'Copied' : 'Copy URL' }}
-        </button>
-      </div>
-      <div class="p-3 bg-slate-50 dark:bg-black/40 rounded-lg border border-slate-200 dark:border-white/5 font-mono text-[10px] break-all text-slate-600 dark:text-slate-400">
-        {{ details.endpoint }}
-      </div>
-    </div>
-
-    <div v-if="details.payload" class="space-y-2">
-      <div class="flex justify-between items-center">
-        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Data Payload</span>
-        <button @click="handleCopyPayload" 
-                class="flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-black uppercase transition-all"
-                :class="copiedPayload ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'">
-          <Transition mode="out-in">
-            <svg v-if="!copiedPayload" key="copy" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-            <svg v-else key="check" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-          </Transition>
-          {{ copiedPayload ? 'Copied JSON' : 'Copy Object' }}
-        </button>
-      </div>
-      <div class="relative group/terminal">
-        <pre class="p-4 bg-[#0d0d0e] rounded-xl text-[11px] text-emerald-400/90 overflow-x-auto border border-white/10 shadow-2xl max-h-80 custom-scrollbar font-mono leading-relaxed">{{ JSON.stringify(details.payload, null, 2) }}</pre>
-        <div class="absolute top-2 right-3 text-[7px] font-bold text-white/5 tracking-[0.4em] uppercase pointer-events-none">Immutable Raw Output</div>
+      <!-- JSON Payload Tool -->
+      <div v-if="details.payload" class="space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+            <h4 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Data Payload Container</h4>
+          </div>
+          <button @click="handleCopyPayload" 
+                  class="group flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-bold transition-all bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 shadow-sm"
+                  :class="copiedPayload ? 'text-emerald-500 border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10' : 'text-slate-500 hover:text-indigo-600 hover:border-indigo-500/30'">
+            <Transition mode="out-in">
+              <svg v-if="!copiedPayload" key="copy" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+              <svg v-else key="check" class="w-3.5 h-3.5 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+            </Transition>
+            {{ copiedPayload ? 'Copied Object' : 'Copy JSON' }}
+          </button>
+        </div>
+        
+        <!-- Mac-style Window for JSON -->
+        <div class="relative rounded-xl overflow-hidden border border-slate-200/80 dark:border-white/10 shadow-xl group/terminal">
+          <div class="flex items-center px-4 py-2.5 bg-slate-100 dark:bg-[#1a1b1e] border-b border-slate-200 dark:border-white/5">
+             <div class="flex gap-1.5 shrink-0">
+               <div class="w-3 h-3 rounded-full bg-rose-400 border border-black/10"></div>
+               <div class="w-3 h-3 rounded-full bg-amber-400 border border-black/10"></div>
+               <div class="w-3 h-3 rounded-full bg-emerald-400 border border-black/10"></div>
+             </div>
+             <div class="w-full text-center text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 tracking-[0.2em] uppercase pr-10">Application / JSON</div>
+          </div>
+          <pre class="p-4 sm:p-5 bg-slate-50/50 dark:bg-[#0d0d0e] text-[11px] sm:text-xs text-slate-800 dark:text-emerald-400/90 overflow-x-auto max-h-[450px] custom-scrollbar font-mono leading-relaxed selection:bg-emerald-500/30">{{ JSON.stringify(details.payload, null, 2) }}</pre>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.v-enter-active, .v-leave-active { transition: all 0.2s ease; }
-.v-enter-from, .v-leave-to { opacity: 0; transform: scale(0.8); }
+.v-enter-active, .v-leave-active { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.v-enter-from, .v-leave-to { opacity: 0; transform: scale(0.95); }
 
-.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; }
+.animate-in {
+  animation: in 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+@keyframes in {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { 
+  background: rgba(156, 163, 175, 0.3); 
+  border-radius: 10px; 
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.15);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
 </style>

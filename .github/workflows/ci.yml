@@ -1,32 +1,84 @@
-name: CI
+name: CI & CD Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ "main" ]
 
 jobs:
-  build:
+  pipeline:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to create GitHub Release
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Source Code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
+      - name: Lint Rules & Formatting (BiomeJS)
         run: npm run lint
 
-      - name: Type Check
+      - name: Type Check (Astro & TS)
         run: npm run typecheck
 
-      - name: Build
+      - name: Unit & Integration Tests (Vitest)
+        run: npm run test:run
+
+      - name: Build Application (Astro)
         run: npm run build
+
+      # --- DESPLIEGUE (Solo corre al hacer Push a Main) ---
+      
+      - name: Get Version from package.json
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: pkg_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if Tag Exists
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: check_tag
+        run: |
+          if git rev-parse "${{ steps.pkg_version.outputs.VERSION }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract Changelog Entry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check_tag.outputs.exists == 'false'
+        id: changelog_reader
+        run: |
+          VERSION_ESCAPED=$(echo "${{ steps.pkg_version.outputs.VERSION }}" | sed 's/v//' | sed 's/\./\\./g')
+          # Extract entry between version header and the next header
+          BODY=$(sed -n "/## \[$VERSION_ESCAPED\]/,/## \[/p" CHANGELOG.md | sed '1d;$d')
+          
+          echo "BODY<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.pkg_version.outputs.VERSION }}
+          name: Release ${{ steps.pkg_version.outputs.VERSION }}
+          body: ${{ steps.changelog_reader.outputs.BODY }}
+          draft: false
+          prerelease: false
+          make_latest: true
+          token: ${{ secrets.GITHUB_TOKEN }}
