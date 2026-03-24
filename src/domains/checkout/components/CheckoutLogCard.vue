@@ -179,8 +179,8 @@ function handleFilterId(id: string | number) {
         
         <div v-if="log.details?.rawTitle && log.details.rawTitle !== log.message" 
              class="mt-1.5 px-2 py-1 bg-slate-100/50 dark:bg-white/5 rounded border border-slate-200/50 dark:border-white/5 w-fit">
-          <p class="font-mono text-[10px] text-slate-400 dark:text-slate-500 break-all leading-relaxed uppercase tracking-tighter">
-            {{ log.details.rawTitle }}
+          <p class="font-mono text-[10px] text-slate-500 dark:text-slate-100 break-all leading-relaxed tracking-tighter">
+            raw log: {{ log.details.rawTitle }}
           </p>
         </div>
       </div>
