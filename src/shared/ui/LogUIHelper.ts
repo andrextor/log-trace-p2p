@@ -39,6 +39,7 @@ export class LogUIHelper {
 
   static getFilterIdentity(event: LogEvent, targetId: string): FilterIdentity {
     const details = event.details as Record<string, unknown>
+    const ctx = (event.context || {}) as Record<string, unknown>
 
     if (event.appType === APP_TYPES.CHECKOUT) {
       if (details?.sessionId && String(details.sessionId) === targetId) {
@@ -53,7 +54,7 @@ export class LogUIHelper {
       }
       if (
         ((details?.payload as Record<string, unknown>)?.id && String((details.payload as Record<string, unknown>).id) === targetId) ||
-        (event.context?.id && String(event.context.id) === targetId)
+        (ctx?.id && String(ctx.id) === targetId)
       ) {
         return { label: "Interdin ID", colorClass: "indigo" }
       }
