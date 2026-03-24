@@ -16,9 +16,7 @@ const props = defineProps<{
 const store = useLogStore();
 const isExpanded = ref(false);
 
-const emit = defineEmits<{
-	(e: "highlight-session", id: string | number): void;
-}>();
+const emit = defineEmits<(e: "highlight-session", id: string | number) => void>();
 
 const bodyComponents: Record<string, Component> = {
 	[APP_TYPES.CHECKOUT]: CheckoutBody,

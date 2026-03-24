@@ -7,9 +7,7 @@ const props = defineProps<{
 	isHighlighted: boolean;
 }>();
 
-const emit = defineEmits<{
-	(e: "filter-id", id: string | number): void;
-}>();
+const emit = defineEmits<(e: "filter-id", id: string | number) => void>();
 
 const copiedPayload = ref(false);
 const copiedEndpoint = ref(false);

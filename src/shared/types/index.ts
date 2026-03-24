@@ -9,14 +9,14 @@ export {
 	type NormalizedLogData,
 } from "./base";
 
-export {
-	type ViewMode,
-	type TimeGroup,
-	type StoreStats,
-	type ActiveFilterInfo,
-	type FilterTheme,
-	type FiltersCacheEntry,
-	type CategoryStyle,
-	type HighlightTheme,
-	type LevelFilter,
+export type {
+	ViewMode,
+	TimeGroup,
+	StoreStats,
+	ActiveFilterInfo,
+	FilterTheme,
+	FiltersCacheEntry,
+	CategoryStyle,
+	HighlightTheme,
+	LevelFilter,
 } from "./store";
