@@ -30,7 +30,7 @@ export interface FilterTheme {
 export interface FiltersCacheEntry {
 	search: string;
 	highlighted: string | number | null;
-	level: string;
+	level: LevelFilter;
 }
 
 export interface CategoryStyle {

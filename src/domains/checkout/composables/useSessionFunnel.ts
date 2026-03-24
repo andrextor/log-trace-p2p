@@ -48,7 +48,8 @@ export function useSessionFunnel() {
 				});
 			}
 
-			const row = sessionMap.get(sid)!;
+			const row = sessionMap.get(sid);
+			if (!row) continue;
 			const time = new Date(ev.timestamp).getTime();
 			const endpoint = details.endpoint || "";
 			const ctx = ev.context as Record<string, unknown>;

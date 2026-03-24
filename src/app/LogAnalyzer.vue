@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { Toaster, toast } from "vue-sonner";
 import "vue-sonner/style.css";
 
-import { useLogStore } from "../store/logStore";
-import { APP_TYPES, ANALYZER_NAMES } from "../shared/types";
+import { ANALYZER_NAMES, APP_TYPES } from "../shared/types";
 import type {
 	AnalyzerType,
 	FilterTheme,
 	FiltersCacheEntry,
 } from "../shared/types";
-import { LogUIHelper } from "../shared/ui/LogUIHelper";
+import { getFilterIdentity, isMatch } from "../shared/ui/LogUIHelper";
+import { useLogStore } from "../store/logStore";
 
-import AnalyzerControlBar from "../shared/components/analyzer/AnalyzerControlBar.vue";
-import LogUploader from "../shared/components/LogUploader.vue";
-import LogTimeline from "../shared/components/LogTimeline.vue";
-import AnalysisProgress from "../shared/components/analyzer/AnalysisProgress.vue";
 import LogExporter from "../shared/components/LogExporter.vue";
+import LogTimeline from "../shared/components/LogTimeline.vue";
+import LogUploader from "../shared/components/LogUploader.vue";
 import ThemeSelector from "../shared/components/ThemeSelector.vue";
+import AnalysisProgress from "../shared/components/analyzer/AnalysisProgress.vue";
+import AnalyzerControlBar from "../shared/components/analyzer/AnalyzerControlBar.vue";
 
 const store = useLogStore();
 
@@ -39,15 +39,15 @@ const activeFilterTheme = computed<FilterTheme | null>(() => {
 	if (!store.highlightedSessionId) return null;
 	const targetId = String(store.highlightedSessionId);
 	const match = store.events.find(
-		(e) => e.appType === store.activeTab && LogUIHelper.isMatch(e, targetId),
+		(e) => e.appType === store.activeTab && isMatch(e, targetId),
 	);
 	if (!match) return null;
-	const identity = LogUIHelper.getFilterIdentity(match, targetId);
+	const identity = getFilterIdentity(match, targetId);
 	return { label: identity.label, color: identity.colorClass, value: targetId };
 });
 
 const formatNumber = (num: number) => {
-	return num > 999 ? (num / 1000).toFixed(1) + "k" : num;
+	return num > 999 ? `${(num / 1000).toFixed(1)}k` : num;
 };
 
 const setTab = (newTab: AnalyzerType) => {
@@ -216,7 +216,7 @@ const handleUploadComplete = async () => {
               </template>
             </p>
           </div>
-          <LogUploader :target-type="store.activeTab" @viewResults="handleUploadComplete" />
+          <LogUploader :target-type="(store.activeTab as AnalyzerType)" @viewResults="handleUploadComplete" />
         </div>
 
       </transition>

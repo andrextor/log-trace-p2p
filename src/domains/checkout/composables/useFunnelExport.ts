@@ -1,8 +1,8 @@
 import { toast } from "vue-sonner";
 import type {
-	SessionFunnelRow,
 	FunnelStats,
 	FunnelStep,
+	SessionFunnelRow,
 	StepConfig,
 } from "../types";
 
@@ -50,11 +50,12 @@ export function useFunnelExport() {
 				formatRow(headers),
 			];
 
-			data.forEach((row) => {
+			for (const row of data) {
 				let lastStepLabel = "None";
 				for (const step of stepConfig) {
-					if (row.steps[step.key as keyof typeof row.steps] === 1)
+					if (row.steps[step.key as keyof typeof row.steps] === 1) {
 						lastStepLabel = step.label;
+					}
 				}
 
 				const isFinished = row.steps.process === 1;
@@ -72,10 +73,10 @@ export function useFunnelExport() {
 						row.durations.timeToShow || "",
 					]),
 				);
-			});
+			}
 
 			const csvContent = lines.join("\n");
-			const blob = new Blob(["\uFEFF" + csvContent], {
+			const blob = new Blob([`\uFEFF${csvContent}`], {
 				type: "text/csv;charset=utf-8;",
 			});
 			const url = URL.createObjectURL(blob);

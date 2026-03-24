@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { useLogStore } from "../../store/logStore";
+import { computed, ref } from "vue";
 import { APP_TYPES } from "../../shared/types";
-import type { LogEvent, ActiveFilterInfo } from "../../shared/types";
-import { LogUIHelper } from "../../shared/ui/LogUIHelper";
+import type { ActiveFilterInfo, LogEvent } from "../../shared/types";
+import { getFilterIdentity, isMatch } from "../../shared/ui/LogUIHelper";
+import { useLogStore } from "../../store/logStore";
 
-import TimelineHeader from "./timeline/TimelineHeader.vue";
-import TimelineGroup from "./timeline/TimelineGroup.vue";
-import ParsingErrorsModal from "./ParsingErrorsModal.vue";
 import SessionFunnelReport from "../../domains/checkout/components/SessionFunnelReport.vue";
+import ParsingErrorsModal from "./ParsingErrorsModal.vue";
+import TimelineGroup from "./timeline/TimelineGroup.vue";
+import TimelineHeader from "./timeline/TimelineHeader.vue";
 
 const store = useLogStore();
 const showErrorsModal = ref(false);
@@ -24,17 +24,17 @@ const timelineGroups = computed(() => {
 const activeFilterInfo = computed<ActiveFilterInfo | null>(() => {
 	if (!store.highlightedSessionId) return null;
 	const targetId = String(store.highlightedSessionId);
-	const match = store.events.find((e) => LogUIHelper.isMatch(e, targetId));
+	const match = store.events.find((e) => isMatch(e, targetId));
 
 	if (!match) return { label: "ID", color: "orange", value: targetId };
 
-	const identity = LogUIHelper.getFilterIdentity(match, targetId);
+	const identity = getFilterIdentity(match, targetId);
 	return { label: identity.label, color: identity.colorClass, value: targetId };
 });
 
 const isLogHighlighted = (event: LogEvent) => {
 	if (!store.highlightedSessionId) return false;
-	return LogUIHelper.isMatch(event, String(store.highlightedSessionId));
+	return isMatch(event, String(store.highlightedSessionId));
 };
 
 const handleSessionFromFunnel = (sessionId: string | number) => {

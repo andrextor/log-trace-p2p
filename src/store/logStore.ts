@@ -1,15 +1,15 @@
-import { defineStore } from "pinia";
-import { ref, computed, shallowRef } from "vue";
-import { APP_TYPES } from "../shared/types";
-import type { LogEvent, AnalyzerType } from "../shared/types";
-import type {
-	ViewMode,
-	TimeGroup,
-	StoreStats,
-	LevelFilter,
-} from "../shared/types";
 import { P2PParserEngine } from "@andrextor_ia11012/p2p-log-parser";
-import { LogUIHelper } from "../shared/ui/LogUIHelper";
+import { defineStore } from "pinia";
+import { computed, ref, shallowRef } from "vue";
+import { APP_TYPES } from "../shared/types";
+import type { AnalyzerType, LogEvent } from "../shared/types";
+import type {
+	LevelFilter,
+	StoreStats,
+	TimeGroup,
+	ViewMode,
+} from "../shared/types";
+import { isMatch } from "../shared/ui/LogUIHelper";
 
 export type { ViewMode } from "../shared/types";
 
@@ -29,10 +29,12 @@ export const useLogStore = defineStore("logs", () => {
 
 	const counts = computed(() => {
 		const c: Record<string, number> = { ALL: events.value.length };
-		Object.values(APP_TYPES).forEach((t) => (c[t] = 0));
-		events.value.forEach((e) => {
+		for (const t of Object.values(APP_TYPES)) {
+			c[t] = 0;
+		}
+		for (const e of events.value) {
 			if (c[e.appType] !== undefined) c[e.appType]++;
-		});
+		}
 		return c;
 	});
 
@@ -66,7 +68,7 @@ export const useLogStore = defineStore("logs", () => {
 
 			if (highlightedSessionId.value) {
 				const targetId = String(highlightedSessionId.value);
-				if (!LogUIHelper.isMatch(event, targetId)) return false;
+				if (!isMatch(event, targetId)) return false;
 			}
 
 			if (!searchTerm) return true;
@@ -86,9 +88,9 @@ export const useLogStore = defineStore("logs", () => {
 				new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
 		);
 
-		sorted.forEach((event) => {
+		for (const event of sorted) {
 			const date = new Date(event.timestamp);
-			if (isNaN(date.getTime())) return;
+			if (Number.isNaN(date.getTime())) continue;
 
 			const timeKey = date.toLocaleString("es-CO", {
 				year: "numeric",
@@ -108,7 +110,7 @@ export const useLogStore = defineStore("logs", () => {
 				};
 			}
 			groups[timeKey].events.push(event);
-		});
+		}
 		return groups;
 	});
 
@@ -171,10 +173,10 @@ export const useLogStore = defineStore("logs", () => {
 		events.value = events.value.filter((e) => e.appType !== type);
 
 		processedHashes.clear();
-		events.value.forEach((e) => {
+		for (const e of events.value) {
 			const fingerprint = `${e.timestamp}_${e.message.slice(0, 60)}`;
 			processedHashes.add(fingerprint);
-		});
+		}
 
 		if (type === APP_TYPES.CHECKOUT) {
 			sessionIds.value = [];

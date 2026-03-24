@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from "vue";
-import { useLogStore } from "../../store/logStore";
+import { computed, nextTick, ref, watch } from "vue";
 import {
+	ANALYZER_NAMES,
 	APP_TYPES,
 	type AnalyzerType,
-	ANALYZER_NAMES,
 } from "../../shared/types";
+import { useLogStore } from "../../store/logStore";
 import ConfirmationModal from "./ConfirmationModal.vue";
 
 const props = defineProps<{

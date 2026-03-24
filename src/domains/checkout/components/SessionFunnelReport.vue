@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useLogStore } from "../../../store/logStore";
 import { APP_TYPES } from "../../../shared/types";
+import { useLogStore } from "../../../store/logStore";
+import { useFunnelExport } from "../composables/useFunnelExport";
+import { useSessionFunnel } from "../composables/useSessionFunnel";
 import type {
-	SessionFunnelSteps,
-	StepConfig,
 	FunnelStats,
 	FunnelStep,
+	SessionFunnelSteps,
+	StepConfig,
 } from "../types";
-import { useSessionFunnel } from "../composables/useSessionFunnel";
-import { useFunnelExport } from "../composables/useFunnelExport";
 
 const store = useLogStore();
 const { generateReport } = useSessionFunnel();

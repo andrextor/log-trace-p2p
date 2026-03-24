@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, type Component } from "vue";
-import { useLogStore } from "../../store/logStore";
-import { APP_TYPES } from "../../shared/types";
-import type { LogEvent, HighlightTheme } from "../../shared/types";
+import { type Component, computed, ref } from "vue";
 import { CATEGORY_STYLES } from "../../shared/constants/ui-styles";
+import { APP_TYPES } from "../../shared/types";
+import type { HighlightTheme, LogEvent } from "../../shared/types";
+import { useLogStore } from "../../store/logStore";
 
 import CheckoutBody from "../../domains/checkout/components/CheckoutBody.vue";
 import RestBody from "../../domains/rest/components/RestBody.vue";
@@ -16,7 +16,8 @@ const props = defineProps<{
 const store = useLogStore();
 const isExpanded = ref(false);
 
-const emit = defineEmits<(e: "highlight-session", id: string | number) => void>();
+const emit =
+	defineEmits<(e: "highlight-session", id: string | number) => void>();
 
 const bodyComponents: Record<string, Component> = {
 	[APP_TYPES.CHECKOUT]: CheckoutBody,
@@ -51,7 +52,7 @@ const isErrorState = computed(() => {
 
 const statusCodeStyle = computed(() => {
 	const code = Number(props.log.details?.statusCode);
-	if (!code || isNaN(code)) return null;
+	if (!code || Number.isNaN(code)) return null;
 	if (code >= 500)
 		return "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400";
 	if (code >= 400)

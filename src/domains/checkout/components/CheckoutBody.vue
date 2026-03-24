@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, type Ref } from "vue";
+import { type Ref, computed, ref } from "vue";
 import type { CheckoutDetails } from "../types";
 
 const props = defineProps<{
@@ -19,7 +19,9 @@ async function copyToClipboard(
 	if (!text) return;
 	await navigator.clipboard.writeText(String(text));
 	stateRef.value = true;
-	setTimeout(() => (stateRef.value = false), 2000);
+	setTimeout(() => {
+		stateRef.value = false;
+	}, 2000);
 }
 
 const contextChips = computed(() => {
@@ -75,6 +77,13 @@ const errorDetail = computed(() => {
 	}
 	return null;
 });
+const handleCopyEndpoint = () =>
+	copyToClipboard(props.details.endpoint, copiedEndpoint);
+const handleCopyPayload = () =>
+	copyToClipboard(
+		JSON.stringify(props.details.payload, null, 2),
+		copiedPayload,
+	);
 </script>
 
 <template>
@@ -95,7 +104,7 @@ const errorDetail = computed(() => {
           <span class="text-[7px] font-black text-slate-400 uppercase tracking-widest">{{ chip.label }}</span>
           <span class="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate">{{ chip.value }}</span>
         </div>
-        <button v-if="chip.filterable" @click.stop="emit('filter-id', chip.value)" 
+        <button v-if="chip.filterable" @click.stop="emit('filter-id', chip.value as string | number)" 
                 class="p-1 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-500 rounded transition-colors">
           <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
         </button>
@@ -119,7 +128,7 @@ const errorDetail = computed(() => {
     <div v-if="details.endpoint" class="space-y-2">
       <div class="flex justify-between items-center">
         <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Target Endpoint</span>
-        <button @click="copyToClipboard(details.endpoint, copiedEndpoint)" 
+        <button @click="handleCopyEndpoint" 
                 class="group relative flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-black uppercase transition-all"
                 :class="copiedEndpoint ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'">
           <Transition mode="out-in">
@@ -137,7 +146,7 @@ const errorDetail = computed(() => {
     <div v-if="details.payload" class="space-y-2">
       <div class="flex justify-between items-center">
         <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Data Payload</span>
-        <button @click="copyToClipboard(JSON.stringify(details.payload, null, 2), copiedPayload)" 
+        <button @click="handleCopyPayload" 
                 class="flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-black uppercase transition-all"
                 :class="copiedPayload ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'">
           <Transition mode="out-in">

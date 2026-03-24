@@ -1,4 +1,4 @@
-import type { LogCategory, CategoryStyle } from "../types";
+import type { CategoryStyle, LogCategory } from "../types";
 
 export const CATEGORY_STYLES: Record<LogCategory, CategoryStyle> = {
 	USER_ACTION: {

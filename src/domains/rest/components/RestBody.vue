@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import type { RestDetails, ExceptionInfo } from "../types";
+import { computed, ref } from "vue";
+import type { ExceptionInfo, RestDetails } from "../types";
 
 const props = defineProps<{
 	details: RestDetails;
@@ -82,7 +82,9 @@ async function copyURL() {
 
 	await navigator.clipboard.writeText(url);
 	copiedURL.value = true;
-	setTimeout(() => (copiedURL.value = false), 2000);
+	setTimeout(() => {
+		copiedURL.value = false;
+	}, 2000);
 }
 
 async function copyJSON() {
@@ -91,7 +93,9 @@ async function copyJSON() {
 
 	await navigator.clipboard.writeText(json);
 	copiedPayload.value = true;
-	setTimeout(() => (copiedPayload.value = false), 2000);
+	setTimeout(() => {
+		copiedPayload.value = false;
+	}, 2000);
 }
 </script>
 
