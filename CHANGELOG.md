@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-03-24
+
+### Changed
+- **UI/UX Overhaul**: Completely redesigned the core visualization components for a more premium, modern, and navigable experience:
+  - `LogCard.vue`: Improved typography, layout, and added smooth CSS Grid accordion animations.
+  - `CheckoutBody.vue`: Replaced the tags UI with structured data grids, visual state transition pipelines, and Mac-style terminal code blocks for payloads.
+  - `LogUploader.vue`: Added a clear empty-state dropzone with drag-and-drop support, loading feedback for large files, and designated raw data areas.
+  - `LogTimeline.vue`: Transformed into an "Explorer Layout" with a left sidebar for sessions and a sticky floating navigation pill for the active session.
+
 ## [1.0.0] - 2026-03-24
 
 ### Added
