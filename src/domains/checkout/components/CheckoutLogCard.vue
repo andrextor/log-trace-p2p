@@ -176,6 +176,13 @@ function handleFilterId(id: string | number) {
             :class="{ 'font-bold text-rose-600 dark:text-rose-400': isErrorState, 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400': !isErrorState }">
           {{ log.message }}
         </h3>
+        
+        <div v-if="log.details?.rawTitle && log.details.rawTitle !== log.message" 
+             class="mt-1.5 px-2 py-1 bg-slate-100/50 dark:bg-white/5 rounded border border-slate-200/50 dark:border-white/5 w-fit">
+          <p class="font-mono text-[10px] text-slate-500 dark:text-slate-100 break-all leading-relaxed tracking-tighter">
+            raw log: {{ log.details.rawTitle }}
+          </p>
+        </div>
       </div>
 
       <div class="flex items-start sm:items-center justify-between mt-4">

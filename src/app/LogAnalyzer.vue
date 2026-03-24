@@ -12,8 +12,9 @@ import type {
 import { getFilterIdentity, isMatch } from "../shared/ui/LogUIHelper";
 import { useLogStore } from "../store/logStore";
 
+import CheckoutTimeline from "../domains/checkout/components/CheckoutTimeline.vue";
+import RestTimeline from "../domains/rest/components/RestTimeline.vue";
 import LogExporter from "../shared/components/LogExporter.vue";
-import LogTimeline from "../shared/components/LogTimeline.vue";
 import LogUploader from "../shared/components/LogUploader.vue";
 import ThemeSelector from "../shared/components/ThemeSelector.vue";
 import AnalysisProgress from "../shared/components/analyzer/AnalysisProgress.vue";
@@ -117,7 +118,7 @@ const handleUploadComplete = async () => {
             <span class="text-indigo-600 dark:text-indigo-400 font-black text-[11px] md:text-[10px] group-hover:block">P2P</span>
           </button>
           <div class="hidden md:flex flex-col cursor-default">
-            <span class="font-mono font-bold text-slate-900 dark:text-slate-100 text-[13px] tracking-tight leading-none">log-trace-analyzer</span>
+            <span class="font-mono font-bold text-slate-900 dark:text-slate-100 text-[13px] tracking-tight leading-none">P2P-log-trace</span>
             <span class="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5">Engine v4</span>
           </div>
         </div>
@@ -187,7 +188,8 @@ const handleUploadComplete = async () => {
 
           <div class="flex-1 w-full px-2 sm:px-6 py-4 custom-scrollbar">
             <div class="max-w-7xl mx-auto w-full pb-20">
-              <LogTimeline />
+              <CheckoutTimeline v-if="store.activeTab === APP_TYPES.CHECKOUT" />
+              <RestTimeline v-else />
             </div>
           </div>
         </div>
@@ -207,14 +209,6 @@ const handleUploadComplete = async () => {
                   Analyzer <span class="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">{{ ANALYZER_NAMES[store.activeTab as keyof typeof ANALYZER_NAMES] }}</span>
               </h1>
             </div>
-            <p class="text-xs text-slate-500 max-w-md mx-auto font-bold uppercase tracking-[0.1em] leading-relaxed opacity-80 pt-2">
-              <template v-if="store.activeTab === APP_TYPES.CHECKOUT">
-                Upload checkout traces to analyze conversions and drop-offs.
-              </template>
-              <template v-else>
-                Upload REST traces to debug 5xx and technical failures.
-              </template>
-            </p>
           </div>
           <LogUploader :target-type="(store.activeTab as AnalyzerType)" @viewResults="handleUploadComplete" />
         </div>

@@ -10,7 +10,6 @@ const props = defineProps<{
 const emit = defineEmits<(e: "filter-id", id: string | number) => void>();
 
 const copiedPayload = ref(false);
-const copiedURL = ref(false);
 
 const contextChips = computed(() => {
 	if (!props.details.payload) return [];
@@ -75,17 +74,6 @@ const errorDetail = computed(() => {
 
 	return null;
 });
-
-async function copyURL() {
-	const url = props.details.endpoint;
-	if (!url) return;
-
-	await navigator.clipboard.writeText(url);
-	copiedURL.value = true;
-	setTimeout(() => {
-		copiedURL.value = false;
-	}, 2000);
-}
 
 async function copyJSON() {
 	const json = JSON.stringify(props.details.payload, null, 2);
@@ -158,28 +146,6 @@ async function copyJSON() {
       </div>
     </div>
 
-    <div class="group bg-indigo-500/5 dark:bg-indigo-500/10 p-3.5 rounded-2xl border border-indigo-500/10 transition-all hover:border-indigo-500/30">
-      <div class="flex justify-between items-center mb-2">
-        <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]"></span>
-            <span class="text-[9px] text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-widest">
-                {{ details.isLaravel ? 'Disk Location' : 'Network Endpoint' }}
-            </span>
-        </div>
-        <div class="flex items-center gap-2">
-            <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase font-mono bg-white dark:bg-black/40 px-2 py-0.5 rounded-md border border-indigo-100 dark:border-white/5 shadow-xs">
-                {{ details.method }}
-            </span>
-            <button @click="copyURL" class="p-1.5 hover:bg-indigo-500/20 rounded-lg transition-all text-indigo-400 active:scale-90">
-                <svg v-if="!copiedURL" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                <span v-else class="text-[9px] font-black uppercase">Copied!</span>
-            </button>
-        </div>
-      </div>
-      <div class="font-mono text-[10px] break-all text-indigo-900/60 dark:text-indigo-200/50 leading-relaxed pl-3 border-l-2 border-indigo-500/20">
-        {{ details.endpoint || 'N/A' }}
-      </div>
-    </div>
 
     <div v-if="details.payload" class="relative">
        <div class="flex justify-between items-center mb-2 px-1">

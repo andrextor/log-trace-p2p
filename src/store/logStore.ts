@@ -4,7 +4,9 @@ import { computed, ref, shallowRef } from "vue";
 import { APP_TYPES } from "../shared/types";
 import type { AnalyzerType, LogEvent } from "../shared/types";
 import type {
+	CheckoutParseMetadata,
 	LevelFilter,
+	ParseMetadata,
 	StoreStats,
 	TimeGroup,
 	ViewMode,
@@ -24,6 +26,7 @@ export const useLogStore = defineStore("logs", () => {
 	const progress = ref(0);
 	const sessionIds = ref<string[]>([]);
 	const sessionFilter = ref<string | null>(null);
+	const metadata = ref<ParseMetadata | null>(null);
 
 	const processedHashes = new Set<string>();
 
@@ -142,11 +145,23 @@ export const useLogStore = defineStore("logs", () => {
 				}
 			}
 
-			if (result.metadata?.sessionIds?.length) {
-				const existing = new Set(sessionIds.value);
-				for (const sid of result.metadata.sessionIds) {
-					if (!existing.has(sid)) sessionIds.value.push(sid);
+			if (result.metadata) {
+				// Cast to local ParseMetadata via unknown to bridge library/local types
+				const meta = result.metadata as unknown as ParseMetadata;
+				metadata.value = meta;
+
+				if (type === APP_TYPES.CHECKOUT) {
+					const checkoutMeta = meta as CheckoutParseMetadata;
+					if (checkoutMeta.sessions?.length) {
+						const existing = new Set(sessionIds.value);
+						for (const sess of checkoutMeta.sessions) {
+							if (!existing.has(sess.sessionId)) {
+								sessionIds.value.push(sess.sessionId);
+							}
+						}
+					}
 				}
+
 				if (sessionIds.value.length > 1 && !sessionFilter.value) {
 					sessionFilter.value = sessionIds.value[0];
 				}
@@ -181,6 +196,7 @@ export const useLogStore = defineStore("logs", () => {
 		if (type === APP_TYPES.CHECKOUT) {
 			sessionIds.value = [];
 			sessionFilter.value = null;
+			metadata.value = null;
 		}
 
 		parsingErrors.value = [];
@@ -195,6 +211,7 @@ export const useLogStore = defineStore("logs", () => {
 		highlightedSessionId.value = null;
 		sessionIds.value = [];
 		sessionFilter.value = null;
+		metadata.value = null;
 		progress.value = 0;
 	}
 
@@ -214,6 +231,7 @@ export const useLogStore = defineStore("logs", () => {
 		progress,
 		sessionIds,
 		sessionFilter,
+		metadata,
 		stats,
 		counts,
 		filteredEvents,

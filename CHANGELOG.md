@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-24
+
+### Added
+- **Floating Session Focus**: Relocated the session navigation pill to a premium floating fixed footer "above the block" for improved accessibility and to avoid content clashing.
+- **Session Explorer Sidebar**: Extracted the session list into a dedicated `SessionExplorer` component for better modularity.
+- **Enhanced Glassmorphism**: Updated the UI with richer backdrop blurs, ring borders, and multi-layered shadows for a more high-end feel.
+
+### Changed
+- **Modular Architecture**: Significant refactoring of `CheckoutTimeline.vue`:
+  - Extracted core session logic into the `useCheckoutSessions` composable.
+  - Deployed new sub-components: `SessionExplorer.vue` and `SessionFocusPill.vue`.
+  - Reduced main component complexity and file size by over 60%.
+
+
 ## [1.0.1] - 2026-03-24
 
 ### Changed

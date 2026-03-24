@@ -7,6 +7,12 @@ export {
 	type BaseDetails,
 	type LogEvent,
 	type NormalizedLogData,
+	type ParseMetadata,
+	type CheckoutParseMetadata,
+	type CheckoutSessionMetadata,
+	type RestParseMetadata,
+	type MicrositesParseMetadata,
+	type SupportedFormat,
 } from "./base";
 
 export type {
