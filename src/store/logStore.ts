@@ -1,253 +1,227 @@
-import { defineStore } from "pinia"
-import { ref, computed, shallowRef } from "vue"
-import { APP_TYPES, type LogEvent, type AnalyzerType } from "../logic/types"
-import { MapperFactory } from "../logic/mappers/MapperFactory"
-import { LogIngestor } from "../logic/parsers/LogIngestor"
+import { P2PParserEngine } from "@andrextor_ia11012/p2p-log-parser";
+import { defineStore } from "pinia";
+import { computed, ref, shallowRef } from "vue";
+import { APP_TYPES } from "../shared/types";
+import type { AnalyzerType, LogEvent } from "../shared/types";
+import type {
+	LevelFilter,
+	StoreStats,
+	TimeGroup,
+	ViewMode,
+} from "../shared/types";
+import { isMatch } from "../shared/ui/LogUIHelper";
 
-export type ViewMode = AnalyzerType
-
-interface TimeGroup {
-  label: string
-  timeDisplay: string
-  timeKey: string
-  events: LogEvent[]
-}
+export type { ViewMode } from "../shared/types";
 
 export const useLogStore = defineStore("logs", () => {
-  // --- ESTADO ---
-  // shallowRef es vital para manejar +20,000 líneas sin lag en la UI.
-  const events = shallowRef<LogEvent[]>([])
-  const activeTab = ref<ViewMode>(APP_TYPES.CHECKOUT)
-  const search = ref("")
-  const levelFilter = ref("ALL")
-  const highlightedSessionId = ref<string | number | null>(null)
-  const parsingErrors = ref<string[]>([])
-  const isProcessing = ref(false)
-  const progress = ref(0)
+	const events = shallowRef<LogEvent[]>([]);
+	const activeTab = ref<ViewMode>(APP_TYPES.CHECKOUT);
+	const search = ref("");
+	const levelFilter = ref<LevelFilter>("ALL");
+	const highlightedSessionId = ref<string | number | null>(null);
+	const parsingErrors = ref<string[]>([]);
+	const isProcessing = ref(false);
+	const progress = ref(0);
+	const sessionIds = ref<string[]>([]);
+	const sessionFilter = ref<string | null>(null);
 
-  /**
-   * Registro de huellas digitales (Fingerprints) para evitar duplicados.
-   */
-  const processedHashes = new Set<string>()
+	const processedHashes = new Set<string>();
 
-  // --- GETTERS ---
+	const counts = computed(() => {
+		const c: Record<string, number> = { ALL: events.value.length };
+		for (const t of Object.values(APP_TYPES)) {
+			c[t] = 0;
+		}
+		for (const e of events.value) {
+			if (c[e.appType] !== undefined) c[e.appType]++;
+		}
+		return c;
+	});
 
-  const counts = computed(() => {
-    const c: Record<string, number> = { ALL: events.value.length }
-    Object.values(APP_TYPES).forEach((t) => (c[t] = 0))
-    events.value.forEach((e) => {
-      if (c[e.appType] !== undefined) c[e.appType]++
-    })
-    return c
-  })
+	const stats = computed<StoreStats>(() => {
+		const filtered = filteredEvents.value;
+		return {
+			total: filtered.length,
+			globalTotal: events.value.length,
+			errors: filtered.filter(
+				(e) => e.level === "ERROR" || e.level === "CRITICAL",
+			).length,
+		};
+	});
 
-  const stats = computed(() => {
-    const filtered = filteredEvents.value
-    return {
-      total: filtered.length,
-      globalTotal: events.value.length,
-      errors: filtered.filter(
-        (e) => e.level === "ERROR" || e.level === "CRITICAL"
-      ).length,
-    }
-  })
+	const filteredEvents = computed(() => {
+		const allEvents = events.value;
+		if (allEvents.length === 0) return [];
 
-  const filteredEvents = computed(() => {
-    const allEvents = events.value
-    if (allEvents.length === 0) return []
+		const searchTerm = search.value.toLowerCase().trim();
+		const activeLevel = levelFilter.value;
+		const currentTab = activeTab.value;
 
-    const searchTerm = search.value.toLowerCase().trim()
-    const activeLevel = levelFilter.value
-    const currentTab = activeTab.value
+		return allEvents.filter((event) => {
+			if (currentTab !== "ALL" && event.appType !== currentTab) return false;
+			if (activeLevel !== "ALL" && event.level !== activeLevel) return false;
 
-    return allEvents.filter((event) => {
-      // 1. Filtro de Aplicación: Garantiza que no veas data de Checkout en REST
-      if (currentTab !== "ALL" && event.appType !== currentTab) return false
+			if (sessionFilter.value) {
+				const details = event.details as Record<string, unknown>;
+				if (String(details?.sessionId) !== sessionFilter.value) return false;
+			}
 
-      // 2. Filtro de Nivel
-      if (activeLevel !== "ALL" && event.level !== activeLevel) return false
+			if (highlightedSessionId.value) {
+				const targetId = String(highlightedSessionId.value);
+				if (!isMatch(event, targetId)) return false;
+			}
 
-      // 3. Filtro de Identidad (Sesiones/AWS IDs)
-      if (highlightedSessionId.value) {
-        const targetId = String(highlightedSessionId.value)
-        const mapper = MapperFactory.getMapper(event.appType)
-        if (!mapper.isMatch(event, targetId)) return false
-      }
+			if (!searchTerm) return true;
+			return (
+				event.message.toLowerCase().includes(searchTerm) ||
+				String(event.id).toLowerCase().includes(searchTerm)
+			);
+		});
+	});
 
-      // 4. Búsqueda Global por texto
-      if (!searchTerm) return true
-      return (
-        event.message.toLowerCase().includes(searchTerm) ||
-        String(event.id).toLowerCase().includes(searchTerm)
-      )
-    })
-  })
+	const groupedEvents = computed(() => {
+		const groups: Record<string, TimeGroup> = {};
+		let blockCounter = 1;
 
-  const groupedEvents = computed(() => {
-    const groups: Record<string, TimeGroup> = {}
-    let blockCounter = 1
+		const sorted = [...filteredEvents.value].sort(
+			(a, b) =>
+				new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+		);
 
-    const sorted = [...filteredEvents.value].sort(
-      (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    )
+		for (const event of sorted) {
+			const date = new Date(event.timestamp);
+			if (Number.isNaN(date.getTime())) continue;
 
-    sorted.forEach((event) => {
-      const date = new Date(event.timestamp)
-      if (isNaN(date.getTime())) return
+			const timeKey = date.toLocaleString("es-CO", {
+				year: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+				hour: "2-digit",
+				minute: "2-digit",
+				hour12: false,
+			});
 
-      const timeKey = date.toLocaleString("es-CO", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      })
+			if (!groups[timeKey]) {
+				groups[timeKey] = {
+					label: `Block ${blockCounter++}`,
+					timeDisplay: timeKey,
+					timeKey: timeKey,
+					events: [],
+				};
+			}
+			groups[timeKey].events.push(event);
+		}
+		return groups;
+	});
 
-      if (!groups[timeKey]) {
-        groups[timeKey] = {
-          label: `Bloque ${blockCounter++}`,
-          timeDisplay: timeKey,
-          timeKey: timeKey,
-          events: [],
-        }
-      }
-      groups[timeKey].events.push(event)
-    })
-    return groups
-  })
+	async function processLogs(rawContent: string, type: AnalyzerType | "ALL") {
+		if (!rawContent.trim()) return;
 
-  // --- ACCIONES ---
+		isProcessing.value = true;
+		progress.value = 0;
 
-  /**
-   * Motor de procesamiento universal.
-   *
-   */
-  async function processLogs(rawContent: string, type: AnalyzerType | "ALL") {
-    if (!rawContent.trim()) return
+		try {
+			const engine = new P2PParserEngine();
 
-    isProcessing.value = true
-    progress.value = 0
+			await new Promise((resolve) => setTimeout(resolve, 50));
 
-    try {
-      const lines = rawContent.split("\n").filter((l) => l.trim().length > 5)
-      const totalLines = lines.length
-      const newEvents: LogEvent[] = []
-      const CHUNK_SIZE = 200
+			const result = engine.parse(rawContent, type);
+			const newEvents: LogEvent[] = [];
 
-      for (let i = 0; i < totalLines; i++) {
-        const line = lines[i].trim()
+			for (const event of result.events) {
+				if (activeTab.value !== event.appType && activeTab.value !== "ALL") {
+					activeTab.value = event.appType;
+				}
 
-        // 1. Ingestión y detección automática de App
-        const parseResults = LogIngestor.parse(line, type)
+				const msgStr = String(event.message || "");
+				const fingerprint = `${event.timestamp}_${msgStr.slice(0, 60)}`;
 
-        for (const normalizedData of parseResults) {
-          // Si detectamos logs de otra App, actualizamos la pestaña para que la UI viaje al timeline
-          if (
-            activeTab.value !== normalizedData.inferredApp &&
-            activeTab.value !== "ALL"
-          ) {
-            activeTab.value = normalizedData.inferredApp
-          }
+				if (!processedHashes.has(fingerprint)) {
+					newEvents.push(event);
+					processedHashes.add(fingerprint);
+				}
+			}
 
-          const msgStr = String(normalizedData.message || "")
-          const fingerprint = `${normalizedData.timestamp}_${msgStr.slice(
-            0,
-            60
-          )}`
+			if (result.metadata?.sessionIds?.length) {
+				const existing = new Set(sessionIds.value);
+				for (const sid of result.metadata.sessionIds) {
+					if (!existing.has(sid)) sessionIds.value.push(sid);
+				}
+				if (sessionIds.value.length > 1 && !sessionFilter.value) {
+					sessionFilter.value = sessionIds.value[0];
+				}
+			}
 
-          if (!processedHashes.has(fingerprint)) {
-            try {
-              // 2. Mapeo Dinámico según lo que detectó el Ingestor
-              const dynamicMapper = MapperFactory.getMapper(
-                normalizedData.inferredApp
-              )
+			if (result.errors && result.errors.length > 0) {
+				for (const err of result.errors) {
+					parsingErrors.value.push(
+						`Line ${err.line}: ${err.reason} - ${err.content}`,
+					);
+				}
+			}
 
-              const event = dynamicMapper.map(
-                normalizedData,
-                line,
-                events.value.length + newEvents.length
-              )
+			events.value = events.value.concat(newEvents);
+		} catch (criticalError) {
+			console.error("Critical failure in log engine:", criticalError);
+		} finally {
+			isProcessing.value = false;
+			progress.value = 100;
+		}
+	}
 
-              newEvents.push(event)
-              processedHashes.add(fingerprint)
-            } catch (e) {
-              parsingErrors.value.push(line)
-            }
-          }
-        }
+	function clearLogsByApp(type: AnalyzerType) {
+		events.value = events.value.filter((e) => e.appType !== type);
 
-        // 3. UI Breathing: Evita que el navegador se bloquee al 0%
-        if (i % CHUNK_SIZE === 0 || i === totalLines - 1) {
-          progress.value = Math.round(((i + 1) / totalLines) * 100)
-          await new Promise((resolve) => setTimeout(resolve, 0))
-        }
-      }
+		processedHashes.clear();
+		for (const e of events.value) {
+			const fingerprint = `${e.timestamp}_${e.message.slice(0, 60)}`;
+			processedHashes.add(fingerprint);
+		}
 
-      // 4. Actualización masiva por concatenación (seguro para memoria)
-      events.value = events.value.concat(newEvents)
-    } catch (criticalError) {
-      console.error("Fallo crítico en el motor de logs:", criticalError)
-    } finally {
-      isProcessing.value = false
-      progress.value = 100
-    }
-  }
+		if (type === APP_TYPES.CHECKOUT) {
+			sessionIds.value = [];
+			sessionFilter.value = null;
+		}
 
-  /**
-   * NUEVO: Borrado Contextual.
-   * Elimina solo los logs de la aplicación actual sin tocar el resto.
-   */
-  function clearLogsByApp(type: AnalyzerType) {
-    // 1. Filtramos para mantener solo lo que NO es de esta aplicación
-    events.value = events.value.filter((e) => e.appType !== type)
+		parsingErrors.value = [];
+	}
 
-    // 2. RE-SINCRONIZACIÓN DE HASHES:
-    // Vaciamos el Set y lo volvemos a llenar con los logs que quedaron.
-    // Esto permite volver a subir el mismo archivo borrado sin que sea ignorado.
-    processedHashes.clear()
-    events.value.forEach((e) => {
-      const fingerprint = `${e.timestamp}_${e.message.slice(0, 60)}`
-      processedHashes.add(fingerprint)
-    })
+	function clearLogs() {
+		events.value = [];
+		parsingErrors.value = [];
+		processedHashes.clear();
+		search.value = "";
+		levelFilter.value = "ALL";
+		highlightedSessionId.value = null;
+		sessionIds.value = [];
+		sessionFilter.value = null;
+		progress.value = 0;
+	}
 
-    // Limpiamos errores de parseo (opcional)
-    parsingErrors.value = []
-  }
+	function toggleHighlight(id: string | number) {
+		highlightedSessionId.value = highlightedSessionId.value === id ? null : id;
+		if (highlightedSessionId.value) search.value = "";
+	}
 
-  function clearLogs() {
-    events.value = []
-    parsingErrors.value = []
-    processedHashes.clear()
-    search.value = ""
-    levelFilter.value = "ALL"
-    highlightedSessionId.value = null
-    progress.value = 0
-  }
-
-  function toggleHighlight(id: string | number) {
-    highlightedSessionId.value = highlightedSessionId.value === id ? null : id
-    if (highlightedSessionId.value) search.value = ""
-  }
-
-  return {
-    events,
-    activeTab,
-    parsingErrors,
-    search,
-    levelFilter,
-    highlightedSessionId,
-    isProcessing,
-    progress,
-    stats,
-    counts,
-    filteredEvents,
-    groupedEvents,
-    currentAnalyzer: activeTab,
-    processLogs,
-    clearLogs,
-    clearLogsByApp,
-    toggleHighlight,
-  }
-})
+	return {
+		events,
+		activeTab,
+		parsingErrors,
+		search,
+		levelFilter,
+		highlightedSessionId,
+		isProcessing,
+		progress,
+		sessionIds,
+		sessionFilter,
+		stats,
+		counts,
+		filteredEvents,
+		groupedEvents,
+		currentAnalyzer: activeTab,
+		processLogs,
+		clearLogs,
+		clearLogsByApp,
+		toggleHighlight,
+	};
+});

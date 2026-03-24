@@ -1,11 +1,11 @@
-import { defineConfig } from 'astro/config';
-import vue from '@astrojs/vue';
-import tailwindcss from '@tailwindcss/vite';
+import vue from "@astrojs/vue";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "astro/config";
 
 export default defineConfig({
-  integrations: [vue({appEntrypoint: '/src/app'})],
+	integrations: [vue({ appEntrypoint: "/src/app" })],
 
-  vite: {
-    plugins: [tailwindcss()]
-  }
+	vite: {
+		plugins: [tailwindcss()],
+	},
 });
