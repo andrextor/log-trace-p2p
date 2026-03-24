@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { APP_TYPES } from "../../../shared/types";
-import type { ActiveFilterInfo, LogEvent } from "../../../shared/types";
+import type {
+	ActiveFilterInfo,
+	CheckoutParseMetadata,
+	CheckoutSessionMetadata,
+	LogEvent,
+} from "../../../shared/types";
 import { getFilterIdentity, isMatch } from "../../../shared/ui/LogUIHelper";
 import { useLogStore } from "../../../store/logStore";
 
-import SessionFunnelReport from "./SessionFunnelReport.vue";
 import ParsingErrorsModal from "../../../shared/components/ParsingErrorsModal.vue";
 import TimelineGroup from "../../../shared/components/timeline/TimelineGroup.vue";
 import TimelineHeader from "../../../shared/components/timeline/TimelineHeader.vue";
+import SessionFunnelReport from "./SessionFunnelReport.vue";
 
 const store = useLogStore();
 const showErrorsModal = ref(false);
@@ -91,13 +96,17 @@ const sessionEventCount = (sid: string) => {
 
 const checkoutMetadata = computed(() => {
 	if (store.activeTab === APP_TYPES.CHECKOUT && store.metadata) {
-		return store.metadata as any;
+		return store.metadata as CheckoutParseMetadata;
 	}
 	return null;
 });
 
-const getSessionMetadata = (sid: string) => {
-	return checkoutMetadata.value?.sessions?.find((s: any) => s.sessionId === sid);
+const getSessionMetadata = (
+	sid: string,
+): CheckoutSessionMetadata | undefined => {
+	return checkoutMetadata.value?.sessions?.find(
+		(s: CheckoutSessionMetadata) => s.sessionId === sid,
+	);
 };
 
 const getSessionTypeColor = (type: string) => {
@@ -189,34 +198,34 @@ const getSessionTypeColor = (type: string) => {
               <div v-if="getSessionMetadata(sid)" class="flex flex-col gap-1.5">
                 <div class="flex flex-wrap items-center gap-1.5">
                   <span class="px-1.5 py-0.5 rounded-md border text-[8px] font-black tracking-widest uppercase"
-                        :class="store.sessionFilter === sid ? 'bg-white/20 border-white/30 text-white' : getSessionTypeColor(getSessionMetadata(sid).sessionType)">
-                    {{ getSessionMetadata(sid).sessionType }}
+                        :class="store.sessionFilter === sid ? 'bg-white/20 border-white/30 text-white' : getSessionTypeColor(getSessionMetadata(sid)?.sessionType || 'UNKNOWN')">
+                    {{ getSessionMetadata(sid)?.sessionType }}
                   </span>
-                  <span v-if="getSessionMetadata(sid).finalState !== 'UNDEFINED'" 
+                  <span v-if="getSessionMetadata(sid)?.finalState !== 'UNDEFINED'" 
                         class="text-[9px] font-bold uppercase tracking-tighter"
                         :class="store.sessionFilter === sid ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'">
-                    {{ getSessionMetadata(sid).finalState }}
+                    {{ getSessionMetadata(sid)?.finalState }}
                   </span>
                 </div>
 
-                <div v-if="getSessionMetadata(sid).reference" class="text-[9px] font-mono opacity-60 truncate">
-                  Ref: {{ getSessionMetadata(sid).reference }}
+                <div v-if="getSessionMetadata(sid)?.reference" class="text-[9px] font-mono opacity-60 truncate">
+                  Ref: {{ getSessionMetadata(sid)?.reference }}
                 </div>
 
                 <div class="flex items-center gap-2 pt-1 border-t" :class="store.sessionFilter === sid ? 'border-white/10' : 'border-slate-100 dark:border-white/5'">
-                  <div class="flex items-center gap-1.5 grayscale opacity-50" :class="{ 'grayscale-0 opacity-100': getSessionMetadata(sid).flags.otp }">
+                  <div class="flex items-center gap-1.5 grayscale opacity-50" :class="{ 'grayscale-0 opacity-100': getSessionMetadata(sid)?.flags.otp }">
                     <svg class="w-2.5 h-2.5" :class="store.sessionFilter === sid ? 'text-indigo-200' : 'text-amber-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                     <span class="text-[7px] font-bold uppercase tracking-tighter">OTP</span>
                   </div>
-                  <div class="flex items-center gap-1.5 grayscale opacity-50" :class="{ 'grayscale-0 opacity-100': getSessionMetadata(sid).flags.threeDS }">
+                  <div class="flex items-center gap-1.5 grayscale opacity-50" :class="{ 'grayscale-0 opacity-100': getSessionMetadata(sid)?.flags.threeDS }">
                     <svg class="w-2.5 h-2.5" :class="store.sessionFilter === sid ? 'text-indigo-200' : 'text-indigo-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                     <span class="text-[7px] font-bold uppercase tracking-tighter">3DS</span>
                   </div>
-                  <div class="flex items-center gap-1.5 grayscale opacity-50" :class="{ 'grayscale-0 opacity-100': getSessionMetadata(sid).flags.interest }">
+                  <div class="flex items-center gap-1.5 grayscale opacity-50" :class="{ 'grayscale-0 opacity-100': getSessionMetadata(sid)?.flags.interest }">
                     <svg class="w-2.5 h-2.5" :class="store.sessionFilter === sid ? 'text-indigo-200' : 'text-emerald-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>

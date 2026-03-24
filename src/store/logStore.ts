@@ -4,7 +4,9 @@ import { computed, ref, shallowRef } from "vue";
 import { APP_TYPES } from "../shared/types";
 import type { AnalyzerType, LogEvent } from "../shared/types";
 import type {
+	CheckoutParseMetadata,
 	LevelFilter,
+	ParseMetadata,
 	StoreStats,
 	TimeGroup,
 	ViewMode,
@@ -24,7 +26,7 @@ export const useLogStore = defineStore("logs", () => {
 	const progress = ref(0);
 	const sessionIds = ref<string[]>([]);
 	const sessionFilter = ref<string | null>(null);
-	const metadata = ref<unknown>(null);
+	const metadata = ref<ParseMetadata | null>(null);
 
 	const processedHashes = new Set<string>();
 
@@ -144,18 +146,19 @@ export const useLogStore = defineStore("logs", () => {
 			}
 
 			if (result.metadata) {
-				metadata.value = result.metadata;
+				// Cast to local ParseMetadata via unknown to bridge library/local types
+				const meta = result.metadata as unknown as ParseMetadata;
+				metadata.value = meta;
 
-				if ("sessionIds" in (result.metadata as any) && (result.metadata as any).sessionIds?.length) {
-					const existing = new Set(sessionIds.value);
-					for (const sid of (result.metadata as any).sessionIds) {
-						if (!existing.has(sid)) sessionIds.value.push(sid);
-					}
-				} else if ("sessions" in (result.metadata as any) && (result.metadata as any).sessions?.length) {
-					// Handling new metadata format with sessions array
-					const existing = new Set(sessionIds.value);
-					for (const sess of (result.metadata as any).sessions) {
-						if (!existing.has(sess.sessionId)) sessionIds.value.push(sess.sessionId);
+				if (type === APP_TYPES.CHECKOUT) {
+					const checkoutMeta = meta as CheckoutParseMetadata;
+					if (checkoutMeta.sessions?.length) {
+						const existing = new Set(sessionIds.value);
+						for (const sess of checkoutMeta.sessions) {
+							if (!existing.has(sess.sessionId)) {
+								sessionIds.value.push(sess.sessionId);
+							}
+						}
 					}
 				}
 

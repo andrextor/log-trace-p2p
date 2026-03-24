@@ -56,3 +56,39 @@ export interface NormalizedLogData {
 	context: Record<string, unknown>;
 	sourceType?: "AWS_CSV" | "LARAVEL_LOCAL" | "NEW_RELIC_JSON" | "UNKNOWN";
 }
+
+export interface DomainMetadata {
+	[key: string]: unknown;
+}
+
+export interface CheckoutSessionMetadata {
+	sessionId: string;
+	sessionType: "PAYMENT" | "COLLECT" | "SUBSCRIPTION" | "AUTOPAY" | "UNKNOWN";
+	finalState: string;
+	hasSuccessfulTransaction: boolean;
+	reference?: string;
+	flags: {
+		otp: boolean;
+		threeDS: boolean;
+		interest: boolean;
+	};
+}
+
+export interface CheckoutParseMetadata extends DomainMetadata {
+	totalSessions: number;
+	sessions: CheckoutSessionMetadata[];
+}
+
+export interface RestParseMetadata extends DomainMetadata {
+	totalRequests: number;
+	requestsByProvider: Record<string, number>;
+}
+
+export interface MicrositesParseMetadata extends DomainMetadata {
+	totalViews: number;
+}
+
+export type ParseMetadata =
+	| CheckoutParseMetadata
+	| RestParseMetadata
+	| MicrositesParseMetadata;

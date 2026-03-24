@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { P2PParserEngine } from "@andrextor_ia11012/p2p-log-parser";
 import { computed, nextTick, ref, watch } from "vue";
 import {
 	ANALYZER_NAMES,
@@ -6,7 +7,6 @@ import {
 	type AnalyzerType,
 } from "../../shared/types";
 import { useLogStore } from "../../store/logStore";
-import { P2PParserEngine } from "@andrextor_ia11012/p2p-log-parser";
 import ConfirmationModal from "./ConfirmationModal.vue";
 
 const props = defineProps<{
@@ -36,7 +36,9 @@ const engine = new P2PParserEngine();
 const supportedFormats = engine.getSupportedFormats();
 
 const availableFormats = computed(() => {
-	return supportedFormats[props.targetType as keyof typeof supportedFormats] || [];
+	return (
+		supportedFormats[props.targetType as keyof typeof supportedFormats] || []
+	);
 });
 
 function detectFormat(text: string) {
@@ -62,14 +64,23 @@ function detectFormat(text: string) {
 
 		// Specific Detection Heuristics
 		const sampleLower = sample.toLowerCase();
-		const isJson = sample.trim().startsWith("{") || sample.trim().startsWith("[");
+		const isJson =
+			sample.trim().startsWith("{") || sample.trim().startsWith("[");
 
 		if (props.targetType === "checkout") {
 			if (sample.includes(',"{') && /^\d{4}-\d{2}-\d{2}/.test(sample)) {
 				detectedFormatName.value = "AWS CSV Parser";
-			} else if (isJson && sample.includes("@timestamp") && sample.includes("fields.message")) {
+			} else if (
+				isJson &&
+				sample.includes("@timestamp") &&
+				sample.includes("fields.message")
+			) {
 				detectedFormatName.value = "New Relic Parser";
-			} else if (isJson && sample.includes("session_id") && sample.includes('"message"')) {
+			} else if (
+				isJson &&
+				sample.includes("session_id") &&
+				sample.includes('"message"')
+			) {
 				detectedFormatName.value = "Insights Parser";
 			} else if (isJson && sample.includes("level_name")) {
 				detectedFormatName.value = "Local Parser";
@@ -91,7 +102,9 @@ function processIncomingText(text: string) {
 		try {
 			const parsed = JSON.parse(trimmed);
 			if (Array.isArray(parsed)) {
-				const formattedText = parsed.map((obj) => JSON.stringify(obj)).join("\n");
+				const formattedText = parsed
+					.map((obj) => JSON.stringify(obj))
+					.join("\n");
 				raw.value = formattedText;
 				detectFormat(formattedText);
 				return;
