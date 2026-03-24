@@ -43,6 +43,27 @@ const displayProvider = computed(() => {
 		: null;
 });
 
+const displaySource = computed(() => {
+	const d = props.log.details as Record<string, unknown>;
+	return d?.source ? String(d.source).toUpperCase() : null;
+});
+
+const displaySubType = computed(() => {
+	const d = props.log.details as Record<string, unknown>;
+	if (props.log.appType !== APP_TYPES.CHECKOUT) return null;
+	return d?.subType ? String(d.subType) : null;
+});
+
+const essentialIdentifiers = computed(() => {
+	const d = props.log.details as Record<string, unknown>;
+	const p = (d.payload || {}) as Record<string, unknown>;
+	return [
+		{ label: "SID", value: d.sessionId },
+		{ label: "TX", value: d.transactionId },
+		{ label: "Trace", value: d.awsRequestId || d.aws_request_id },
+	].filter((c) => c.value);
+});
+
 const isErrorState = computed(() => {
 	const code = Number(props.log.details?.statusCode);
 	return (
@@ -167,16 +188,34 @@ function handleFilterId(id: string | number) {
       </div>
 
       <!-- Bottom Row: Meta Info & Visual Indicator -->
-      <div class="flex items-center justify-between mt-4">
+      <div class="flex items-start sm:items-center justify-between mt-4">
         <div class="flex flex-wrap items-center gap-2">
+           
+           <div v-if="displaySource" title="Event Source" class="flex items-center gap-1.5 bg-slate-50 dark:bg-black/20 px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 shadow-sm">
+              <div class="w-1.5 h-1.5 rounded-full" :class="displaySource === 'FRONTEND' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]'"></div>
+              <span class="text-[9px] font-black tracking-widest text-slate-500 dark:text-slate-400">{{ displaySource }}</span>
+           </div>
+
+           <div v-if="displaySubType" class="hidden sm:flex items-center gap-1.5 bg-slate-50 dark:bg-white/[0.02] px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 shadow-sm">
+              <span class="text-[9px] font-mono font-bold uppercase text-slate-400">{{ displaySubType }}</span>
+           </div>
+
            <span v-if="displayProvider" 
                  class="px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase tracking-wider border border-indigo-500/20 shadow-sm flex items-center gap-1.5">
              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
              {{ displayProvider }}
            </span>
 
+           <button v-for="id in essentialIdentifiers" :key="id.label" 
+                   @click.stop="handleFilterId(id.value as string)"
+                   class="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-indigo-500/10 px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 hover:border-indigo-500/30 transition-all shadow-sm group/id"
+                   :title="`Filter by ${id.label}: ${id.value}`">
+              <span class="text-[9px] font-black uppercase text-slate-400 group-hover/id:text-indigo-500 transition-colors">{{ id.label }}</span>
+              <span class="text-[9px] sm:text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 truncate max-w-[80px] sm:max-w-[120px]" :title="String(id.value)">{{ id.value }}</span>
+           </button>
+
            <div v-if="displayEndpoint" 
-                class="flex items-center gap-2 py-1 px-2.5 bg-slate-50 dark:bg-black/30 rounded-md border border-slate-100 dark:border-white/5 transition-all group-hover:border-indigo-500/30 group-hover:bg-white dark:group-hover:bg-black/50 shadow-sm max-w-[200px] sm:max-w-md">
+                class="hidden lg:flex items-center gap-2 py-1 px-2.5 bg-slate-50 dark:bg-black/30 rounded-md border border-slate-100 dark:border-white/5 transition-all group-hover:border-indigo-500/30 group-hover:bg-white dark:group-hover:bg-black/50 shadow-sm max-w-[150px] xl:max-w-xs">
              <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
              <span class="font-mono text-[10px] sm:text-xs truncate text-slate-500 dark:text-slate-400">
                {{ displayEndpoint }}
