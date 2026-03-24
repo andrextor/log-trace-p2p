@@ -35,6 +35,8 @@ export interface BaseDetails {
 	statusCode?: number | string | null;
 	payload?: unknown;
 	source?: string | null;
+	title?: string;
+	rawTitle?: string;
 }
 
 export interface LogEvent {
