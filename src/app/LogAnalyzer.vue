@@ -118,7 +118,7 @@ const handleUploadComplete = async () => {
             <span class="text-indigo-600 dark:text-indigo-400 font-black text-[11px] md:text-[10px] group-hover:block">P2P</span>
           </button>
           <div class="hidden md:flex flex-col cursor-default">
-            <span class="font-mono font-bold text-slate-900 dark:text-slate-100 text-[13px] tracking-tight leading-none">log-trace-analyzer</span>
+            <span class="font-mono font-bold text-slate-900 dark:text-slate-100 text-[13px] tracking-tight leading-none">P2P-log-trace</span>
             <span class="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5">Engine v4</span>
           </div>
         </div>
