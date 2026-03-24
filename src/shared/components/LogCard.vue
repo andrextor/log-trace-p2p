@@ -1,101 +1,117 @@
 <script setup lang="ts">
-import { ref, computed, type Component } from 'vue';
-import { useLogStore } from '../../store/logStore'; 
-import { APP_TYPES } from '../../shared/types';
-import type { LogEvent, HighlightTheme } from '../../shared/types'; 
-import { CATEGORY_STYLES } from '../../shared/constants/ui-styles';
+import { ref, computed, type Component } from "vue";
+import { useLogStore } from "../../store/logStore";
+import { APP_TYPES } from "../../shared/types";
+import type { LogEvent, HighlightTheme } from "../../shared/types";
+import { CATEGORY_STYLES } from "../../shared/constants/ui-styles";
 
-import CheckoutBody from '../../domains/checkout/components/CheckoutBody.vue'; 
-import RestBody from '../../domains/rest/components/RestBody.vue'; 
+import CheckoutBody from "../../domains/checkout/components/CheckoutBody.vue";
+import RestBody from "../../domains/rest/components/RestBody.vue";
 
 const props = defineProps<{
-  log: LogEvent;
-  isHighlighted: boolean;
+	log: LogEvent;
+	isHighlighted: boolean;
 }>();
 
 const store = useLogStore();
 const isExpanded = ref(false);
 
 const emit = defineEmits<{
-  (e: 'highlight-session', id: string | number): void
+	(e: "highlight-session", id: string | number): void;
 }>();
 
 const bodyComponents: Record<string, Component> = {
-  [APP_TYPES.CHECKOUT]: CheckoutBody,
-  [APP_TYPES.MICROSITIOS]: CheckoutBody,
-  [APP_TYPES.REST]: RestBody,
+	[APP_TYPES.CHECKOUT]: CheckoutBody,
+	[APP_TYPES.MICROSITIOS]: CheckoutBody,
+	[APP_TYPES.REST]: RestBody,
 };
 
-const currentBodyComponent = computed(() => bodyComponents[props.log.appType] || CheckoutBody);
+const currentBodyComponent = computed(
+	() => bodyComponents[props.log.appType] || CheckoutBody,
+);
 
 const displayEndpoint = computed(() => {
-  const details = props.log.details as Record<string, unknown>;
-  return details?.endpoint && details.endpoint !== 'N/A' ? String(details.endpoint) : null;
+	const details = props.log.details as Record<string, unknown>;
+	return details?.endpoint && details.endpoint !== "N/A"
+		? String(details.endpoint)
+		: null;
 });
 
 const displayProvider = computed(() => {
-  const details = props.log.details as Record<string, unknown>;
-  return details?.provider && details.provider !== 'API_REST' ? String(details.provider) : null;
+	const details = props.log.details as Record<string, unknown>;
+	return details?.provider && details.provider !== "API_REST"
+		? String(details.provider)
+		: null;
 });
 
 const isErrorState = computed(() => {
-  const code = Number(props.log.details?.statusCode);
-  return props.log.level === 'ERROR' || props.log.category === 'ERROR' || (code >= 400);
+	const code = Number(props.log.details?.statusCode);
+	return (
+		props.log.level === "ERROR" || props.log.category === "ERROR" || code >= 400
+	);
 });
 
 const statusCodeStyle = computed(() => {
-  const code = Number(props.log.details?.statusCode);
-  if (!code || isNaN(code)) return null;
-  if (code >= 500) return 'bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400';
-  if (code >= 400) return 'bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400';
-  return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400';
+	const code = Number(props.log.details?.statusCode);
+	if (!code || isNaN(code)) return null;
+	if (code >= 500)
+		return "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400";
+	if (code >= 400)
+		return "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400";
+	return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400";
 });
 
 const activeTheme = computed<HighlightTheme | null>(() => {
-  if (!props.isHighlighted) return null;
-  
-  const activeId = String(store.highlightedSessionId).toLowerCase();
-  const details = props.log.details as Record<string, unknown>;
-  const payload = (details?.payload || {}) as Record<string, unknown>;
+	if (!props.isHighlighted) return null;
 
-  const isSessionId = details?.sessionId && String(details.sessionId).toLowerCase() === activeId;
-  const isInterdinHash = payload?.id && String(payload.id).toLowerCase().includes(activeId);
+	const activeId = String(store.highlightedSessionId).toLowerCase();
+	const details = props.log.details as Record<string, unknown>;
+	const payload = (details?.payload || {}) as Record<string, unknown>;
 
-  if (isSessionId || isInterdinHash) {
-    return { 
-      ring: 'ring-2 ring-indigo-500 border-indigo-500 shadow-indigo-500/20', 
-      bg: 'bg-indigo-500' 
-    };
-  }
+	const isSessionId =
+		details?.sessionId && String(details.sessionId).toLowerCase() === activeId;
+	const isInterdinHash =
+		payload?.id && String(payload.id).toLowerCase().includes(activeId);
 
-  return { 
-    ring: 'ring-2 ring-orange-500 border-orange-500 shadow-orange-500/20', 
-    bg: 'bg-orange-500' 
-  };
+	if (isSessionId || isInterdinHash) {
+		return {
+			ring: "ring-2 ring-indigo-500 border-indigo-500 shadow-indigo-500/20",
+			bg: "bg-indigo-500",
+		};
+	}
+
+	return {
+		ring: "ring-2 ring-orange-500 border-orange-500 shadow-orange-500/20",
+		bg: "bg-orange-500",
+	};
 });
 
-const styles = computed(() => CATEGORY_STYLES[props.log.category] || { 
-  label: props.log.category, 
-  classes: 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-white/5 dark:text-slate-400' 
-});
+const styles = computed(
+	() =>
+		CATEGORY_STYLES[props.log.category] || {
+			label: props.log.category,
+			classes:
+				"bg-slate-100 text-slate-500 border-slate-200 dark:bg-white/5 dark:text-slate-400",
+		},
+);
 
 // Formateo de fecha más limpio: extraemos solo la hora y milisegundos si están disponibles
 const formattedTime = computed(() => {
-  try {
-    const timePart = props.log.timestamp.split('T')[1];
-    if (timePart) {
-      // Intentamos dejar solo HH:MM:SS.mmm
-      const cleanTime = timePart.split('-')[0].split('+')[0]; // quita la zona horaria
-      return cleanTime;
-    }
-    return props.log.timestamp;
-  } catch (e) {
-    return props.log.timestamp;
-  }
+	try {
+		const timePart = props.log.timestamp.split("T")[1];
+		if (timePart) {
+			// Intentamos dejar solo HH:MM:SS.mmm
+			const cleanTime = timePart.split("-")[0].split("+")[0]; // quita la zona horaria
+			return cleanTime;
+		}
+		return props.log.timestamp;
+	} catch (e) {
+		return props.log.timestamp;
+	}
 });
 
 function handleFilterId(id: string | number) {
-  emit('highlight-session', id);
+	emit("highlight-session", id);
 }
 </script>
 

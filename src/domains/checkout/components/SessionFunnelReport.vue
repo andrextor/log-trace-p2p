@@ -1,57 +1,71 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useLogStore } from '../../../store/logStore';
-import { APP_TYPES } from '../../../shared/types';
-import type { SessionFunnelSteps, StepConfig, FunnelStats, FunnelStep } from '../types';
-import { useSessionFunnel } from '../composables/useSessionFunnel';
-import { useFunnelExport } from '../composables/useFunnelExport';
+import { computed } from "vue";
+import { useLogStore } from "../../../store/logStore";
+import { APP_TYPES } from "../../../shared/types";
+import type {
+	SessionFunnelSteps,
+	StepConfig,
+	FunnelStats,
+	FunnelStep,
+} from "../types";
+import { useSessionFunnel } from "../composables/useSessionFunnel";
+import { useFunnelExport } from "../composables/useFunnelExport";
 
 const store = useLogStore();
 const { generateReport } = useSessionFunnel();
 const { exportToCSV } = useFunnelExport();
-const emit = defineEmits(['filter-session']);
+const emit = defineEmits(["filter-session"]);
 
 const STEP_CONFIG: readonly StepConfig[] = [
-  { key: 'created', label: 'Created', full: 'Session Creation Request' },
-  { key: 'entry', label: 'Entry', full: 'SPA Initial Load (Entry)' },
-  { key: 'show', label: 'Show', full: 'Data Visualization (Show)' },
-  { key: 'information', label: 'Info', full: 'Information Query' },
-  { key: 'interest', label: 'Interest', full: 'Interest Calculation' },
-  { key: 'generateOtp', label: 'OTP', full: 'OTP Generation / Validation' },
-  { key: 'threeDS', label: '3DS', full: '3DS / MPI Validation' },
-  { key: 'process', label: 'Process', full: 'Payment / Collect Execution' },
+	{ key: "created", label: "Created", full: "Session Creation Request" },
+	{ key: "entry", label: "Entry", full: "SPA Initial Load (Entry)" },
+	{ key: "show", label: "Show", full: "Data Visualization (Show)" },
+	{ key: "information", label: "Info", full: "Information Query" },
+	{ key: "interest", label: "Interest", full: "Interest Calculation" },
+	{ key: "generateOtp", label: "OTP", full: "OTP Generation / Validation" },
+	{ key: "threeDS", label: "3DS", full: "3DS / MPI Validation" },
+	{ key: "process", label: "Process", full: "Payment / Collect Execution" },
 ] as const;
 
 const reportData = computed(() => {
-  if (store.activeTab !== APP_TYPES.CHECKOUT) return [];
-  return generateReport(store.filteredEvents);
+	if (store.activeTab !== APP_TYPES.CHECKOUT) return [];
+	return generateReport(store.filteredEvents);
 });
 
 const stats = computed<FunnelStats | null>(() => {
-  const data = reportData.value;
-  if (data.length === 0) return null;
-  const total = data.length;
-  const finished = data.filter(r => r.steps.process === 1).length;
-  return { 
-    total, 
-    payments: data.filter(r => r.sessionType === 'PAYMENT').length,
-    collects: data.filter(r => r.sessionType === 'COLLECT').length,
-    conversionRate: ((finished / total) * 100).toFixed(1)
-  };
+	const data = reportData.value;
+	if (data.length === 0) return null;
+	const total = data.length;
+	const finished = data.filter((r) => r.steps.process === 1).length;
+	return {
+		total,
+		payments: data.filter((r) => r.sessionType === "PAYMENT").length,
+		collects: data.filter((r) => r.sessionType === "COLLECT").length,
+		conversionRate: ((finished / total) * 100).toFixed(1),
+	};
 });
 
 const funnelSteps = computed<FunnelStep[]>(() => {
-  const data = reportData.value;
-  if (!data.length) return [];
-  return STEP_CONFIG.filter(s => ['created', 'entry', 'show', 'information', 'process'].includes(s.key))
-    .map(s => {
-      const count = data.filter(r => r.steps[s.key as keyof SessionFunnelSteps] === 1).length;
-      return { ...s, count, percentage: ((count / data.length) * 100).toFixed(0) };
-    });
+	const data = reportData.value;
+	if (!data.length) return [];
+	return STEP_CONFIG.filter((s) =>
+		["created", "entry", "show", "information", "process"].includes(s.key),
+	).map((s) => {
+		const count = data.filter(
+			(r) => r.steps[s.key as keyof SessionFunnelSteps] === 1,
+		).length;
+		return {
+			...s,
+			count,
+			percentage: ((count / data.length) * 100).toFixed(0),
+		};
+	});
 });
 
 const handleExport = () => {
-  exportToCSV(reportData.value, stats.value, funnelSteps.value, [...STEP_CONFIG]);
+	exportToCSV(reportData.value, stats.value, funnelSteps.value, [
+		...STEP_CONFIG,
+	]);
 };
 </script>
 

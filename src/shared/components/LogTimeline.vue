@@ -1,77 +1,77 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useLogStore } from '../../store/logStore';
-import { APP_TYPES } from '../../shared/types';
-import type { LogEvent, ActiveFilterInfo } from '../../shared/types';
-import { LogUIHelper } from '../../shared/ui/LogUIHelper';
+import { ref, computed } from "vue";
+import { useLogStore } from "../../store/logStore";
+import { APP_TYPES } from "../../shared/types";
+import type { LogEvent, ActiveFilterInfo } from "../../shared/types";
+import { LogUIHelper } from "../../shared/ui/LogUIHelper";
 
-import TimelineHeader from './timeline/TimelineHeader.vue';
-import TimelineGroup from './timeline/TimelineGroup.vue';
-import ParsingErrorsModal from './ParsingErrorsModal.vue';
-import SessionFunnelReport from '../../domains/checkout/components/SessionFunnelReport.vue';
+import TimelineHeader from "./timeline/TimelineHeader.vue";
+import TimelineGroup from "./timeline/TimelineGroup.vue";
+import ParsingErrorsModal from "./ParsingErrorsModal.vue";
+import SessionFunnelReport from "../../domains/checkout/components/SessionFunnelReport.vue";
 
 const store = useLogStore();
 const showErrorsModal = ref(false);
-const showFunnel = ref(false); 
+const showFunnel = ref(false);
 const showSessionPanel = ref(true);
 const MAX_INITIAL_GROUPS = 40;
 
 const timelineGroups = computed(() => {
-  const groups = store.groupedEvents ? Object.values(store.groupedEvents) : [];
-  return groups.slice(0, MAX_INITIAL_GROUPS);
+	const groups = store.groupedEvents ? Object.values(store.groupedEvents) : [];
+	return groups.slice(0, MAX_INITIAL_GROUPS);
 });
 
 const activeFilterInfo = computed<ActiveFilterInfo | null>(() => {
-  if (!store.highlightedSessionId) return null;
-  const targetId = String(store.highlightedSessionId);
-  const match = store.events.find(e => LogUIHelper.isMatch(e, targetId));
-  
-  if (!match) return { label: 'ID', color: 'orange', value: targetId };
+	if (!store.highlightedSessionId) return null;
+	const targetId = String(store.highlightedSessionId);
+	const match = store.events.find((e) => LogUIHelper.isMatch(e, targetId));
 
-  const identity = LogUIHelper.getFilterIdentity(match, targetId);
-  return { label: identity.label, color: identity.colorClass, value: targetId };
+	if (!match) return { label: "ID", color: "orange", value: targetId };
+
+	const identity = LogUIHelper.getFilterIdentity(match, targetId);
+	return { label: identity.label, color: identity.colorClass, value: targetId };
 });
 
 const isLogHighlighted = (event: LogEvent) => {
-  if (!store.highlightedSessionId) return false;
-  return LogUIHelper.isMatch(event, String(store.highlightedSessionId));
+	if (!store.highlightedSessionId) return false;
+	return LogUIHelper.isMatch(event, String(store.highlightedSessionId));
 };
 
 const handleSessionFromFunnel = (sessionId: string | number) => {
-  store.highlightedSessionId = sessionId;
-  store.search = ''; 
-  showFunnel.value = false;
+	store.highlightedSessionId = sessionId;
+	store.search = "";
+	showFunnel.value = false;
 };
 
 const hasSessionFilter = computed(() => {
-  return store.activeTab === APP_TYPES.CHECKOUT && store.sessionIds.length > 1;
+	return store.activeTab === APP_TYPES.CHECKOUT && store.sessionIds.length > 1;
 });
 
 const setSessionFilter = (sessionId: string | null) => {
-  store.sessionFilter = sessionId;
-  store.highlightedSessionId = null;
-  store.search = '';
+	store.sessionFilter = sessionId;
+	store.highlightedSessionId = null;
+	store.search = "";
 };
 
 const currentSessionIndex = computed(() => {
-  if (!store.sessionFilter) return -1;
-  return store.sessionIds.indexOf(store.sessionFilter);
+	if (!store.sessionFilter) return -1;
+	return store.sessionIds.indexOf(store.sessionFilter);
 });
 
-const navigateSession = (direction: 'prev' | 'next') => {
-  const idx = currentSessionIndex.value;
-  if (direction === 'prev' && idx > 0) {
-    setSessionFilter(store.sessionIds[idx - 1]);
-  } else if (direction === 'next' && idx < store.sessionIds.length - 1) {
-    setSessionFilter(store.sessionIds[idx + 1]);
-  }
+const navigateSession = (direction: "prev" | "next") => {
+	const idx = currentSessionIndex.value;
+	if (direction === "prev" && idx > 0) {
+		setSessionFilter(store.sessionIds[idx - 1]);
+	} else if (direction === "next" && idx < store.sessionIds.length - 1) {
+		setSessionFilter(store.sessionIds[idx + 1]);
+	}
 };
 
 const sessionEventCount = (sid: string) => {
-  return store.events.filter(e => {
-    const details = e.details as Record<string, unknown>;
-    return String(details?.sessionId) === sid;
-  }).length;
+	return store.events.filter((e) => {
+		const details = e.details as Record<string, unknown>;
+		return String(details?.sessionId) === sid;
+	}).length;
 };
 </script>
 

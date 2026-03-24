@@ -1,129 +1,139 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
-import { useLogStore } from '../../store/logStore';
-import { APP_TYPES, type AnalyzerType, ANALYZER_NAMES } from '../../shared/types'; 
+import { useLogStore } from "../../store/logStore";
+import {
+	APP_TYPES,
+	type AnalyzerType,
+	ANALYZER_NAMES,
+} from "../../shared/types";
 import ConfirmationModal from "./ConfirmationModal.vue";
 
 const props = defineProps<{
-  targetType: AnalyzerType; 
+	targetType: AnalyzerType;
 }>();
 
 const store = useLogStore();
-const emit = defineEmits(['viewResults']);
+const emit = defineEmits(["viewResults"]);
 
 // --- CONFIGURACIÓN ---
-const MAX_STORE_LIMIT = 20000; 
-const BATCH_SIZE = 5000;      
+const MAX_STORE_LIMIT = 20000;
+const BATCH_SIZE = 5000;
 
 // --- ESTADO ---
 const raw = ref("");
-const leftovers = ref<string[]>([]); 
+const leftovers = ref<string[]>([]);
 const isDragging = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const showDeleteModal = ref(false);
 const currentInputCount = ref(0);
 
 function processIncomingText(text: string) {
-  const trimmed = text.trim();
-  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (Array.isArray(parsed)) {
-        raw.value = parsed.map(obj => JSON.stringify(obj)).join('\n');
-        return;
-      }
-    } catch (e) {
-      console.warn("JSON inválido.");
-    }
-  }
-  raw.value = text;
+	const trimmed = text.trim();
+	if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+		try {
+			const parsed = JSON.parse(trimmed);
+			if (Array.isArray(parsed)) {
+				raw.value = parsed.map((obj) => JSON.stringify(obj)).join("\n");
+				return;
+			}
+		} catch (e) {
+			console.warn("JSON inválido.");
+		}
+	}
+	raw.value = text;
 }
 
 watch(raw, (newVal) => {
-  if (!newVal.trim()) {
-    currentInputCount.value = 0;
-    return;
-  }
-  currentInputCount.value = newVal.split('\n').filter(l => l.trim().length > 5).length;
+	if (!newVal.trim()) {
+		currentInputCount.value = 0;
+		return;
+	}
+	currentInputCount.value = newVal
+		.split("\n")
+		.filter((l) => l.trim().length > 5).length;
 });
 
 const totalAccumulatedLines = computed(() => {
-  const currentAppCount = store.counts[props.targetType] || 0;
-  return currentAppCount + currentInputCount.value + leftovers.value.length;
+	const currentAppCount = store.counts[props.targetType] || 0;
+	return currentAppCount + currentInputCount.value + leftovers.value.length;
 });
 
-const isOverLimit = computed(() => totalAccumulatedLines.value > MAX_STORE_LIMIT);
+const isOverLimit = computed(
+	() => totalAccumulatedLines.value > MAX_STORE_LIMIT,
+);
 const needsSplitting = computed(() => currentInputCount.value > BATCH_SIZE);
 
 // --- FUNCIONES DE CARGA ---
 
-function openFilePicker() { fileInput.value?.click(); }
+function openFilePicker() {
+	fileInput.value?.click();
+}
 
 async function handleFileSelect(e: Event) {
-  const target = e.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    const text = await file.text();
-    processIncomingText(text);
-    target.value = '';
-    leftovers.value = []; 
-  }
+	const target = e.target as HTMLInputElement;
+	const file = target.files?.[0];
+	if (file) {
+		const text = await file.text();
+		processIncomingText(text);
+		target.value = "";
+		leftovers.value = [];
+	}
 }
 
 function onPaste(e: ClipboardEvent) {
-  const content = e.clipboardData?.getData("text") ?? "";
-  processIncomingText(content);
-  leftovers.value = [];
+	const content = e.clipboardData?.getData("text") ?? "";
+	processIncomingText(content);
+	leftovers.value = [];
 }
 
 async function handleFileDrop(e: DragEvent) {
-  isDragging.value = false;
-  const file = e.dataTransfer?.files[0];
-  if (file) {
-    const text = await file.text();
-    processIncomingText(text);
-    leftovers.value = [];
-  }
+	isDragging.value = false;
+	const file = e.dataTransfer?.files[0];
+	if (file) {
+		const text = await file.text();
+		processIncomingText(text);
+		leftovers.value = [];
+	}
 }
 
-function clearEditor() { 
-  raw.value = ""; 
-  leftovers.value = [];
-  currentInputCount.value = 0;
+function clearEditor() {
+	raw.value = "";
+	leftovers.value = [];
+	currentInputCount.value = 0;
 }
 
 function confirmClearAll() {
-  store.clearLogsByApp(props.targetType);
-  clearEditor();
-  showDeleteModal.value = false;
+	store.clearLogsByApp(props.targetType);
+	clearEditor();
+	showDeleteModal.value = false;
 }
 
 // --- PROCESAMIENTO ---
 
 async function triggerProcess() {
-  if (!raw.value || isOverLimit.value || store.isProcessing) return;
-  const allLines = raw.value.split('\n').filter(l => l.trim().length > 5);
+	if (!raw.value || isOverLimit.value || store.isProcessing) return;
+	const allLines = raw.value.split("\n").filter((l) => l.trim().length > 5);
 
-  if (allLines.length > BATCH_SIZE) {
-    const firstBatch = allLines.slice(0, BATCH_SIZE).join('\n');
-    leftovers.value = allLines.slice(BATCH_SIZE);
-    await store.processLogs(firstBatch, props.targetType);
-    raw.value = ""; 
-  } else {
-    await store.processLogs(raw.value, props.targetType);
-    raw.value = "";
-    leftovers.value = [];
-  }
-  await nextTick();
-  emit('viewResults');
+	if (allLines.length > BATCH_SIZE) {
+		const firstBatch = allLines.slice(0, BATCH_SIZE).join("\n");
+		leftovers.value = allLines.slice(BATCH_SIZE);
+		await store.processLogs(firstBatch, props.targetType);
+		raw.value = "";
+	} else {
+		await store.processLogs(raw.value, props.targetType);
+		raw.value = "";
+		leftovers.value = [];
+	}
+	await nextTick();
+	emit("viewResults");
 }
 
 async function processRemaining() {
-  if (leftovers.value.length === 0 || store.isProcessing) return;
-  const nextBatch = leftovers.value.slice(0, BATCH_SIZE).join('\n');
-  leftovers.value = leftovers.value.slice(BATCH_SIZE);
-  await store.processLogs(nextBatch, props.targetType);
-  if (leftovers.value.length === 0) emit('viewResults');
+	if (leftovers.value.length === 0 || store.isProcessing) return;
+	const nextBatch = leftovers.value.slice(0, BATCH_SIZE).join("\n");
+	leftovers.value = leftovers.value.slice(BATCH_SIZE);
+	await store.processLogs(nextBatch, props.targetType);
+	if (leftovers.value.length === 0) emit("viewResults");
 }
 </script>
 

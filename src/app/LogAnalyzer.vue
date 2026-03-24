@@ -1,74 +1,101 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue';
-import { Toaster, toast } from 'vue-sonner';
+import { ref, computed, onMounted, nextTick } from "vue";
+import { Toaster, toast } from "vue-sonner";
 import "vue-sonner/style.css";
 
-import { useLogStore } from '../store/logStore';
-import { APP_TYPES, ANALYZER_NAMES } from '../shared/types';
-import type { AnalyzerType, FilterTheme, FiltersCacheEntry } from '../shared/types';
-import { LogUIHelper } from '../shared/ui/LogUIHelper';
+import { useLogStore } from "../store/logStore";
+import { APP_TYPES, ANALYZER_NAMES } from "../shared/types";
+import type {
+	AnalyzerType,
+	FilterTheme,
+	FiltersCacheEntry,
+} from "../shared/types";
+import { LogUIHelper } from "../shared/ui/LogUIHelper";
 
-import AnalyzerControlBar from '../shared/components/analyzer/AnalyzerControlBar.vue';
-import LogUploader from '../shared/components/LogUploader.vue';
-import LogTimeline from '../shared/components/LogTimeline.vue';
-import AnalysisProgress from '../shared/components/analyzer/AnalysisProgress.vue';
-import LogExporter from '../shared/components/LogExporter.vue';
-import ThemeSelector from '../shared/components/ThemeSelector.vue'; 
+import AnalyzerControlBar from "../shared/components/analyzer/AnalyzerControlBar.vue";
+import LogUploader from "../shared/components/LogUploader.vue";
+import LogTimeline from "../shared/components/LogTimeline.vue";
+import AnalysisProgress from "../shared/components/analyzer/AnalysisProgress.vue";
+import LogExporter from "../shared/components/LogExporter.vue";
+import ThemeSelector from "../shared/components/ThemeSelector.vue";
 
 const store = useLogStore();
 
 const filtersCache = ref<Record<string, FiltersCacheEntry>>({
-  [APP_TYPES.CHECKOUT]: { search: '', highlighted: null, level: 'ALL' },
-  [APP_TYPES.REST]: { search: '', highlighted: null, level: 'ALL' }
+	[APP_TYPES.CHECKOUT]: { search: "", highlighted: null, level: "ALL" },
+	[APP_TYPES.REST]: { search: "", highlighted: null, level: "ALL" },
 });
 
-onMounted(() => { store.activeTab = APP_TYPES.CHECKOUT; });
+onMounted(() => {
+	store.activeTab = APP_TYPES.CHECKOUT;
+});
 
 const hasEventsForCurrentTab = computed(() => {
-  if (store.events.length === 0) return false;
-  return store.events.some(e => e.appType === store.activeTab);
+	if (store.events.length === 0) return false;
+	return store.events.some((e) => e.appType === store.activeTab);
 });
 
 const activeFilterTheme = computed<FilterTheme | null>(() => {
-  if (!store.highlightedSessionId) return null;
-  const targetId = String(store.highlightedSessionId);
-  const match = store.events.find(e => e.appType === store.activeTab && LogUIHelper.isMatch(e, targetId));
-  if (!match) return null;
-  const identity = LogUIHelper.getFilterIdentity(match, targetId);
-  return { label: identity.label, color: identity.colorClass, value: targetId };
+	if (!store.highlightedSessionId) return null;
+	const targetId = String(store.highlightedSessionId);
+	const match = store.events.find(
+		(e) => e.appType === store.activeTab && LogUIHelper.isMatch(e, targetId),
+	);
+	if (!match) return null;
+	const identity = LogUIHelper.getFilterIdentity(match, targetId);
+	return { label: identity.label, color: identity.colorClass, value: targetId };
 });
 
 const formatNumber = (num: number) => {
-  return num > 999 ? (num/1000).toFixed(1) + 'k' : num;
+	return num > 999 ? (num / 1000).toFixed(1) + "k" : num;
 };
 
 const setTab = (newTab: AnalyzerType) => {
-  if (store.activeTab === newTab) return;
-  const oldTab = store.activeTab;
-  filtersCache.value[oldTab] = { search: store.search, highlighted: store.highlightedSessionId, level: store.levelFilter };
-  store.activeTab = newTab;
-  store.sessionFilter = null;
-  const cached = filtersCache.value[newTab] || { search: '', highlighted: null, level: 'ALL' };
-  store.search = cached.search; store.highlightedSessionId = cached.highlighted; store.levelFilter = cached.level;
+	if (store.activeTab === newTab) return;
+	const oldTab = store.activeTab;
+	filtersCache.value[oldTab] = {
+		search: store.search,
+		highlighted: store.highlightedSessionId,
+		level: store.levelFilter,
+	};
+	store.activeTab = newTab;
+	store.sessionFilter = null;
+	const cached = filtersCache.value[newTab] || {
+		search: "",
+		highlighted: null,
+		level: "ALL",
+	};
+	store.search = cached.search;
+	store.highlightedSessionId = cached.highlighted;
+	store.levelFilter = cached.level;
 };
 
 const toggleErrorFilter = () => {
-  if (store.levelFilter === 'ERROR') store.levelFilter = 'ALL';
-  else {
-    if (store.stats.errors > 0) store.levelFilter = 'ERROR';
-    else toast.success("No failures in this application");
-  }
+	if (store.levelFilter === "ERROR") store.levelFilter = "ALL";
+	else {
+		if (store.stats.errors > 0) store.levelFilter = "ERROR";
+		else toast.success("No failures in this application");
+	}
 };
 
 const handleClearContext = () => {
-  const currentTab = store.activeTab as AnalyzerType;
-  store.clearLogsByApp(currentTab);
-  filtersCache.value[currentTab] = { search: '', highlighted: null, level: 'ALL' };
-  store.search = ""; store.levelFilter = "ALL"; store.highlightedSessionId = null;
-  toast.success(`${ANALYZER_NAMES[currentTab]} data cleared`);
+	const currentTab = store.activeTab as AnalyzerType;
+	store.clearLogsByApp(currentTab);
+	filtersCache.value[currentTab] = {
+		search: "",
+		highlighted: null,
+		level: "ALL",
+	};
+	store.search = "";
+	store.levelFilter = "ALL";
+	store.highlightedSessionId = null;
+	toast.success(`${ANALYZER_NAMES[currentTab]} data cleared`);
 };
 
-const handleUploadComplete = async () => { await nextTick(); toast.success("Logs integrated successfully"); };
+const handleUploadComplete = async () => {
+	await nextTick();
+	toast.success("Logs integrated successfully");
+};
 </script>
 
 <template>

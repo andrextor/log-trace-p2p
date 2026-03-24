@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted } from "vue";
 
 const props = defineProps<{
-  isOpen: boolean;
-  title?: string;
-  message?: string;
+	isOpen: boolean;
+	title?: string;
+	message?: string;
 }>();
 
-const emit = defineEmits(['close', 'confirm']);
+const emit = defineEmits(["close", "confirm"]);
 
 const handleKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && props.isOpen) emit('close');
+	if (e.key === "Escape" && props.isOpen) emit("close");
 };
 
-onMounted(() => window.addEventListener('keydown', handleKeydown));
-onUnmounted(() => window.removeEventListener('keydown', handleKeydown));
+onMounted(() => window.addEventListener("keydown", handleKeydown));
+onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
 </script>
 
 <template>

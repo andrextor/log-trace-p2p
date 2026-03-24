@@ -1,46 +1,51 @@
 <script setup lang="ts">
-import { useLogStore } from '../../store/logStore';
-import { toast } from 'vue-sonner';
+import { useLogStore } from "../../store/logStore";
+import { toast } from "vue-sonner";
 
 const store = useLogStore();
 
 function downloadJSON() {
-  try {
-    if (store.filteredEvents.length === 0) {
-      toast.error("No hay datos para exportar");
-      return;
-    }
+	try {
+		if (store.filteredEvents.length === 0) {
+			toast.error("No hay datos para exportar");
+			return;
+		}
 
-    // Estructuramos el JSON con metadata útil
-    const exportData = {
-      project: "P2P Analizer Report",
-      exportDate: new Date().toISOString(),
-      analyzerUsed: store.currentAnalyzer,
-      totalEvents: store.filteredEvents.length,
-      data: store.filteredEvents
-    };
+		// Estructuramos el JSON con metadata útil
+		const exportData = {
+			project: "P2P Analizer Report",
+			exportDate: new Date().toISOString(),
+			analyzerUsed: store.currentAnalyzer,
+			totalEvents: store.filteredEvents.length,
+			data: store.filteredEvents,
+		};
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    // Crear link temporal y simular click
-    const link = document.createElement('a');
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    
-    link.href = url;
-    link.download = `p2p-report-${store.currentAnalyzer}-${timestamp}.json`;
-    document.body.appendChild(link);
-    link.click();
-    
-    // Limpieza
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    toast.success("Archivo JSON descargado correctamente");
-  } catch (error) {
-    toast.error("Error al generar el archivo");
-    console.error(error);
-  }
+		const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+			type: "application/json",
+		});
+		const url = URL.createObjectURL(blob);
+
+		// Crear link temporal y simular click
+		const link = document.createElement("a");
+		const timestamp = new Date()
+			.toISOString()
+			.replace(/[:.]/g, "-")
+			.slice(0, 19);
+
+		link.href = url;
+		link.download = `p2p-report-${store.currentAnalyzer}-${timestamp}.json`;
+		document.body.appendChild(link);
+		link.click();
+
+		// Limpieza
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
+
+		toast.success("Archivo JSON descargado correctamente");
+	} catch (error) {
+		toast.error("Error al generar el archivo");
+		console.error(error);
+	}
 }
 </script>
 

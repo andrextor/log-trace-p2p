@@ -1,59 +1,81 @@
 <script setup lang="ts">
-import { ref, computed, type Ref } from 'vue';
-import type { CheckoutDetails } from '../types';
+import { ref, computed, type Ref } from "vue";
+import type { CheckoutDetails } from "../types";
 
 const props = defineProps<{
-  details: CheckoutDetails;
-  isHighlighted: boolean;
+	details: CheckoutDetails;
+	isHighlighted: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: 'filter-id', id: string | number): void
+	(e: "filter-id", id: string | number): void;
 }>();
 
 const copiedPayload = ref(false);
 const copiedEndpoint = ref(false);
 
-async function copyToClipboard(text: string | undefined | null, stateRef: Ref<boolean>) {
-  if (!text) return;
-  await navigator.clipboard.writeText(String(text));
-  stateRef.value = true;
-  setTimeout(() => stateRef.value = false, 2000);
+async function copyToClipboard(
+	text: string | undefined | null,
+	stateRef: Ref<boolean>,
+) {
+	if (!text) return;
+	await navigator.clipboard.writeText(String(text));
+	stateRef.value = true;
+	setTimeout(() => (stateRef.value = false), 2000);
 }
 
 const contextChips = computed(() => {
-  const d = props.details;
-  const p = (d.payload || {}) as Record<string, unknown>;
-  const body = (p.body || {}) as Record<string, unknown>;
-  return [
-    { label: 'Session ID', value: d.sessionId, filterable: true },
-    { label: 'Transaction', value: d.transactionId, filterable: true },
-    { label: 'Provider', value: d.provider, filterable: false },
-    { label: 'Gateway', value: body?.gateway || p.gateway || null, filterable: false },
-    { label: 'Trace ID', value: d.awsRequestId || d.aws_request_id, filterable: true },
-  ].filter(c => c.value);
+	const d = props.details;
+	const p = (d.payload || {}) as Record<string, unknown>;
+	const body = (p.body || {}) as Record<string, unknown>;
+	return [
+		{ label: "Session ID", value: d.sessionId, filterable: true },
+		{ label: "Transaction", value: d.transactionId, filterable: true },
+		{ label: "Provider", value: d.provider, filterable: false },
+		{
+			label: "Gateway",
+			value: body?.gateway || p.gateway || null,
+			filterable: false,
+		},
+		{
+			label: "Trace ID",
+			value: d.awsRequestId || d.aws_request_id,
+			filterable: true,
+		},
+	].filter((c) => c.value);
 });
 
 const stateTransition = computed(() => {
-  const p = (props.details.payload || {}) as Record<string, unknown>;
-  const actual = (p.actual_session_state || p.session_state) as string | undefined;
-  const target = (p.state_to_update || p.new_state) as string | undefined;
-  if (!actual && !target) return null;
-  return { actual: actual || 'START', target: target || actual };
+	const p = (props.details.payload || {}) as Record<string, unknown>;
+	const actual = (p.actual_session_state || p.session_state) as
+		| string
+		| undefined;
+	const target = (p.state_to_update || p.new_state) as string | undefined;
+	if (!actual && !target) return null;
+	return { actual: actual || "START", target: target || actual };
 });
 
 const errorDetail = computed(() => {
-  const p = (props.details.payload || {}) as Record<string, unknown>;
-  const exception = p.exception as Record<string, unknown> | undefined;
-  if (props.details.subType === 'request_not_valid' || exception || Number(props.details.statusCode) >= 400) {
-    return {
-      title: exception ? 'System Exception' : 'Validation Failed',
-      message: (exception?.message as string) || (p.message as string) || 'Request rejected by validation layer.',
-      code: props.details.statusCode || 'ERR',
-      sub: exception ? `${exception.file}:${exception.line}` : (props.details.endpoint || 'Checkout Validator')
-    };
-  }
-  return null;
+	const p = (props.details.payload || {}) as Record<string, unknown>;
+	const exception = p.exception as Record<string, unknown> | undefined;
+	if (
+		props.details.subType === "request_not_valid" ||
+		exception ||
+		Number(props.details.statusCode) >= 400
+	) {
+		return {
+			title: exception ? "System Exception" : "Validation Failed",
+			message:
+				(exception?.message as string) ||
+				(p.message as string) ||
+				"Request rejected by validation layer.",
+			code: props.details.statusCode || "ERR",
+			sub: exception
+				? `${exception.file}:${exception.line}`
+				: props.details.endpoint || "Checkout Validator",
+		};
+	}
+	return null;
 });
 </script>
 

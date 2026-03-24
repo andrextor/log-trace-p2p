@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ANALYZER_NAMES } from '../../../shared/types';
-import type { FilterTheme, StoreStats } from '../../../shared/types';
+import { ANALYZER_NAMES } from "../../../shared/types";
+import type { FilterTheme, StoreStats } from "../../../shared/types";
 
 defineProps<{
-  activeTab: string;
-  activeFilterTheme: FilterTheme | null;
-  stats: StoreStats;
-  levelFilter: string;
+	activeTab: string;
+	activeFilterTheme: FilterTheme | null;
+	stats: StoreStats;
+	levelFilter: string;
 }>();
 
-defineEmits(['toggle-errors', 'reset-filters', 'clear-data']);
+defineEmits(["toggle-errors", "reset-filters", "clear-data"]);
 </script>
 
 <template>

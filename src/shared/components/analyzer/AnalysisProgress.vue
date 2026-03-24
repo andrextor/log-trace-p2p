@@ -4,8 +4,8 @@
  * Se activa cuando el Store reporta que está procesando logs.
  */
 defineProps<{
-  progress: number;
-  isProcessing: boolean;
+	progress: number;
+	isProcessing: boolean;
 }>();
 </script>
 

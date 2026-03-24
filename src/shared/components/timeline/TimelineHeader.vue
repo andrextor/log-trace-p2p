@@ -1,17 +1,22 @@
 <script setup lang="ts">
-import LogExporter from '../LogExporter.vue';
-import { useLogStore } from '../../../store/logStore';
-import { APP_TYPES } from '../../../shared/types';
-import type { ActiveFilterInfo } from '../../../shared/types';
+import LogExporter from "../LogExporter.vue";
+import { useLogStore } from "../../../store/logStore";
+import { APP_TYPES } from "../../../shared/types";
+import type { ActiveFilterInfo } from "../../../shared/types";
 
 defineProps<{
-  search: string;
-  activeFilterInfo: ActiveFilterInfo | null;
-  visibleCount: number;
-  isFunnelVisible?: boolean;
+	search: string;
+	activeFilterInfo: ActiveFilterInfo | null;
+	visibleCount: number;
+	isFunnelVisible?: boolean;
 }>();
 
-const emit = defineEmits(['update:search', 'clearSearch', 'clearFilter', 'toggleFunnel']);
+const emit = defineEmits([
+	"update:search",
+	"clearSearch",
+	"clearFilter",
+	"toggleFunnel",
+]);
 const store = useLogStore();
 </script>
 

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { LogEvent } from '../../../shared/types';
-import type { TimeGroup } from '../../../shared/types';
-import LogCard from '../LogCard.vue';
+import type { LogEvent } from "../../../shared/types";
+import type { TimeGroup } from "../../../shared/types";
+import LogCard from "../LogCard.vue";
 
 defineProps<{
-  group: TimeGroup;
-  index: number;
-  highlightedId: string | number | null;
-  isLogHighlighted: (event: LogEvent) => boolean;
+	group: TimeGroup;
+	index: number;
+	highlightedId: string | number | null;
+	isLogHighlighted: (event: LogEvent) => boolean;
 }>();
 
-defineEmits(['highlight-session']);
+defineEmits(["highlight-session"]);
 </script>
 
 <template>

@@ -1,29 +1,29 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted } from "vue";
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = "light" | "dark" | "system";
 
-const theme = ref<Theme>('system');
+const theme = ref<Theme>("system");
 
 onMounted(() => {
-  const savedTheme = localStorage.getItem('theme') as Theme | null;
-  if (savedTheme) {
-    theme.value = savedTheme;
-  }
+	const savedTheme = localStorage.getItem("theme") as Theme | null;
+	if (savedTheme) {
+		theme.value = savedTheme;
+	}
 });
 
 const setTheme = (newTheme: Theme) => {
-  theme.value = newTheme;
-  const root = document.documentElement;
+	theme.value = newTheme;
+	const root = document.documentElement;
 
-  if (newTheme === 'system') {
-    localStorage.setItem('theme', 'system');
-    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    root.classList.toggle('dark', isDark);
-  } else {
-    localStorage.setItem('theme', newTheme);
-    root.classList.toggle('dark', newTheme === 'dark');
-  }
+	if (newTheme === "system") {
+		localStorage.setItem("theme", "system");
+		const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+		root.classList.toggle("dark", isDark);
+	} else {
+		localStorage.setItem("theme", newTheme);
+		root.classList.toggle("dark", newTheme === "dark");
+	}
 };
 </script>
 

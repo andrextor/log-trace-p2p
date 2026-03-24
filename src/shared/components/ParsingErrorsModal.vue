@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 
 const props = defineProps<{
-  isOpen: boolean;
-  errors: string[];
+	isOpen: boolean;
+	errors: string[];
 }>();
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(["close"]);
 
 const isCopied = ref(false);
 
 const copyAll = async () => {
-  try {
-    await navigator.clipboard.writeText(props.errors.join('\n'));
-    
-    isCopied.value = true;
-    setTimeout(() => {
-      isCopied.value = false;
-    }, 2000);
-  } catch (err) {
-    console.error('Error al copiar al portapapeles', err);
-  }
+	try {
+		await navigator.clipboard.writeText(props.errors.join("\n"));
+
+		isCopied.value = true;
+		setTimeout(() => {
+			isCopied.value = false;
+		}, 2000);
+	} catch (err) {
+		console.error("Error al copiar al portapapeles", err);
+	}
 };
 </script>
 

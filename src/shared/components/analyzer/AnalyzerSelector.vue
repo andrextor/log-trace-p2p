@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useLogStore } from '../../../store/logStore';
+import { computed } from "vue";
+import { useLogStore } from "../../../store/logStore";
 // Importamos la configuración centralizada (Paso 1)
-import { ANALYZER_NAMES, type AnalyzerType } from '../../../shared/types';
+import { ANALYZER_NAMES, type AnalyzerType } from "../../../shared/types";
 
 const store = useLogStore();
 
 const availableAnalyzers = computed(() => {
-  return Object.entries(ANALYZER_NAMES).map(([key, label]) => {
-    const id = key as AnalyzerType;
-    return {
-      id,
-      name: label,
-      icon: id === 'checkout' ? '🛒' : id === 'micrositios' ? '🏢' : '💻',
-      disabled: false 
-    };
-  });
+	return Object.entries(ANALYZER_NAMES).map(([key, label]) => {
+		const id = key as AnalyzerType;
+		return {
+			id,
+			name: label,
+			icon: id === "checkout" ? "🛒" : id === "micrositios" ? "🏢" : "💻",
+			disabled: false,
+		};
+	});
 });
 
 function selectAnalyzer(id: AnalyzerType) {
-  store.currentAnalyzer = id;
-   store.clearLogs(); 
+	store.currentAnalyzer = id;
+	store.clearLogs();
 }
 </script>
 

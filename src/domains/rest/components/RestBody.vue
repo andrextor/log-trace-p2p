@@ -1,78 +1,99 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import type { RestDetails, ExceptionInfo } from '../types';
+import { ref, computed } from "vue";
+import type { RestDetails, ExceptionInfo } from "../types";
 
 const props = defineProps<{
-  details: RestDetails;
-  isHighlighted: boolean;
+	details: RestDetails;
+	isHighlighted: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: 'filter-id', id: string | number): void
+	(e: "filter-id", id: string | number): void;
 }>();
 
 const copiedPayload = ref(false);
 const copiedURL = ref(false);
 
 const contextChips = computed(() => {
-  if (!props.details.payload) return [];
-  
-  const importantKeys = ['id', 'TENANT_DOMAIN', 'bin', 'reference', 'site', 'service', 'tenantId', 'bank'];
-  const dataSource = props.details.payload as Record<string, unknown>;
+	if (!props.details.payload) return [];
 
-  return Object.entries(dataSource)
-    .filter(([key, value]) => importantKeys.includes(key) && value !== null && value !== undefined && value !== '')
-    .map(([key, value]) => ({
-      label: key === 'id' ? 'Trace Hash' : key.replace('_', ' '),
-      value: String(value),
-      filterable: ['id', 'bin', 'reference', 'tenantId'].includes(key)
-    }));
+	const importantKeys = [
+		"id",
+		"TENANT_DOMAIN",
+		"bin",
+		"reference",
+		"site",
+		"service",
+		"tenantId",
+		"bank",
+	];
+	const dataSource = props.details.payload as Record<string, unknown>;
+
+	return Object.entries(dataSource)
+		.filter(
+			([key, value]) =>
+				importantKeys.includes(key) &&
+				value !== null &&
+				value !== undefined &&
+				value !== "",
+		)
+		.map(([key, value]) => ({
+			label: key === "id" ? "Trace Hash" : key.replace("_", " "),
+			value: String(value),
+			filterable: ["id", "bin", "reference", "tenantId"].includes(key),
+		}));
 });
 
 const errorDetail = computed(() => {
-  if (props.details.exception) {
-    const exc = props.details.exception;
-    return {
-      title: 'System / Guzzle Exception',
-      message: exc.message,
-      code: props.details.statusCode || 500,
-      sub: `File: ${exc.file?.split('/').pop()}:${exc.line || '?'}`
-    };
-  }
-  
-  const payloadData = props.details.payload as Record<string, unknown>;
-  const ctx = (payloadData?.context as Record<string, unknown>)?.data as Record<string, unknown> | undefined;
-  const source = ctx || payloadData;
-  const bizError = (source?.dinError || source?.error) as Record<string, unknown> | undefined;
-  
-  if (bizError && bizError.codigo !== '0000' && bizError.codigo !== undefined) {
-    return {
-      title: `Provider Error [${props.details.provider}]`,
-      message: String(bizError.mensaje || bizError.message || 'Operation rejected'),
-      code: bizError.codigo,
-      sub: String(bizError.detalle || 'Check JSON trace for more details')
-    };
-  }
-  
-  return null;
+	if (props.details.exception) {
+		const exc = props.details.exception;
+		return {
+			title: "System / Guzzle Exception",
+			message: exc.message,
+			code: props.details.statusCode || 500,
+			sub: `File: ${exc.file?.split("/").pop()}:${exc.line || "?"}`,
+		};
+	}
+
+	const payloadData = props.details.payload as Record<string, unknown>;
+	const ctx = (payloadData?.context as Record<string, unknown>)?.data as
+		| Record<string, unknown>
+		| undefined;
+	const source = ctx || payloadData;
+	const bizError = (source?.dinError || source?.error) as
+		| Record<string, unknown>
+		| undefined;
+
+	if (bizError && bizError.codigo !== "0000" && bizError.codigo !== undefined) {
+		return {
+			title: `Provider Error [${props.details.provider}]`,
+			message: String(
+				bizError.mensaje || bizError.message || "Operation rejected",
+			),
+			code: bizError.codigo,
+			sub: String(bizError.detalle || "Check JSON trace for more details"),
+		};
+	}
+
+	return null;
 });
 
 async function copyURL() {
-  const url = props.details.endpoint;
-  if (!url) return; 
-  
-  await navigator.clipboard.writeText(url);
-  copiedURL.value = true;
-  setTimeout(() => (copiedURL.value = false), 2000);
+	const url = props.details.endpoint;
+	if (!url) return;
+
+	await navigator.clipboard.writeText(url);
+	copiedURL.value = true;
+	setTimeout(() => (copiedURL.value = false), 2000);
 }
 
 async function copyJSON() {
-  const json = JSON.stringify(props.details.payload, null, 2);
-  if (!json) return;
+	const json = JSON.stringify(props.details.payload, null, 2);
+	if (!json) return;
 
-  await navigator.clipboard.writeText(json);
-  copiedPayload.value = true;
-  setTimeout(() => (copiedPayload.value = false), 2000);
+	await navigator.clipboard.writeText(json);
+	copiedPayload.value = true;
+	setTimeout(() => (copiedPayload.value = false), 2000);
 }
 </script>
 
