@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useLogStore } from '../store/logStore';
-import { APP_TYPES } from '../logic/types';
-import { LogUIHelper } from '../logic/ui/LogUIHelper';
+import { useLogStore } from '../../store/logStore';
+import { APP_TYPES } from '../../shared/types';
+import type { LogEvent, ActiveFilterInfo } from '../../shared/types';
+import { LogUIHelper } from '../../shared/ui/LogUIHelper';
 
-// Sub-componentes
 import TimelineHeader from './timeline/TimelineHeader.vue';
 import TimelineGroup from './timeline/TimelineGroup.vue';
 import ParsingErrorsModal from './ParsingErrorsModal.vue';
-import SessionFunnelReport from './funnels/SessionFunnelReport.vue';
+import SessionFunnelReport from '../../domains/checkout/components/SessionFunnelReport.vue';
 
 const store = useLogStore();
 const showErrorsModal = ref(false);
@@ -21,7 +21,7 @@ const timelineGroups = computed(() => {
   return groups.slice(0, MAX_INITIAL_GROUPS);
 });
 
-const activeFilterInfo = computed(() => {
+const activeFilterInfo = computed<ActiveFilterInfo | null>(() => {
   if (!store.highlightedSessionId) return null;
   const targetId = String(store.highlightedSessionId);
   const match = store.events.find(e => LogUIHelper.isMatch(e, targetId));
@@ -32,7 +32,7 @@ const activeFilterInfo = computed(() => {
   return { label: identity.label, color: identity.colorClass, value: targetId };
 });
 
-const isLogHighlighted = (event: any) => {
+const isLogHighlighted = (event: LogEvent) => {
   if (!store.highlightedSessionId) return false;
   return LogUIHelper.isMatch(event, String(store.highlightedSessionId));
 };
@@ -69,7 +69,7 @@ const navigateSession = (direction: 'prev' | 'next') => {
 
 const sessionEventCount = (sid: string) => {
   return store.events.filter(e => {
-    const details = e.details as any;
+    const details = e.details as Record<string, unknown>;
     return String(details?.sessionId) === sid;
   }).length;
 };
@@ -78,7 +78,6 @@ const sessionEventCount = (sid: string) => {
 <template>
   <div class="flex h-[calc(100vh-180px)] animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
     
-    <!-- Main Timeline Column -->
     <div class="flex-1 flex flex-col min-w-0">
       <TimelineHeader 
         v-model:search="store.search"
@@ -90,7 +89,6 @@ const sessionEventCount = (sid: string) => {
         @toggleFunnel="showFunnel = !showFunnel"
       />
 
-      <!-- Active session quick-nav bar -->
       <div v-if="hasSessionFilter && store.sessionFilter" class="flex items-center justify-between px-4 py-1.5 bg-indigo-500/5 dark:bg-indigo-500/10 border-b border-indigo-500/10">
         <div class="flex items-center gap-3">
           <button @click="navigateSession('prev')" :disabled="currentSessionIndex <= 0"
@@ -145,7 +143,6 @@ const sessionEventCount = (sid: string) => {
       </div>
     </div>
 
-    <!-- Right Session Panel -->
     <transition name="slide-panel">
       <aside v-if="hasSessionFilter && showSessionPanel" 
              class="w-52 shrink-0 border-l border-slate-200 dark:border-white/5 bg-white/50 dark:bg-[#0a0a0b]/50 backdrop-blur-sm flex flex-col overflow-hidden">
@@ -194,7 +191,6 @@ const sessionEventCount = (sid: string) => {
       </aside>
     </transition>
 
-    <!-- Toggle panel button (when closed) -->
     <button v-if="hasSessionFilter && !showSessionPanel" 
             @click="showSessionPanel = true"
             class="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#161618] border border-slate-200 dark:border-white/10 shadow-md text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:border-indigo-500/30 transition-all">

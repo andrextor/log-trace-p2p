@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useLogStore } from '../store/logStore'; 
-import { APP_TYPES, type LogEvent } from '../logic/types'; 
-import { CATEGORY_STYLES } from '../constants/ui-styles';
+import { ref, computed, type Component } from 'vue';
+import { useLogStore } from '../../store/logStore'; 
+import { APP_TYPES } from '../../shared/types';
+import type { LogEvent, HighlightTheme } from '../../shared/types'; 
+import { CATEGORY_STYLES } from '../../shared/constants/ui-styles';
 
-// Importación de los cuerpos específicos
-import CheckoutBody from './log-bodies/checkout/CheckoutBody.vue'; 
-import RestBody from './log-bodies/rest/RestBody.vue'; 
+import CheckoutBody from '../../domains/checkout/components/CheckoutBody.vue'; 
+import RestBody from '../../domains/rest/components/RestBody.vue'; 
 
 const props = defineProps<{
   log: LogEvent;
@@ -20,7 +20,7 @@ const emit = defineEmits<{
   (e: 'highlight-session', id: string | number): void
 }>();
 
-const bodyComponents: Record<string, any> = {
+const bodyComponents: Record<string, Component> = {
   [APP_TYPES.CHECKOUT]: CheckoutBody,
   [APP_TYPES.MICROSITIOS]: CheckoutBody,
   [APP_TYPES.REST]: RestBody,
@@ -29,13 +29,13 @@ const bodyComponents: Record<string, any> = {
 const currentBodyComponent = computed(() => bodyComponents[props.log.appType] || CheckoutBody);
 
 const displayEndpoint = computed(() => {
-  const details = props.log.details as any;
-  return details?.endpoint && details.endpoint !== 'N/A' ? details.endpoint : null;
+  const details = props.log.details as Record<string, unknown>;
+  return details?.endpoint && details.endpoint !== 'N/A' ? String(details.endpoint) : null;
 });
 
 const displayProvider = computed(() => {
-  const details = props.log.details as any;
-  return details?.provider && details.provider !== 'API_REST' ? details.provider : null;
+  const details = props.log.details as Record<string, unknown>;
+  return details?.provider && details.provider !== 'API_REST' ? String(details.provider) : null;
 });
 
 const isErrorState = computed(() => {
@@ -51,12 +51,12 @@ const statusCodeStyle = computed(() => {
   return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400';
 });
 
-const activeTheme = computed(() => {
+const activeTheme = computed<HighlightTheme | null>(() => {
   if (!props.isHighlighted) return null;
   
   const activeId = String(store.highlightedSessionId).toLowerCase();
-  const details = props.log.details as any;
-  const payload = details?.payload || {};
+  const details = props.log.details as Record<string, unknown>;
+  const payload = (details?.payload || {}) as Record<string, unknown>;
 
   const isSessionId = details?.sessionId && String(details.sessionId).toLowerCase() === activeId;
   const isInterdinHash = payload?.id && String(payload.id).toLowerCase().includes(activeId);

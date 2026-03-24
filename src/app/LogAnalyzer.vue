@@ -4,37 +4,32 @@ import { Toaster, toast } from 'vue-sonner';
 import "vue-sonner/style.css";
 
 import { useLogStore } from '../store/logStore';
-import { APP_TYPES, ANALYZER_NAMES } from '../logic/types';
-import { LogUIHelper } from '../logic/ui/LogUIHelper';
+import { APP_TYPES, ANALYZER_NAMES } from '../shared/types';
+import type { AnalyzerType, FilterTheme, FiltersCacheEntry } from '../shared/types';
+import { LogUIHelper } from '../shared/ui/LogUIHelper';
 
-// Sub-componentes
-import AnalyzerControlBar from './analyzer/AnalyzerControlBar.vue';
-import LogUploader from './LogUploader.vue';
-import LogTimeline from './LogTimeline.vue';
-import AnalysisProgress from './analyzer/AnalysisProgress.vue';
-import LogExporter from './LogExporter.vue';
-import ThemeSelector from './ThemeSelector.vue'; 
+import AnalyzerControlBar from '../shared/components/analyzer/AnalyzerControlBar.vue';
+import LogUploader from '../shared/components/LogUploader.vue';
+import LogTimeline from '../shared/components/LogTimeline.vue';
+import AnalysisProgress from '../shared/components/analyzer/AnalysisProgress.vue';
+import LogExporter from '../shared/components/LogExporter.vue';
+import ThemeSelector from '../shared/components/ThemeSelector.vue'; 
 
 const store = useLogStore();
 
-/**
- * MEMORIA DE FILTROS POR APLICACIÓN
- */
-const filtersCache = ref({
-  [APP_TYPES.CHECKOUT]: { search: '', highlighted: null as any, level: 'ALL' },
-  [APP_TYPES.REST]: { search: '', highlighted: null as any, level: 'ALL' }
+const filtersCache = ref<Record<string, FiltersCacheEntry>>({
+  [APP_TYPES.CHECKOUT]: { search: '', highlighted: null, level: 'ALL' },
+  [APP_TYPES.REST]: { search: '', highlighted: null, level: 'ALL' }
 });
 
 onMounted(() => { store.activeTab = APP_TYPES.CHECKOUT; });
-
-// --- LÓGICA DE VISUALIZACIÓN ---
 
 const hasEventsForCurrentTab = computed(() => {
   if (store.events.length === 0) return false;
   return store.events.some(e => e.appType === store.activeTab);
 });
 
-const activeFilterTheme = computed(() => {
+const activeFilterTheme = computed<FilterTheme | null>(() => {
   if (!store.highlightedSessionId) return null;
   const targetId = String(store.highlightedSessionId);
   const match = store.events.find(e => e.appType === store.activeTab && LogUIHelper.isMatch(e, targetId));
@@ -47,38 +42,33 @@ const formatNumber = (num: number) => {
   return num > 999 ? (num/1000).toFixed(1) + 'k' : num;
 };
 
-/**
- * CAMBIO DE PESTAÑA SIN CRUCE
- */
-const setTab = (newTab: any) => {
+const setTab = (newTab: AnalyzerType) => {
   if (store.activeTab === newTab) return;
-  const oldTab = store.activeTab as keyof typeof filtersCache.value;
+  const oldTab = store.activeTab;
   filtersCache.value[oldTab] = { search: store.search, highlighted: store.highlightedSessionId, level: store.levelFilter };
   store.activeTab = newTab;
   store.sessionFilter = null;
-  const cached = filtersCache.value[newTab as keyof typeof filtersCache.value];
+  const cached = filtersCache.value[newTab] || { search: '', highlighted: null, level: 'ALL' };
   store.search = cached.search; store.highlightedSessionId = cached.highlighted; store.levelFilter = cached.level;
 };
-
-// --- ACCIONES ---
 
 const toggleErrorFilter = () => {
   if (store.levelFilter === 'ERROR') store.levelFilter = 'ALL';
   else {
     if (store.stats.errors > 0) store.levelFilter = 'ERROR';
-    else toast.success("No hay fallos en esta aplicación");
+    else toast.success("No failures in this application");
   }
 };
 
 const handleClearContext = () => {
-  const currentTab = store.activeTab as keyof typeof filtersCache.value;
+  const currentTab = store.activeTab as AnalyzerType;
   store.clearLogsByApp(currentTab);
   filtersCache.value[currentTab] = { search: '', highlighted: null, level: 'ALL' };
   store.search = ""; store.levelFilter = "ALL"; store.highlightedSessionId = null;
-  toast.success(`Data de ${ANALYZER_NAMES[currentTab]} borrada`);
+  toast.success(`${ANALYZER_NAMES[currentTab]} data cleared`);
 };
 
-const handleUploadComplete = async () => { await nextTick(); toast.success("Logs integrados correctamente"); };
+const handleUploadComplete = async () => { await nextTick(); toast.success("Logs integrated successfully"); };
 </script>
 
 <template>
@@ -92,11 +82,9 @@ const handleUploadComplete = async () => { await nextTick(); toast.success("Logs
 
   <div class="flex flex-col min-h-screen w-full font-sans text-slate-900 dark:text-slate-100 transition-colors duration-500">
     
-    <!-- UNIFIED APP BAR -->
     <header class="sticky top-0 z-50 bg-white/80 dark:bg-[#0a0a0b]/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/5 transition-colors">
       <div class="px-4 sm:px-6 h-14 flex items-center justify-between w-full">
         
-        <!-- Logo & Branding -->
         <div class="flex items-center gap-3 w-1/4">
           <button @click="handleClearContext" class="relative w-8 h-8 md:w-7 md:h-7 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-center justify-center shadow-sm hover:scale-105 transition-transform group">
             <span class="text-indigo-600 dark:text-indigo-400 font-black text-[11px] md:text-[10px] group-hover:block">P2P</span>
@@ -107,7 +95,6 @@ const handleUploadComplete = async () => { await nextTick(); toast.success("Logs
           </div>
         </div>
 
-        <!-- Segmented Tabs (Center) -->
         <div class="flex-1 flex justify-center w-2/4">
           <div class="flex items-center p-1 bg-slate-100/60 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-xl shadow-inner backdrop-blur-sm">
             <button
@@ -133,7 +120,6 @@ const handleUploadComplete = async () => { await nextTick(); toast.success("Logs
           </div>
         </div>
 
-        <!-- Right Actions (Data Export + Theme) -->
         <div class="flex items-center justify-end gap-2 sm:gap-4 w-1/4">
           <transition name="fade">
             <LogExporter v-if="hasEventsForCurrentTab" class="hidden sm:flex" />
@@ -144,12 +130,10 @@ const handleUploadComplete = async () => { await nextTick(); toast.success("Logs
       </div>
     </header>
 
-    <!-- MAIN VIEW -->
     <main class="flex-1 w-full bg-slate-50/30 dark:bg-transparent relative">
       <transition name="fade" mode="out-in">
         
         <div v-if="hasEventsForCurrentTab" key="timeline" class="h-full flex flex-col">
-          <!-- Sleek Sub-Header Control Bar -->
           <div class="sticky top-14 z-40 bg-white/70 dark:bg-[#0a0a0b]/70 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/5 py-3 px-4 sm:px-6 w-full shadow-sm">
              <div class="max-w-7xl mx-auto w-full">
                <AnalyzerControlBar 
@@ -174,7 +158,6 @@ const handleUploadComplete = async () => { await nextTick(); toast.success("Logs
              </div>
           </div>
 
-          <!-- Timeline Content -->
           <div class="flex-1 w-full px-2 sm:px-6 py-4 custom-scrollbar">
             <div class="max-w-7xl mx-auto w-full pb-20">
               <LogTimeline />
@@ -182,7 +165,6 @@ const handleUploadComplete = async () => { await nextTick(); toast.success("Logs
           </div>
         </div>
 
-        <!-- Empty / Uploader State -->
         <div v-else key="uploader" class="h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-4 animate-in fade-in slide-in-from-bottom-6 duration-700 w-full max-w-7xl mx-auto">
           <div class="text-center mb-10 space-y-4">
             <div class="flex flex-col items-center justify-center gap-4">
@@ -195,15 +177,15 @@ const handleUploadComplete = async () => { await nextTick(); toast.success("Logs
                   </svg>
               </div>
               <h1 class="text-3xl font-black uppercase tracking-tighter italic">
-                  Analizador <span class="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">{{ ANALYZER_NAMES[store.activeTab as keyof typeof ANALYZER_NAMES] }}</span>
+                  Analyzer <span class="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">{{ ANALYZER_NAMES[store.activeTab as keyof typeof ANALYZER_NAMES] }}</span>
               </h1>
             </div>
             <p class="text-xs text-slate-500 max-w-md mx-auto font-bold uppercase tracking-[0.1em] leading-relaxed opacity-80 pt-2">
               <template v-if="store.activeTab === APP_TYPES.CHECKOUT">
-                Sube trazas de checkout para analizar conversiones y abandonos.
+                Upload checkout traces to analyze conversions and drop-offs.
               </template>
               <template v-else>
-                Sube trazas REST para depurar 5xx y fallos técnicos.
+                Upload REST traces to debug 5xx and technical failures.
               </template>
             </p>
           </div>

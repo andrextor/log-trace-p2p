@@ -1,55 +1,54 @@
 import { toast } from "vue-sonner"
+import type { SessionFunnelRow, FunnelStats, FunnelStep, StepConfig } from "../types"
 
 export function useFunnelExport() {
   const TOTAL_COLUMNS = 12
 
-  const formatRow = (cells: any[]) => {
+  const formatRow = (cells: Array<string | number>) => {
     const row = [...cells]
     while (row.length < TOTAL_COLUMNS) row.push("")
     return row.join(";")
   }
 
   const exportToCSV = (
-    data: any[],
-    stats: any,
-    funnelSteps: any[],
-    stepConfig: any[]
+    data: SessionFunnelRow[],
+    stats: FunnelStats | null,
+    funnelSteps: FunnelStep[],
+    stepConfig: StepConfig[]
   ) => {
     try {
       if (!data.length || !stats) return
 
       const headers = [
-        "ID SESION",
-        "TIPO",
-        "ESTADO FINAL",
-        "PASO DE ABANDONO",
+        "SESSION ID",
+        "TYPE",
+        "FINAL STATE",
+        "ABANDON STEP",
         ...stepConfig.map((s) => s.label.toUpperCase()),
-        "DURACION ENTRY",
-        "DURACION SHOW",
+        "ENTRY DURATION",
+        "SHOW DURATION",
       ]
 
-      // 1. Cabeceras y Resumen
       const lines = [
         "sep=;",
-        formatRow(["REPORTE DE CONVERSION P2P"]),
-        formatRow(["Generado el", new Date().toLocaleString()]),
-        formatRow(["Total Sesiones Analizadas", stats.total]),
-        formatRow(["Conversion Exitosa", `${stats.conversionRate}%`]),
+        formatRow(["P2P CONVERSION REPORT"]),
+        formatRow(["Generated", new Date().toLocaleString()]),
+        formatRow(["Total Analyzed Sessions", stats.total]),
+        formatRow(["Successful Conversion", `${stats.conversionRate}%`]),
         formatRow([]),
-        formatRow(["RETENCION POR PASO"]),
+        formatRow(["RETENTION BY STEP"]),
         ...funnelSteps.map((st) =>
-          formatRow([st.full, `${st.percentage}%`, `${st.count} usuarios`])
+          formatRow([st.full, `${st.percentage}%`, `${st.count} users`])
         ),
         formatRow([]),
-        formatRow(["DETALLE TECNICO"]),
+        formatRow(["TECHNICAL DETAIL"]),
         formatRow(headers),
       ]
 
-      // 2. Procesamiento de filas
       data.forEach((row) => {
-        let lastStepLabel = "Ninguno"
+        let lastStepLabel = "None"
         for (const step of stepConfig) {
-          if (row.steps[step.key] === 1) lastStepLabel = step.label
+          if (row.steps[step.key as keyof typeof row.steps] === 1) lastStepLabel = step.label
         }
 
         const isFinished = row.steps.process === 1
@@ -58,16 +57,15 @@ export function useFunnelExport() {
           formatRow([
             row.sessionId,
             row.sessionType,
-            isFinished ? "COMPLETADA" : "ABANDONADA",
+            isFinished ? "COMPLETED" : "ABANDONED",
             isFinished ? "--" : lastStepLabel,
-            ...stepConfig.map((sc) => (row.steps[sc.key] === 1 ? "OK" : "")),
+            ...stepConfig.map((sc) => (row.steps[sc.key as keyof typeof row.steps] === 1 ? "OK" : "")),
             row.durations.timeToEntry || "",
             row.durations.timeToShow || "",
           ])
         )
       })
 
-      // 3. Generación del archivo
       const csvContent = lines.join("\n")
       const blob = new Blob(["\uFEFF" + csvContent], {
         type: "text/csv;charset=utf-8;",
@@ -75,14 +73,14 @@ export function useFunnelExport() {
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-      link.download = `p2p-analisis-${new Date().getTime()}.csv`
+      link.download = `p2p-analysis-${new Date().getTime()}.csv`
       link.click()
       URL.revokeObjectURL(url)
 
-      toast.success("Reporte exportado correctamente")
+      toast.success("Report exported successfully")
     } catch (e) {
       console.error(e)
-      toast.error("Error al generar el reporte")
+      toast.error("Error generating report")
     }
   }
 

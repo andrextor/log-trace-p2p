@@ -6,14 +6,10 @@ export interface FilterIdentity {
 }
 
 export class LogUIHelper {
-  /**
-   * Coincidencia robusta para resaltar todo el rastro de una transacción o sesión.
-   * Centraliza la lógica que antes estaba esparcida en los mappers.
-   */
   static isMatch(event: LogEvent, targetId: string): boolean {
     const tId = String(targetId).toLowerCase()
-    const ctx = event.context || {}
-    const details = event.details as any // Use as any to smoothly support multiple detail types
+    const ctx = (event.context || {}) as Record<string, unknown>
+    const details = event.details as Record<string, unknown>
 
     if (event.appType === APP_TYPES.CHECKOUT) {
       return (
@@ -23,7 +19,7 @@ export class LogUIHelper {
         String(details?.awsRequestId).toLowerCase() === tId ||
         String(details?.aws_request_id).toLowerCase() === tId ||
         String(ctx?.aws_request_id).toLowerCase() === tId ||
-        String(ctx?.payload?.session_id).toLowerCase() === tId
+        String((ctx?.payload as Record<string, unknown>)?.session_id).toLowerCase() === tId
       )
     }
 
@@ -32,25 +28,21 @@ export class LogUIHelper {
         String(event.id).toLowerCase() === tId ||
         String(details?.awsRequestId).toLowerCase() === tId ||
         String(ctx?.awsRequestId).toLowerCase() === tId ||
-        String(details?.payload?.id).toLowerCase() === tId ||
-        String(ctx?.payload?.id).toLowerCase() === tId ||
-        String(ctx?.id).toLowerCase() === tId // Para JsonInterdin
+        String((details?.payload as Record<string, unknown>)?.id).toLowerCase() === tId ||
+        String((ctx?.payload as Record<string, unknown>)?.id).toLowerCase() === tId ||
+        String(ctx?.id).toLowerCase() === tId
       )
     }
 
-    // Fallback genérico
     return String(event.id).toLowerCase() === tId
   }
 
-  /**
-   * Identifica cómo debe etiquetarse visualmente la coincidencia en el Timeline.
-   */
   static getFilterIdentity(event: LogEvent, targetId: string): FilterIdentity {
-    const details = event.details as any
+    const details = event.details as Record<string, unknown>
 
     if (event.appType === APP_TYPES.CHECKOUT) {
       if (details?.sessionId && String(details.sessionId) === targetId) {
-        return { label: "Sesión", colorClass: "indigo" }
+        return { label: "Session", colorClass: "indigo" }
       }
       return { label: "Trace / ID", colorClass: "orange" }
     }
@@ -60,7 +52,7 @@ export class LogUIHelper {
         return { label: "AWS Request ID", colorClass: "indigo" }
       }
       if (
-        (details?.payload?.id && String(details.payload.id) === targetId) ||
+        ((details?.payload as Record<string, unknown>)?.id && String((details.payload as Record<string, unknown>).id) === targetId) ||
         (event.context?.id && String(event.context.id) === targetId)
       ) {
         return { label: "Interdin ID", colorClass: "indigo" }

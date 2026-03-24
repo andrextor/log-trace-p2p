@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import type { RestDetails } from '../../../logic/types';
-
-// Extendemos la interfaz para soportar la marca de Laravel generada por el Mapper
-interface ExtendedRestDetails extends RestDetails {
-  isLaravel?: boolean;
-}
+import type { RestDetails, ExceptionInfo } from '../types';
 
 const props = defineProps<{
-  details: ExtendedRestDetails;
+  details: RestDetails;
   isHighlighted: boolean;
 }>();
 
@@ -19,18 +14,11 @@ const emit = defineEmits<{
 const copiedPayload = ref(false);
 const copiedURL = ref(false);
 
-/**
- * EXTRACTOR DE METADATOS (Chips):
- * Resalta variables clave y permite filtrarlas con un clic.
- */
 const contextChips = computed(() => {
   if (!props.details.payload) return [];
   
-  // Claves críticas para auditoría (incluye el ID hash de Interdin)
   const importantKeys = ['id', 'TENANT_DOMAIN', 'bin', 'reference', 'site', 'service', 'tenantId', 'bank'];
-  
-  // Los datos de rastro técnico suelen estar en el payload raíz procesado por el Mapper
-  const dataSource = props.details.payload;
+  const dataSource = props.details.payload as Record<string, unknown>;
 
   return Object.entries(dataSource)
     .filter(([key, value]) => importantKeys.includes(key) && value !== null && value !== undefined && value !== '')
@@ -41,39 +29,34 @@ const contextChips = computed(() => {
     }));
 });
 
-/**
- * DETECTOR DE ERRORES:
- * Prioriza fallos de infraestructura (503, connection) sobre errores de negocio.
- */
 const errorDetail = computed(() => {
   if (props.details.exception) {
+    const exc = props.details.exception;
     return {
-      title: 'Excepción de Sistema / Guzzle',
-      message: props.details.exception.message,
+      title: 'System / Guzzle Exception',
+      message: exc.message,
       code: props.details.statusCode || 500,
-      sub: `Archivo: ${props.details.exception.file?.split('/').pop()}:${props.details.exception.line || '?'}`
+      sub: `File: ${exc.file?.split('/').pop()}:${exc.line || '?'}`
     };
   }
   
-  const payloadData = props.details.payload?.context?.data || props.details.payload;
-  const bizError = payloadData?.dinError || payloadData?.error;
+  const payloadData = props.details.payload as Record<string, unknown>;
+  const ctx = (payloadData?.context as Record<string, unknown>)?.data as Record<string, unknown> | undefined;
+  const source = ctx || payloadData;
+  const bizError = (source?.dinError || source?.error) as Record<string, unknown> | undefined;
   
   if (bizError && bizError.codigo !== '0000' && bizError.codigo !== undefined) {
     return {
-      title: `Error de Proveedor [${props.details.provider}]`,
-      message: bizError.mensaje || bizError.message || 'Operación rechazada',
+      title: `Provider Error [${props.details.provider}]`,
+      message: String(bizError.mensaje || bizError.message || 'Operation rejected'),
       code: bizError.codigo,
-      sub: bizError.detalle || 'Consulte el rastro JSON para más detalles'
+      sub: String(bizError.detalle || 'Check JSON trace for more details')
     };
   }
   
   return null;
 });
 
-/**
- * GUARDIAS DE COPIADO:
- * Solucionan el error "Argument of type string | null is not assignable"
- */
 async function copyURL() {
   const url = props.details.endpoint;
   if (!url) return; 
@@ -128,7 +111,7 @@ async function copyJSON() {
         <button v-if="chip.filterable" 
                 @click.stop="emit('filter-id', chip.value)"
                 class="ml-2 p-1 rounded-md opacity-0 group-hover/chip:opacity-100 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-500 transition-all active:scale-90"
-                title="Filtrar rastro por este ID">
+                title="Filter trace by this ID">
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
         </button>
       </div>
@@ -166,7 +149,7 @@ async function copyJSON() {
             </span>
             <button @click="copyURL" class="p-1.5 hover:bg-indigo-500/20 rounded-lg transition-all text-indigo-400 active:scale-90">
                 <svg v-if="!copiedURL" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                <span v-else class="text-[9px] font-black uppercase">¡Copiado!</span>
+                <span v-else class="text-[9px] font-black uppercase">Copied!</span>
             </button>
         </div>
       </div>
@@ -186,7 +169,7 @@ async function copyJSON() {
          >
            <svg v-if="!copiedPayload" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" /></svg>
            <svg v-else class="w-3 h-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-           {{ copiedPayload ? 'Estructura Copiada' : 'Copiar JSON' }}
+           {{ copiedPayload ? 'Structure Copied' : 'Copy JSON' }}
          </button>
        </div>
        

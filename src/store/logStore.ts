@@ -1,25 +1,18 @@
 import { defineStore } from "pinia"
 import { ref, computed, shallowRef } from "vue"
-import { APP_TYPES, type LogEvent, type AnalyzerType } from "../logic/types"
+import { APP_TYPES } from "../shared/types"
+import type { LogEvent, AnalyzerType } from "../shared/types"
+import type { ViewMode, TimeGroup, StoreStats, LevelFilter } from "../shared/types"
 import { P2PParserEngine } from "@andrextor_ia11012/p2p-log-parser"
-import { LogUIHelper } from "../logic/ui/LogUIHelper"
+import { LogUIHelper } from "../shared/ui/LogUIHelper"
 
-export type ViewMode = AnalyzerType | "ALL"
-
-interface TimeGroup {
-  label: string
-  timeDisplay: string
-  timeKey: string
-  events: LogEvent[]
-}
+export type { ViewMode } from "../shared/types"
 
 export const useLogStore = defineStore("logs", () => {
-  // --- ESTADO ---
-  // shallowRef es vital para manejar +20,000 líneas sin lag en la UI.
   const events = shallowRef<LogEvent[]>([])
   const activeTab = ref<ViewMode>(APP_TYPES.CHECKOUT)
   const search = ref("")
-  const levelFilter = ref("ALL")
+  const levelFilter = ref<LevelFilter>("ALL")
   const highlightedSessionId = ref<string | number | null>(null)
   const parsingErrors = ref<string[]>([])
   const isProcessing = ref(false)
@@ -27,12 +20,7 @@ export const useLogStore = defineStore("logs", () => {
   const sessionIds = ref<string[]>([])
   const sessionFilter = ref<string | null>(null)
 
-  /**
-   * Registro de huellas digitales (Fingerprints) para evitar duplicados.
-   */
   const processedHashes = new Set<string>()
-
-  // --- GETTERS ---
 
   const counts = computed(() => {
     const c: Record<string, number> = { ALL: events.value.length }
@@ -43,7 +31,7 @@ export const useLogStore = defineStore("logs", () => {
     return c
   })
 
-  const stats = computed(() => {
+  const stats = computed<StoreStats>(() => {
     const filtered = filteredEvents.value
     return {
       total: filtered.length,
@@ -64,11 +52,10 @@ export const useLogStore = defineStore("logs", () => {
 
     return allEvents.filter((event) => {
       if (currentTab !== "ALL" && event.appType !== currentTab) return false
-
       if (activeLevel !== "ALL" && event.level !== activeLevel) return false
 
       if (sessionFilter.value) {
-        const details = event.details as any
+        const details = event.details as Record<string, unknown>
         if (String(details?.sessionId) !== sessionFilter.value) return false
       }
 
@@ -77,7 +64,6 @@ export const useLogStore = defineStore("logs", () => {
         if (!LogUIHelper.isMatch(event, targetId)) return false
       }
 
-      // 4. Búsqueda Global por texto
       if (!searchTerm) return true
       return (
         event.message.toLowerCase().includes(searchTerm) ||
@@ -110,7 +96,7 @@ export const useLogStore = defineStore("logs", () => {
 
       if (!groups[timeKey]) {
         groups[timeKey] = {
-          label: `Bloque ${blockCounter++}`,
+          label: `Block ${blockCounter++}`,
           timeDisplay: timeKey,
           timeKey: timeKey,
           events: [],
@@ -121,12 +107,6 @@ export const useLogStore = defineStore("logs", () => {
     return groups
   })
 
-  // --- ACCIONES ---
-
-  /**
-   * Motor de procesamiento universal.
-   *
-   */
   async function processLogs(rawContent: string, type: AnalyzerType | "ALL") {
     if (!rawContent.trim()) return
 
@@ -136,11 +116,9 @@ export const useLogStore = defineStore("logs", () => {
     try {
       const engine = new P2PParserEngine()
 
-      // Allow UI to update loading state
       await new Promise((resolve) => setTimeout(resolve, 50))
 
       const result = engine.parse(rawContent, type)
-      console.log(result)
       const newEvents: LogEvent[] = []
 
       for (const event of result.events) {
@@ -172,24 +150,19 @@ export const useLogStore = defineStore("logs", () => {
 
       if (result.errors && result.errors.length > 0) {
         for (const err of result.errors) {
-          parsingErrors.value.push(`Línea ${err.line}: ${err.reason} - ${err.content}`)
+          parsingErrors.value.push(`Line ${err.line}: ${err.reason} - ${err.content}`)
         }
       }
 
-      // 4. Actualización masiva por concatenación (seguro para memoria)
       events.value = events.value.concat(newEvents)
     } catch (criticalError) {
-      console.error("Fallo crítico en el motor de logs:", criticalError)
+      console.error("Critical failure in log engine:", criticalError)
     } finally {
       isProcessing.value = false
       progress.value = 100
     }
   }
 
-  /**
-   * NUEVO: Borrado Contextual.
-   * Elimina solo los logs de la aplicación actual sin tocar el resto.
-   */
   function clearLogsByApp(type: AnalyzerType) {
     events.value = events.value.filter((e) => e.appType !== type)
 

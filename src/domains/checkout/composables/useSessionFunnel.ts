@@ -1,6 +1,6 @@
-// Separamos APP_TYPES de la importación de "type" porque es un valor/enum
-import { APP_TYPES } from "../types"
-import type { LogEvent, SessionFunnelRow } from "../types"
+import { APP_TYPES } from "../../../shared/types"
+import type { LogEvent } from "../../../shared/types"
+import type { CheckoutDetails, SessionFunnelRow } from "../types"
 
 export function useSessionFunnel() {
   const formatDuration = (ms: number): string => {
@@ -11,7 +11,6 @@ export function useSessionFunnel() {
     const cs = Math.floor((ms % 1000) / 10)
 
     const pad = (n: number) => n.toString().padStart(2, "0")
-    // CAMBIADO: Usamos punto (.) en lugar de punto y coma (;) para las centésimas
     return `${h}:${pad(m)}:${pad(s)}.${pad(cs)}`
   }
 
@@ -25,13 +24,14 @@ export function useSessionFunnel() {
     for (const ev of sortedEvents) {
       if (ev.appType !== APP_TYPES.CHECKOUT) continue
 
-      const details = ev.details as any
+      const details = ev.details as CheckoutDetails
       const sessionId = details?.sessionId
       if (!sessionId) continue
 
-      if (!sessionMap.has(sessionId)) {
-        sessionMap.set(sessionId, {
-          sessionId: String(sessionId),
+      const sid = String(sessionId)
+      if (!sessionMap.has(sid)) {
+        sessionMap.set(sid, {
+          sessionId: sid,
           sessionType: "UNKNOWN",
           steps: {
             created: 0,
@@ -48,10 +48,11 @@ export function useSessionFunnel() {
         })
       }
 
-      const row = sessionMap.get(sessionId)!
+      const row = sessionMap.get(sid)!
       const time = new Date(ev.timestamp).getTime()
       const endpoint = details.endpoint || ""
-      const action = ev.context?.action_method || ""
+      const ctx = ev.context as Record<string, unknown>
+      const action = String(ctx?.action_method || "")
       const subType = details.subType || ""
       const msg = ev.message || ""
 
@@ -95,7 +96,6 @@ export function useSessionFunnel() {
         row.sessionType = "COLLECT"
       }
 
-      // Cálculo de Tiempos
       if (row._rawTimestamps.created) {
         if (row._rawTimestamps.entry) {
           row.durations.timeToEntry = formatDuration(

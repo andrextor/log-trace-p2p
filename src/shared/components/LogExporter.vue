@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useLogStore } from '../store/logStore';
+import { useLogStore } from '../../store/logStore';
 import { toast } from 'vue-sonner';
 
 const store = useLogStore();

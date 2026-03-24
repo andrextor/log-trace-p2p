@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import LogExporter from '../LogExporter.vue';
-import { useLogStore } from '../../store/logStore';
-import { APP_TYPES } from '../../logic/types';
+import { useLogStore } from '../../../store/logStore';
+import { APP_TYPES } from '../../../shared/types';
+import type { ActiveFilterInfo } from '../../../shared/types';
 
 defineProps<{
   search: string;
-  activeFilterInfo: any;
+  activeFilterInfo: ActiveFilterInfo | null;
   visibleCount: number;
-  isFunnelVisible?: boolean; // Nueva prop para cambiar el texto del botón
+  isFunnelVisible?: boolean;
 }>();
 
 const emit = defineEmits(['update:search', 'clearSearch', 'clearFilter', 'toggleFunnel']);
@@ -26,7 +27,7 @@ const store = useLogStore();
         <input 
           :value="search"
           @input="e => emit('update:search', (e.target as HTMLInputElement).value)"
-          placeholder="Buscar en el rastro..." 
+          placeholder="Search trace..." 
           class="w-full bg-white dark:bg-[#0a0a0b] border border-slate-200 dark:border-white/10 pl-10 pr-10 py-2.5 rounded-xl text-sm font-medium outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/5 transition-all shadow-sm" 
         />
         <button v-if="search" @click="emit('clearSearch')" class="absolute right-3 top-3 text-slate-300 hover:text-slate-500">
@@ -51,7 +52,7 @@ const store = useLogStore();
 
     <div class="flex items-center gap-6">
       <div class="flex flex-col items-end">
-        <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Resultados</span>
+        <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Results</span>
         <span class="text-sm font-mono font-bold text-slate-700 dark:text-indigo-400">{{ visibleCount.toLocaleString() }}</span>
       </div>
       
@@ -67,7 +68,7 @@ const store = useLogStore();
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
           <span class="text-xs font-bold uppercase tracking-tight">
-            {{ isFunnelVisible ? 'Cerrar Funnel' : 'Ver Funnel' }}
+            {{ isFunnelVisible ? 'Close Funnel' : 'View Funnel' }}
           </span>
         </button>
 

@@ -1,25 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useLogStore } from '../../store/logStore';
-import { APP_TYPES } from '../../logic/types'; 
-import { useSessionFunnel } from '../../logic/funnels/useSessionFunnel';
-import { useFunnelExport } from '../../logic/funnels/useFunnelExport';
+import { useLogStore } from '../../../store/logStore';
+import { APP_TYPES } from '../../../shared/types';
+import type { SessionFunnelSteps, StepConfig, FunnelStats, FunnelStep } from '../types';
+import { useSessionFunnel } from '../composables/useSessionFunnel';
+import { useFunnelExport } from '../composables/useFunnelExport';
 
 const store = useLogStore();
 const { generateReport } = useSessionFunnel();
 const { exportToCSV } = useFunnelExport();
 const emit = defineEmits(['filter-session']);
 
-// CONFIGURACIÓN DE PASOS
-const STEP_CONFIG = [
-  { key: 'created', label: 'Creacion', full: 'Solicitud Crear Sesion' },
-  { key: 'entry', label: 'Entry', full: 'Carga inicial del SPA (Entry)' },
-  { key: 'show', label: 'Vista', full: 'Visualizacion de datos (Show)' },
-  { key: 'information', label: 'Info', full: 'Interaccion / Consulta Informacion' },
-  { key: 'interest', label: 'Interes', full: 'Calculo de intereses' },
-  { key: 'generateOtp', label: 'OTP', full: 'Generacion / Validacion de OTP' },
-  { key: 'threeDS', label: '3DS', full: 'Validacion 3DS / MPI' },
-  { key: 'process', label: 'Proceso', full: 'Ejecucion de Pago / Collect' },
+const STEP_CONFIG: readonly StepConfig[] = [
+  { key: 'created', label: 'Created', full: 'Session Creation Request' },
+  { key: 'entry', label: 'Entry', full: 'SPA Initial Load (Entry)' },
+  { key: 'show', label: 'Show', full: 'Data Visualization (Show)' },
+  { key: 'information', label: 'Info', full: 'Information Query' },
+  { key: 'interest', label: 'Interest', full: 'Interest Calculation' },
+  { key: 'generateOtp', label: 'OTP', full: 'OTP Generation / Validation' },
+  { key: 'threeDS', label: '3DS', full: '3DS / MPI Validation' },
+  { key: 'process', label: 'Process', full: 'Payment / Collect Execution' },
 ] as const;
 
 const reportData = computed(() => {
@@ -27,7 +27,7 @@ const reportData = computed(() => {
   return generateReport(store.filteredEvents);
 });
 
-const stats = computed(() => {
+const stats = computed<FunnelStats | null>(() => {
   const data = reportData.value;
   if (data.length === 0) return null;
   const total = data.length;
@@ -40,17 +40,16 @@ const stats = computed(() => {
   };
 });
 
-const funnelSteps = computed(() => {
+const funnelSteps = computed<FunnelStep[]>(() => {
   const data = reportData.value;
   if (!data.length) return [];
   return STEP_CONFIG.filter(s => ['created', 'entry', 'show', 'information', 'process'].includes(s.key))
     .map(s => {
-      const count = data.filter(r => (r.steps as any)[s.key] === 1).length;
+      const count = data.filter(r => r.steps[s.key as keyof SessionFunnelSteps] === 1).length;
       return { ...s, count, percentage: ((count / data.length) * 100).toFixed(0) };
     });
 });
 
-// Llamada a la exportación externa
 const handleExport = () => {
   exportToCSV(reportData.value, stats.value, funnelSteps.value, [...STEP_CONFIG]);
 };
@@ -59,12 +58,12 @@ const handleExport = () => {
 <template>
   <div class="space-y-6">
     <div v-if="reportData.length === 0" class="p-8 text-center opacity-50 uppercase text-[10px] font-black tracking-widest border border-dashed rounded-3xl">
-      Sin datos de checkout...
+      No checkout data available...
     </div>
 
     <template v-else>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div v-for="(v, l) in { 'Total': stats?.total, 'Payments': stats?.payments, 'Collects': stats?.collects, 'Conversión': stats?.conversionRate + '%' }" :key="l"
+        <div v-for="(v, l) in { 'Total': stats?.total, 'Payments': stats?.payments, 'Collects': stats?.collects, 'Conversion': stats?.conversionRate + '%' }" :key="l"
              class="bg-white dark:bg-white/5 p-4 rounded-2xl border border-slate-200 dark:border-white/10">
           <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{{ l }}</p>
           <p class="text-xl font-black text-indigo-500">{{ v }}</p>
@@ -82,9 +81,9 @@ const handleExport = () => {
       </div>
 
       <div class="flex justify-between items-center">
-        <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Trazabilidad Reciente</h3>
+        <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Recent Traceability</h3>
         <button @click="handleExport" class="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:scale-105 transition-transform">
-          Exportar Full Report
+          Export Full Report
         </button>
       </div>
 
@@ -93,7 +92,7 @@ const handleExport = () => {
           <thead class="bg-slate-50 dark:bg-black/20 text-slate-400 uppercase tracking-widest">
             <tr>
               <th class="px-4 py-3 font-black">ID</th>
-              <th class="px-4 py-3 text-center">TIPO</th>
+              <th class="px-4 py-3 text-center">TYPE</th>
               <th v-for="s in STEP_CONFIG" :key="s.key" class="px-2 py-3 text-center">{{ s.label }}</th>
               <th class="px-4 py-3 text-right text-indigo-500">ENTRY</th>
               <th class="px-4 py-3 text-right text-indigo-500">SHOW</th>
@@ -113,7 +112,7 @@ const handleExport = () => {
                 </span>
               </td>
               <td v-for="s in STEP_CONFIG" :key="s.key" class="px-2 py-3 text-center">
-                <div v-if="row.steps[s.key]" class="w-1.5 h-1.5 rounded-full bg-emerald-500 mx-auto"></div>
+                <div v-if="row.steps[s.key as keyof typeof row.steps]" class="w-1.5 h-1.5 rounded-full bg-emerald-500 mx-auto"></div>
                 <div v-else class="w-1 h-1 rounded-full bg-slate-200 dark:bg-white/10 mx-auto"></div>
               </td>
               <td class="px-4 py-3 text-right font-bold text-slate-400">{{ row.durations.timeToEntry || '--' }}</td>

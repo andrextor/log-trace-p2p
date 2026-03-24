@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ANALYZER_NAMES } from '../../logic/types';
+import { ANALYZER_NAMES } from '../../../shared/types';
+import type { FilterTheme, StoreStats } from '../../../shared/types';
 
 defineProps<{
   activeTab: string;
-  activeFilterTheme: any;
-  stats: any;
+  activeFilterTheme: FilterTheme | null;
+  stats: StoreStats;
   levelFilter: string;
 }>();
 
@@ -60,10 +61,10 @@ defineEmits(['toggle-errors', 'reset-filters', 'clear-data']);
 
           <span>
             <template v-if="levelFilter === 'ERROR'">
-              Mostrando fallos
+              Showing failures
             </template>
             <template v-else>
-              {{ stats.errors === 1 ? '1 Fallo crítico' : `${stats.errors} Fallos críticos` }}
+              {{ stats.errors === 1 ? '1 Critical failure' : `${stats.errors} Critical failures` }}
             </template>
           </span>
         </button>
@@ -86,7 +87,7 @@ defineEmits(['toggle-errors', 'reset-filters', 'clear-data']);
               d="M6 18L18 6M6 6l12 12"
             />
           </svg>
-          Limpiar
+          Clear
         </button>
       </div>
 
@@ -96,7 +97,7 @@ defineEmits(['toggle-errors', 'reset-filters', 'clear-data']);
         @click="$emit('clear-data')"
         class="px-3 py-2 text-[10px] font-bold uppercase tracking-tight text-slate-400 hover:text-red-500 transition-colors"
       >
-        Limpiar Logs
+        Clear Logs
       </button>
     </div>
   </div>

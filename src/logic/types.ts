@@ -1,128 +1,18 @@
-// --- 1. IDENTIFICADORES DE APLICACIÓN ---
+export {
+  APP_TYPES,
+  ANALYZER_NAMES,
+  type AnalyzerType,
+  type LogLevel,
+  type LogCategory,
+  type BaseDetails,
+  type LogEvent,
+  type NormalizedLogData,
+} from "../shared/types"
 
-export const APP_TYPES = {
-  CHECKOUT: "checkout",
-  MICROSITIOS: "micrositios",
-  REST: "rest",
-} as const
+export type { CheckoutDetails, MicrositiosDetails, SessionFunnelSteps, SessionFunnelRow } from "../domains/checkout/types"
+export type { RestDetails } from "../domains/rest/types"
 
-export type AnalyzerType = (typeof APP_TYPES)[keyof typeof APP_TYPES]
-
-export const ANALYZER_NAMES: Record<AnalyzerType, string> = {
-  [APP_TYPES.CHECKOUT]: "Checkout",
-  [APP_TYPES.MICROSITIOS]: "Micrositios",
-  [APP_TYPES.REST]: "API REST Core",
-}
-
-// --- 2. ESTRUCTURAS DE DATOS CRUDA (Parsers) ---
-
-export interface NormalizedLogData {
-  timestamp: string
-  level: string
-  message: string
-  context: Record<string, any>
-  sourceType?: "AWS_CSV" | "LARAVEL_LOCAL" | "NEW_RELIC_JSON" | "UNKNOWN"
-}
-
-export type LogLevel = "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL"
-
-export type LogCategory =
-  | "HTTP_REQ_OUT"
-  | "HTTP_REQ_IN"
-  | "HTTP_RES"
-  | "DB_OP"
-  | "NOTIFICATION"
-  | "RETURN_NOTIFICATION"
-  | "BROWSER_LOAD"
-  | "USER_ACTION"
-  | "BACKEND_LOG"
-  | "APPLICATION_LOG" // Añadido para diferenciar logs de Laravel
-  | "ERROR"
-  | "PAYMENT"
-  | "GENERIC"
-
-// --- 3. POLIMORFISMO DE DETALLES (App-Specific) ---
-
-/**
- * Propiedades que todos los detalles DEBEN compartir para que la UI
- * principal pueda leerlas sin errores de TypeScript.
- */
-export interface BaseDetails {
-  method?: string | null
-  endpoint?: string | null // Unificamos URL/Endpoint aquí
-  statusCode?: number | string | null
-  payload?: any
-  source?: string | null
-}
-
-export interface CheckoutDetails extends BaseDetails {
-  url?: string
-  duration?: string
-  sessionId?: string | number
-  transactionId?: string | number
-  subType?: string | null
-  awsRequestId?: string | null
-  aws_request_id?: string | null
-  provider?: string | null
-}
-
-export interface RestDetails extends BaseDetails {
-  provider: string
-  operation: string
-  action: string
-  awsRequestId?: string | null
-  exception?: any
-  isLaravel?: boolean
-}
-
-export interface MicrositiosDetails extends BaseDetails {
-  siteId: string | number
-  formName?: string
-  sessionId?: string | number
-}
-
-/**
- * Unión de tipos para los detalles.
- * Al heredar todos de BaseDetails, resolvemos el error de "Property does not exist".
- */
-export type AppLogDetails = CheckoutDetails | RestDetails | MicrositiosDetails
-
-// --- 4. MODELO DE EVENTO FINAL (UI) ---
-
-export interface LogEvent {
-  id: string
-  timestamp: string
-  level: LogLevel
-  message: string
-  category: LogCategory
-  appType: AnalyzerType
-  details: AppLogDetails
-  context: any
-  rawStream?: string
-}
-
-export interface SessionFunnelSteps {
-  created: number
-  entry: number
-  show: number
-  information: number
-  interest: number
-  generateOtp: number
-  threeDS: number
-  process: number
-}
-
-export interface SessionFunnelRow {
-  sessionId: string
-  sessionType: "PAYMENT" | "COLLECT" | "UNKNOWN"
-  steps: SessionFunnelSteps
-  _rawTimestamps: {
-    created: number | null
-    entry: number | null
-    show: number | null
-  }
-  durations: {
-    timeToEntry: string | null
-    timeToShow: string | null
-  }
-}
+export type AppLogDetails =
+  | import("../domains/checkout/types").CheckoutDetails
+  | import("../domains/rest/types").RestDetails
+  | import("../domains/checkout/types").MicrositiosDetails
