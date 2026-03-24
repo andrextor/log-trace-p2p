@@ -94,3 +94,9 @@ export type ParseMetadata =
 	| CheckoutParseMetadata
 	| RestParseMetadata
 	| MicrositesParseMetadata;
+
+export interface SupportedFormat {
+	name: string;
+	detectionRule: string;
+	description: string;
+}

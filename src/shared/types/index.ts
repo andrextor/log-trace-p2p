@@ -12,6 +12,7 @@ export {
 	type CheckoutSessionMetadata,
 	type RestParseMetadata,
 	type MicrositesParseMetadata,
+	type SupportedFormat,
 } from "./base";
 
 export type {
