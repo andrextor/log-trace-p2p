@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { APP_TYPES } from "../../shared/types";
-import type { ActiveFilterInfo, LogEvent } from "../../shared/types";
-import { getFilterIdentity, isMatch } from "../../shared/ui/LogUIHelper";
-import { useLogStore } from "../../store/logStore";
+import { APP_TYPES } from "../../../shared/types";
+import type { ActiveFilterInfo, LogEvent } from "../../../shared/types";
+import { getFilterIdentity, isMatch } from "../../../shared/ui/LogUIHelper";
+import { useLogStore } from "../../../store/logStore";
 
-import SessionFunnelReport from "../../domains/checkout/components/SessionFunnelReport.vue";
-import ParsingErrorsModal from "./ParsingErrorsModal.vue";
-import TimelineGroup from "./timeline/TimelineGroup.vue";
-import TimelineHeader from "./timeline/TimelineHeader.vue";
+import SessionFunnelReport from "./SessionFunnelReport.vue";
+import ParsingErrorsModal from "../../../shared/components/ParsingErrorsModal.vue";
+import TimelineGroup from "../../../shared/components/timeline/TimelineGroup.vue";
+import TimelineHeader from "../../../shared/components/timeline/TimelineHeader.vue";
 
 const store = useLogStore();
 const showErrorsModal = ref(false);
 const showFunnel = ref(false);
 const showSessionPanel = ref(true);
+const sessionSearch = ref("");
 const MAX_INITIAL_GROUPS = 40;
 
 const timelineGroups = computed(() => {
@@ -53,6 +54,20 @@ const setSessionFilter = (sessionId: string | null) => {
 	store.search = "";
 };
 
+const filteredSessionIds = computed(() => {
+	if (!sessionSearch.value.trim()) return store.sessionIds;
+	const term = sessionSearch.value.toLowerCase();
+	return store.sessionIds.filter((sid) => {
+		const meta = getSessionMetadata(sid);
+		return (
+			sid.toLowerCase().includes(term) ||
+			meta?.sessionType?.toLowerCase().includes(term) ||
+			meta?.finalState?.toLowerCase().includes(term) ||
+			meta?.reference?.toLowerCase().includes(term)
+		);
+	});
+});
+
 const currentSessionIndex = computed(() => {
 	if (!store.sessionFilter) return -1;
 	return store.sessionIds.indexOf(store.sessionFilter);
@@ -72,6 +87,32 @@ const sessionEventCount = (sid: string) => {
 		const details = e.details as Record<string, unknown>;
 		return String(details?.sessionId) === sid;
 	}).length;
+};
+
+const checkoutMetadata = computed(() => {
+	if (store.activeTab === APP_TYPES.CHECKOUT && store.metadata) {
+		return store.metadata as any;
+	}
+	return null;
+});
+
+const getSessionMetadata = (sid: string) => {
+	return checkoutMetadata.value?.sessions?.find((s: any) => s.sessionId === sid);
+};
+
+const getSessionTypeColor = (type: string) => {
+	switch (type?.toUpperCase()) {
+		case "PAYMENT":
+			return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20";
+		case "SUBSCRIPTION":
+			return "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20";
+		case "COLLECT":
+			return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
+		case "AUTOPAY":
+			return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
+		default:
+			return "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20";
+	}
 };
 </script>
 
@@ -95,6 +136,20 @@ const sessionEventCount = (sid: string) => {
           </button>
         </div>
 
+        <div class="px-3 py-2 border-b border-slate-200/50 dark:border-white/5 bg-slate-50/50 dark:bg-black/10">
+          <div class="relative group">
+            <input 
+              v-model="sessionSearch"
+              type="text" 
+              placeholder="Search traces..." 
+              class="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-[#1a1b1e] border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 outline-none transition-all placeholder:text-slate-400"
+            />
+            <svg class="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
         <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2 relative">
           <button 
             @click="setSessionFilter(null)"
@@ -110,19 +165,65 @@ const sessionEventCount = (sid: string) => {
           <div class="h-px bg-slate-200/50 dark:bg-white/5 my-3 mx-2"></div>
 
           <button
-            v-for="sid in store.sessionIds" :key="sid"
+            v-for="sid in filteredSessionIds" :key="sid"
             @click="setSessionFilter(sid)"
-            class="w-full text-left p-3.5 rounded-xl transition-all border group/sid relative overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+            class="w-full text-left p-3 rounded-xl transition-all border group/sid relative overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
             :class="store.sessionFilter === sid 
               ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 border-indigo-400 scale-[1.02] z-10'
               : 'bg-white dark:bg-[#131315] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/5 hover:border-indigo-400/50 hover:shadow-md shadow-sm'"
           >
-            <div class="flex items-center justify-between relative z-10">
-              <span class="font-mono text-xs font-bold truncate w-2/3">{{ sid }}</span>
-              <span class="text-[9px] font-black shrink-0 px-2 py-0.5 rounded-lg transition-colors border"
-                    :class="store.sessionFilter === sid ? 'bg-indigo-400/30 text-white border-white/20' : 'bg-slate-100/50 dark:bg-black/30 text-slate-400 border-slate-200/50 dark:border-white/5 group-hover/sid:bg-indigo-50 dark:group-hover/sid:bg-indigo-500/10 group-hover/sid:text-indigo-500 group-hover/sid:border-indigo-500/20'">
-                {{ sessionEventCount(sid) }}
-              </span>
+            <div class="relative z-10 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-[11px] font-bold truncate pr-2" :class="store.sessionFilter === sid ? 'text-white' : 'text-slate-700 dark:text-slate-200'">{{ sid }}</span>
+                <div class="flex items-center gap-1">
+                   <div v-if="getSessionMetadata(sid)?.hasSuccessfulTransaction" class="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-white" title="Successful Transaction">
+                      <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                   </div>
+                   <span class="text-[9px] font-black shrink-0 px-1.5 py-0.5 rounded-lg border transition-colors"
+                        :class="store.sessionFilter === sid ? 'bg-indigo-400/30 text-white border-white/20' : 'bg-slate-100/50 dark:bg-black/30 text-slate-400 border-slate-200/50 dark:border-white/5'">
+                    {{ sessionEventCount(sid) }}
+                  </span>
+                </div>
+              </div>
+
+              <div v-if="getSessionMetadata(sid)" class="flex flex-col gap-1.5">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="px-1.5 py-0.5 rounded-md border text-[8px] font-black tracking-widest uppercase"
+                        :class="store.sessionFilter === sid ? 'bg-white/20 border-white/30 text-white' : getSessionTypeColor(getSessionMetadata(sid).sessionType)">
+                    {{ getSessionMetadata(sid).sessionType }}
+                  </span>
+                  <span v-if="getSessionMetadata(sid).finalState !== 'UNDEFINED'" 
+                        class="text-[9px] font-bold uppercase tracking-tighter"
+                        :class="store.sessionFilter === sid ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'">
+                    {{ getSessionMetadata(sid).finalState }}
+                  </span>
+                </div>
+
+                <div v-if="getSessionMetadata(sid).reference" class="text-[9px] font-mono opacity-60 truncate">
+                  Ref: {{ getSessionMetadata(sid).reference }}
+                </div>
+
+                <div class="flex items-center gap-2 pt-1 border-t" :class="store.sessionFilter === sid ? 'border-white/10' : 'border-slate-100 dark:border-white/5'">
+                  <div class="flex items-center gap-1.5 grayscale opacity-50" :class="{ 'grayscale-0 opacity-100': getSessionMetadata(sid).flags.otp }">
+                    <svg class="w-2.5 h-2.5" :class="store.sessionFilter === sid ? 'text-indigo-200' : 'text-amber-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span class="text-[7px] font-bold uppercase tracking-tighter">OTP</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 grayscale opacity-50" :class="{ 'grayscale-0 opacity-100': getSessionMetadata(sid).flags.threeDS }">
+                    <svg class="w-2.5 h-2.5" :class="store.sessionFilter === sid ? 'text-indigo-200' : 'text-indigo-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span class="text-[7px] font-bold uppercase tracking-tighter">3DS</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 grayscale opacity-50" :class="{ 'grayscale-0 opacity-100': getSessionMetadata(sid).flags.interest }">
+                    <svg class="w-2.5 h-2.5" :class="store.sessionFilter === sid ? 'text-indigo-200' : 'text-emerald-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-[7px] font-bold uppercase tracking-tighter">INT</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </button>
         </div>

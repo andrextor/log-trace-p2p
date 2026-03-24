@@ -24,6 +24,7 @@ export const useLogStore = defineStore("logs", () => {
 	const progress = ref(0);
 	const sessionIds = ref<string[]>([]);
 	const sessionFilter = ref<string | null>(null);
+	const metadata = ref<unknown>(null);
 
 	const processedHashes = new Set<string>();
 
@@ -142,11 +143,22 @@ export const useLogStore = defineStore("logs", () => {
 				}
 			}
 
-			if (result.metadata?.sessionIds?.length) {
-				const existing = new Set(sessionIds.value);
-				for (const sid of result.metadata.sessionIds) {
-					if (!existing.has(sid)) sessionIds.value.push(sid);
+			if (result.metadata) {
+				metadata.value = result.metadata;
+
+				if ("sessionIds" in (result.metadata as any) && (result.metadata as any).sessionIds?.length) {
+					const existing = new Set(sessionIds.value);
+					for (const sid of (result.metadata as any).sessionIds) {
+						if (!existing.has(sid)) sessionIds.value.push(sid);
+					}
+				} else if ("sessions" in (result.metadata as any) && (result.metadata as any).sessions?.length) {
+					// Handling new metadata format with sessions array
+					const existing = new Set(sessionIds.value);
+					for (const sess of (result.metadata as any).sessions) {
+						if (!existing.has(sess.sessionId)) sessionIds.value.push(sess.sessionId);
+					}
 				}
+
 				if (sessionIds.value.length > 1 && !sessionFilter.value) {
 					sessionFilter.value = sessionIds.value[0];
 				}
@@ -181,6 +193,7 @@ export const useLogStore = defineStore("logs", () => {
 		if (type === APP_TYPES.CHECKOUT) {
 			sessionIds.value = [];
 			sessionFilter.value = null;
+			metadata.value = null;
 		}
 
 		parsingErrors.value = [];
@@ -195,6 +208,7 @@ export const useLogStore = defineStore("logs", () => {
 		highlightedSessionId.value = null;
 		sessionIds.value = [];
 		sessionFilter.value = null;
+		metadata.value = null;
 		progress.value = 0;
 	}
 
@@ -214,6 +228,7 @@ export const useLogStore = defineStore("logs", () => {
 		progress,
 		sessionIds,
 		sessionFilter,
+		metadata,
 		stats,
 		counts,
 		filteredEvents,
