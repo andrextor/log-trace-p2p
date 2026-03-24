@@ -24,16 +24,6 @@ async function copyToClipboard(
 	}, 2000);
 }
 
-const stateTransition = computed(() => {
-	const p = (props.details.payload || {}) as Record<string, unknown>;
-	const actual = (p.actual_session_state || p.session_state) as
-		| string
-		| undefined;
-	const target = (p.state_to_update || p.new_state) as string | undefined;
-	if (!actual && !target) return null;
-	return { actual: actual || "START", target: target || actual };
-});
-
 const errorDetail = computed(() => {
 	const p = (props.details.payload || {}) as Record<string, unknown>;
 	const exception = p.exception as Record<string, unknown> | undefined;
@@ -42,16 +32,24 @@ const errorDetail = computed(() => {
 		exception ||
 		Number(props.details.statusCode) >= 400
 	) {
+		const title = exception ? "System Exception" : "Validation Failed";
+		const message =
+			(exception?.message as string) ||
+			(p.message as string) ||
+			"Request rejected by validation layer.";
+		const sub = exception
+			? `${exception.file}:${exception.line}`
+			: props.details.endpoint || "Checkout Validator";
+
+		if (title === "Validation Failed" && !props.details.endpoint) {
+			return null;
+		}
+
 		return {
-			title: exception ? "System Exception" : "Validation Failed",
-			message:
-				(exception?.message as string) ||
-				(p.message as string) ||
-				"Request rejected by validation layer.",
+			title,
+			message,
 			code: props.details.statusCode || "ERR",
-			sub: exception
-				? `${exception.file}:${exception.line}`
-				: props.details.endpoint || "Checkout Validator",
+			sub,
 		};
 	}
 	return null;
@@ -85,39 +83,6 @@ const handleCopyPayload = () =>
         </div>
       </div>
     </div>
-
-      <!-- Section: Flow -->
-      <div class="space-y-3" v-if="stateTransition">
-        <div class="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
-          <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-          <h4 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">State Pipeline</h4>
-        </div>
-        <div class="min-h-[140px] bg-white dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-xl shadow-sm flex flex-col items-center justify-center p-6 gap-4">
-           <!-- Pipeline UI Structure -->
-           <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full max-w-2xl mx-auto">
-             <div class="w-full sm:flex-1 text-center bg-slate-50 dark:bg-white/5 py-4 px-3 rounded-xl border border-slate-200 dark:border-white/5 shadow-inner">
-               <div class="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1.5">From</div>
-               <div class="text-[11px] sm:text-xs font-mono font-bold text-slate-600 dark:text-slate-300 truncate">
-                 {{ stateTransition.actual }}
-               </div>
-             </div>
-             
-             <div class="shrink-0 flex items-center justify-center transform sm:rotate-0 rotate-90 my-2 sm:my-0">
-                <div class="w-10 sm:w-16 h-0.5 bg-indigo-500/30 relative">
-                   <div class="absolute top-1/2 left-0 w-full h-0.5 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] -translate-y-1/2"></div>
-                   <div class="absolute right-0 top-1/2 -ml-1 w-2.5 h-2.5 border-t-2 border-r-2 border-indigo-500 rotate-45 -translate-y-1/2"></div>
-                </div>
-             </div>
-
-             <div class="w-full sm:flex-1 text-center bg-indigo-500 py-4 px-3 rounded-xl border border-indigo-400 shadow-[0_6px_16px_rgba(99,102,241,0.3)]">
-               <div class="text-[9px] font-black uppercase text-indigo-200 tracking-widest mb-1.5">To Target</div>
-               <div class="text-[11px] sm:text-xs font-mono font-bold text-white truncate">
-                 {{ stateTransition.target }}
-               </div>
-             </div>
-           </div>
-        </div>
-      </div>
 
     <!-- Section: Raw Data -->
     <div class="space-y-5 pt-4">
