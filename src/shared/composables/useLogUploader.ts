@@ -1,10 +1,29 @@
 import { P2PParserEngine } from "@andrextor_ia11012/p2p-log-parser";
-import { type Ref, computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { useLogStore } from "../../store/logStore";
 import type { AnalyzerType } from "../types";
 
 const MAX_STORE_LIMIT = 20000;
 const BATCH_SIZE = 5000;
+const MIN_LINE_LENGTH = 5;
+
+/**
+ * Contador de líneas ultra-rápido.
+ * Evita hacer .split('\n') en textos de 20MB para no congelar el navegador.
+ */
+function fastLineCount(text: string): number {
+	if (!text) return 0;
+	let count = 0;
+	let pos = 0;
+	while (true) {
+		const nextPos = text.indexOf("\n", pos);
+		const line = nextPos !== -1 ? text.slice(pos, nextPos) : text.slice(pos);
+		if (line.trim().length > MIN_LINE_LENGTH) count++;
+		if (nextPos === -1) break;
+		pos = nextPos + 1;
+	}
+	return count;
+}
 
 export function useLogUploader(targetType: AnalyzerType) {
 	const store = useLogStore();
@@ -44,30 +63,35 @@ export function useLogUploader(targetType: AnalyzerType) {
 			return;
 		}
 
-		const lines = text.split("\n").filter((l) => l.trim().length > 5);
+		const lines = text
+			.split("\n", 20)
+			.filter((l) => l.trim().length > MIN_LINE_LENGTH);
 		if (lines.length === 0) {
 			detectedFormat.value = null;
 			detectedFormatName.value = null;
 			return;
 		}
 
-		const sample = lines.slice(0, 5).join("\n");
+		// Ampliamos un poco la muestra para asegurar que capturamos líneas útiles además del header
+		const sample = lines.slice(0, 10).join("\n");
 		const result = engine.parse(sample, targetType);
 
-		if (result.events.length > 0) {
+		// Identificadores fuertes
+		const isGrafanaCsv = sample.includes("grafana_internal");
+		const isAwsCsv =
+			sample.includes(',"{') && /^\d{4}-\d{2}-\d{2}/.test(sample);
+		const isJson =
+			sample.trim().startsWith("{") || sample.trim().startsWith("[");
+
+		// Si el motor logra parsear ALGO, o si tiene la huella indudable de Grafana/AWS, BRILLA.
+		if (result.events.length > 0 || isGrafanaCsv || isAwsCsv) {
 			detectedFormat.value = "Formato compatible detectado";
-			const isJson =
-				sample.trim().startsWith("{") || sample.trim().startsWith("[");
 
 			if (targetType === "checkout") {
-				if (sample.includes(',"{') && /^\d{4}-\d{2}-\d{2}/.test(sample)) {
+				if (isGrafanaCsv) {
+					detectedFormatName.value = "Grafana CSV Parser";
+				} else if (isAwsCsv) {
 					detectedFormatName.value = "AWS CSV Parser";
-				} else if (
-					isJson &&
-					sample.includes("@timestamp") &&
-					sample.includes("fields.message")
-				) {
-					detectedFormatName.value = "New Relic Parser";
 				} else if (
 					isJson &&
 					sample.includes("session_id") &&
@@ -76,10 +100,16 @@ export function useLogUploader(targetType: AnalyzerType) {
 					detectedFormatName.value = "Insights Parser";
 				} else if (isJson && sample.includes("level_name")) {
 					detectedFormatName.value = "Local Parser";
+				} else {
+					detectedFormatName.value = "Generic Parser";
 				}
 			} else if (targetType === "rest") {
-				if (isJson && sample.includes("@timestamp")) {
+				if (isGrafanaCsv) {
+					detectedFormatName.value = "Grafana REST Parser";
+				} else if (isJson && sample.includes("@timestamp")) {
 					detectedFormatName.value = "Rest New Relic Parser";
+				} else {
+					detectedFormatName.value = "Generic REST Parser";
 				}
 			}
 		} else {
@@ -165,7 +195,9 @@ export function useLogUploader(targetType: AnalyzerType) {
 
 	async function triggerProcess(onComplete?: () => void) {
 		if (!raw.value || isOverLimit.value || store.isProcessing) return;
-		const allLines = raw.value.split("\n").filter((l) => l.trim().length > 5);
+		const allLines = raw.value
+			.split("\n")
+			.filter((l) => l.trim().length > MIN_LINE_LENGTH);
 
 		if (allLines.length > BATCH_SIZE) {
 			const firstBatch = allLines.slice(0, BATCH_SIZE).join("\n");
@@ -195,9 +227,7 @@ export function useLogUploader(targetType: AnalyzerType) {
 			currentInputCount.value = 0;
 			return;
 		}
-		currentInputCount.value = newVal
-			.split("\n")
-			.filter((l) => l.trim().length > 5).length;
+		currentInputCount.value = fastLineCount(newVal);
 	});
 
 	return {
