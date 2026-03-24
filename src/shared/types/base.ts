@@ -33,7 +33,7 @@ export interface BaseDetails {
   method?: string | null
   endpoint?: string | null
   statusCode?: number | string | null
-  payload?: Record<string, unknown>
+  payload?: unknown
   source?: string | null
 }
 
@@ -45,7 +45,7 @@ export interface LogEvent {
   category: LogCategory
   appType: AnalyzerType
   details: BaseDetails
-  context: Record<string, unknown>
+  context: unknown
   rawStream?: string
 }
 
