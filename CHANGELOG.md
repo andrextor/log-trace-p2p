@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-30
+
+### Added
+- **Global Paste Listener**: Enabled pasting logs directly via `Ctrl+V` without needing to focus the application explicitly.
+
+### Changed
+- **Layout Space Optimization**: Removed the static application footer and integrated it into the LogAnalyzer's empty state, giving full vertical space to the log timelines.
+- **Session Explorer UI**: Pre-calculated metadata directly via computed properties, saving redundant function calls during view rendering. Hidden `UNKNOWN` tag instances for cleaner UI.
+
+### Fixed
+- **Formats Reactivity Issue**: Fixed a bug where supported parsing formats weren't dynamically updated when changing from `Checkout` to `REST` tabs.
+
 ## [1.1.0] - 2026-03-24
 
 ### Added
