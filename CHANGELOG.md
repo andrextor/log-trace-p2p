@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-03-30
+### Added
+- **Timeline Session Context**: The `TimelineHeader` now elegantly displays the extracted `TENANT_DOMAIN` and the current `session_id` as a badge whenever a specific Session is actively filtered or is perfectly singular in the file.
+
+### Fixed
+- **Trace Context Extraction**: Enhanced `isMatch` to comprehensively query nested JSON properties (like `context.session_id` or `payload.session_id`), allowing non-standard formats (such as raw Grafana logs) to appropriately funnel down to their respective Sessions Explorer instances.
+- **Library Parser Overrides**: Explicitly enforced `appType` bindings inside the log store to prevent the `p2p-log-parser` engine from inadvertently miscategorizing `Checkout` traces into the `REST` domain tabs.
+- **Standalone Traces Auto-Selection**: Isolated, standalone logs uploaded without generating dedicated global `metadata` now cleanly fallback by pushing their discovered IDs to the store. This flawlessly triggers the Session UI logic.
+
 ## [1.2.0] - 2026-03-30
 
 ### Added
