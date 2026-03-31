@@ -65,8 +65,7 @@ export const useLogStore = defineStore("logs", () => {
 			if (activeLevel !== "ALL" && event.level !== activeLevel) return false;
 
 			if (sessionFilter.value) {
-				const details = event.details as Record<string, unknown>;
-				if (String(details?.sessionId) !== sessionFilter.value) return false;
+				if (!isMatch(event, sessionFilter.value)) return false;
 			}
 
 			if (highlightedSessionId.value) {
@@ -132,6 +131,11 @@ export const useLogStore = defineStore("logs", () => {
 			const newEvents: LogEvent[] = [];
 
 			for (const event of result.events) {
+				// Force the event type to match the targeted upload type, overriding library miscategorizations
+				if (type !== "ALL" && event.appType !== type) {
+					event.appType = type;
+				}
+
 				if (activeTab.value !== event.appType && activeTab.value !== "ALL") {
 					activeTab.value = event.appType;
 				}
@@ -152,11 +156,13 @@ export const useLogStore = defineStore("logs", () => {
 
 				if (type === APP_TYPES.CHECKOUT) {
 					const checkoutMeta = meta as CheckoutParseMetadata;
+					const existing = new Set(sessionIds.value);
+
 					if (checkoutMeta.sessions?.length) {
-						const existing = new Set(sessionIds.value);
 						for (const sess of checkoutMeta.sessions) {
 							if (!existing.has(sess.sessionId)) {
 								sessionIds.value.push(sess.sessionId);
+								existing.add(sess.sessionId);
 							}
 						}
 					}
@@ -164,6 +170,41 @@ export const useLogStore = defineStore("logs", () => {
 
 				if (sessionIds.value.length > 1 && !sessionFilter.value) {
 					sessionFilter.value = sessionIds.value[0];
+				}
+			}
+
+			if (
+				type === APP_TYPES.CHECKOUT ||
+				activeTab.value === APP_TYPES.CHECKOUT
+			) {
+				const existing = new Set(sessionIds.value);
+				// Fallback manual extraction from newEvents to ensure we capture untracked sessions (e.g. from generic JSON or Grafana formats)
+				for (const e of newEvents) {
+					if (e.appType === APP_TYPES.CHECKOUT) {
+						const ctx = (e.context || {}) as Record<string, unknown>;
+						const details = (e.details || {}) as Record<string, unknown>;
+						const pay = (ctx.payload || details.payload || {}) as Record<
+							string,
+							unknown
+						>;
+						const sid =
+							details.sessionId ||
+							details.session_id ||
+							ctx.session_id ||
+							ctx.sessionId ||
+							pay.session_id ||
+							pay.sessionId;
+
+						if (
+							sid &&
+							String(sid).trim() !== "" &&
+							String(sid) !== "undefined" &&
+							!existing.has(String(sid))
+						) {
+							sessionIds.value.push(String(sid));
+							existing.add(String(sid));
+						}
+					}
 				}
 			}
 

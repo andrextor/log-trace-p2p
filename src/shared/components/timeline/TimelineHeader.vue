@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { APP_TYPES } from "../../../shared/types";
 import type { ActiveFilterInfo } from "../../../shared/types";
+import { isMatch } from "../../../shared/ui/LogUIHelper";
 import { useLogStore } from "../../../store/logStore";
 import LogExporter from "../LogExporter.vue";
 
@@ -18,6 +20,27 @@ const emit = defineEmits([
 	"toggleFunnel",
 ]);
 const store = useLogStore();
+
+const activeSessionInfo = computed(() => {
+	if (store.activeTab !== APP_TYPES.CHECKOUT) return null;
+
+	const sid =
+		store.sessionFilter ||
+		(store.sessionIds.length === 1 ? store.sessionIds[0] : null);
+
+	if (!sid) return null;
+
+	const firstMatch = store.events.find((e) => isMatch(e, sid));
+	if (!firstMatch) return null;
+
+	const ctx = (firstMatch.context || {}) as Record<string, unknown>;
+	const tenant = ctx.TENANT_DOMAIN || ctx.tenant_domain || null;
+
+	return {
+		sessionId: sid,
+		tenantDomain: tenant,
+	};
+});
 </script>
 
 <template>
@@ -40,7 +63,7 @@ const store = useLogStore();
         </button>
       </div>
 
-      <Transition name="scale">
+      <Transition name="scale" mode="out-in">
         <div v-if="activeFilterInfo" 
              class="flex items-center h-10 px-4 rounded-xl border text-[11px] font-bold shadow-sm transition-all animate-in zoom-in duration-300"
              :class="activeFilterInfo.color === 'orange' 
@@ -52,13 +75,20 @@ const store = useLogStore();
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
+        <div v-else-if="activeSessionInfo" 
+             class="flex items-center h-10 px-4 rounded-xl border text-[11px] font-bold shadow-sm transition-all animate-in zoom-in duration-300 bg-sky-50 border-sky-200 text-sky-700 dark:bg-sky-500/5 dark:border-sky-500/20 dark:text-sky-400">
+          <span v-if="activeSessionInfo.tenantDomain" class="opacity-60 uppercase tracking-widest text-[9px] mr-2">Domain</span>
+          <span v-if="activeSessionInfo.tenantDomain" class="font-bold text-[9px] mr-4 truncate max-w-[140px]">{{ activeSessionInfo.tenantDomain }}</span>
+          <span class="opacity-60 uppercase tracking-widest text-[9px] mr-2">ID</span>
+          <span class="font-mono text-[9px] truncate max-w-[120px]">{{ activeSessionInfo.sessionId }}</span>
+        </div>
       </Transition>
     </div>
 
     <div class="flex items-center gap-6">
       <div class="flex flex-col items-end">
         <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Results</span>
-        <span class="text-sm font-mono font-bold text-slate-700 dark:text-indigo-400">{{ visibleCount.toLocaleString() }}</span>
+        <span class="text-sm font-mono font-bold text-slate-700 dark:text-indigo-400">{{ visibleCount.toLocaleString('es-ES') }}</span>
       </div>
       
       <div class="h-8 w-px bg-slate-200 dark:bg-white/10"></div>

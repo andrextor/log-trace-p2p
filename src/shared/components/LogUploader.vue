@@ -39,7 +39,7 @@ const {
 	clearEditor,
 	triggerProcess,
 	processRemaining,
-} = useLogUploader(props.targetType);
+} = useLogUploader(() => props.targetType);
 
 function confirmClearAll() {
 	store.clearLogsByApp(props.targetType);
@@ -76,7 +76,7 @@ const handleViewResults = () => emit("viewResults");
           <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
         </div>
         <p class="text-[11px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">
-          {{ leftovers.length.toLocaleString() }} trazas en cola de espera
+          {{ leftovers.length.toLocaleString('es-ES') }} trazas en cola de espera
         </p>
       </div>
       <button 

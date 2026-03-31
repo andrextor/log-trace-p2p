@@ -1,5 +1,6 @@
 import { P2PParserEngine } from "@andrextor_ia11012/p2p-log-parser";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, toValue, watch } from "vue";
+import type { MaybeRefOrGetter } from "vue";
 import { useLogStore } from "../../store/logStore";
 import type { AnalyzerType } from "../types";
 
@@ -25,7 +26,7 @@ function fastLineCount(text: string): number {
 	return count;
 }
 
-export function useLogUploader(targetType: AnalyzerType) {
+export function useLogUploader(targetType: MaybeRefOrGetter<AnalyzerType>) {
 	const store = useLogStore();
 	const engine = new P2PParserEngine();
 	const supportedFormats = engine.getSupportedFormats();
@@ -42,11 +43,13 @@ export function useLogUploader(targetType: AnalyzerType) {
 
 	// --- COMPUTED ---
 	const availableFormats = computed(() => {
-		return supportedFormats[targetType as keyof typeof supportedFormats] || [];
+		const type = toValue(targetType);
+		return supportedFormats[type as keyof typeof supportedFormats] || [];
 	});
 
 	const totalAccumulatedLines = computed(() => {
-		const currentAppCount = store.counts[targetType] || 0;
+		const type = toValue(targetType);
+		const currentAppCount = store.counts[type] || 0;
 		return currentAppCount + currentInputCount.value + leftovers.value.length;
 	});
 
@@ -74,22 +77,28 @@ export function useLogUploader(targetType: AnalyzerType) {
 
 		// Ampliamos un poco la muestra para asegurar que capturamos líneas útiles además del header
 		const sample = lines.slice(0, 10).join("\n");
-		const result = engine.parse(sample, targetType);
+		const type = toValue(targetType);
+		const result = engine.parse(sample, type);
 
 		// Identificadores fuertes
 		const isGrafanaCsv = sample.includes("grafana_internal");
+		const isGrafanaJson =
+			/^\d+\s+\d{4}-\d{2}-\d{2}T/.test(sample.trim()) && sample.includes('{"');
 		const isAwsCsv =
 			sample.includes(',"{') && /^\d{4}-\d{2}-\d{2}/.test(sample);
 		const isJson =
 			sample.trim().startsWith("{") || sample.trim().startsWith("[");
 
 		// Si el motor logra parsear ALGO, o si tiene la huella indudable de Grafana/AWS, BRILLA.
-		if (result.events.length > 0 || isGrafanaCsv || isAwsCsv) {
+		if (result.events.length > 0 || isGrafanaCsv || isAwsCsv || isGrafanaJson) {
 			detectedFormat.value = "Formato compatible detectado";
 
-			if (targetType === "checkout") {
+			const type = toValue(targetType);
+			if (type === "checkout") {
 				if (isGrafanaCsv) {
 					detectedFormatName.value = "Grafana CSV Parser";
+				} else if (isGrafanaJson) {
+					detectedFormatName.value = "Grafana JSON Parser";
 				} else if (isAwsCsv) {
 					detectedFormatName.value = "AWS CSV Parser";
 				} else if (
@@ -103,7 +112,7 @@ export function useLogUploader(targetType: AnalyzerType) {
 				} else {
 					detectedFormatName.value = "Generic Parser";
 				}
-			} else if (targetType === "rest") {
+			} else if (type === "rest") {
 				if (isGrafanaCsv) {
 					detectedFormatName.value = "Grafana REST Parser";
 				} else if (isJson && sample.includes("@timestamp")) {
@@ -199,13 +208,14 @@ export function useLogUploader(targetType: AnalyzerType) {
 			.split("\n")
 			.filter((l) => l.trim().length > MIN_LINE_LENGTH);
 
+		const type = toValue(targetType);
 		if (allLines.length > BATCH_SIZE) {
 			const firstBatch = allLines.slice(0, BATCH_SIZE).join("\n");
 			leftovers.value = allLines.slice(BATCH_SIZE);
-			await store.processLogs(firstBatch, targetType);
+			await store.processLogs(firstBatch, type);
 			raw.value = "";
 		} else {
-			await store.processLogs(raw.value, targetType);
+			await store.processLogs(raw.value, type);
 			raw.value = "";
 			leftovers.value = [];
 		}
@@ -217,7 +227,8 @@ export function useLogUploader(targetType: AnalyzerType) {
 		if (leftovers.value.length === 0 || store.isProcessing) return;
 		const nextBatch = leftovers.value.slice(0, BATCH_SIZE).join("\n");
 		leftovers.value = leftovers.value.slice(BATCH_SIZE);
-		await store.processLogs(nextBatch, targetType);
+		const type = toValue(targetType);
+		await store.processLogs(nextBatch, type);
 		if (leftovers.value.length === 0) onComplete?.();
 	}
 

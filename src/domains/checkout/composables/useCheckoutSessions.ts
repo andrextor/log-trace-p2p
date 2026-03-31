@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { APP_TYPES } from "../../../shared/types";
 import type {
 	ActiveFilterInfo,
@@ -24,6 +24,16 @@ export function useCheckoutSessions() {
 		store.highlightedSessionId = null;
 		store.search = "";
 	};
+
+	watch(
+		() => store.sessionIds.length,
+		(newLength) => {
+			if (newLength === 1 && !store.sessionFilter) {
+				setSessionFilter(store.sessionIds[0]);
+			}
+		},
+		{ immediate: true },
+	);
 
 	const checkoutMetadata = computed(() => {
 		if (store.activeTab === APP_TYPES.CHECKOUT && store.metadata) {
@@ -69,10 +79,7 @@ export function useCheckoutSessions() {
 	};
 
 	const sessionEventCount = (sid: string) => {
-		return store.events.filter((e) => {
-			const details = e.details as Record<string, unknown>;
-			return String(details?.sessionId) === sid;
-		}).length;
+		return store.events.filter((e) => isMatch(e, sid)).length;
 	};
 
 	const getSessionTypeColor = (type: string) => {
