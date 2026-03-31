@@ -15,7 +15,7 @@ defineProps<{
     
     <div class="px-3 py-1 bg-white dark:bg-black/20 rounded-lg border border-slate-200 dark:border-white/5 shadow-sm">
       <span class="text-[10px] font-mono font-bold" :class="isOverLimit ? 'text-rose-500' : 'text-slate-500 dark:text-slate-400'">
-        {{ totalAccumulatedLines.toLocaleString() }} <span class="opacity-40">/</span> {{ maxStoreLimit.toLocaleString() }}
+        {{ totalAccumulatedLines.toLocaleString('es-ES') }} <span class="opacity-40">/</span> {{ maxStoreLimit.toLocaleString('es-ES') }}
       </span>
     </div>
   </div>

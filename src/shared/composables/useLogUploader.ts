@@ -82,19 +82,23 @@ export function useLogUploader(targetType: MaybeRefOrGetter<AnalyzerType>) {
 
 		// Identificadores fuertes
 		const isGrafanaCsv = sample.includes("grafana_internal");
+		const isGrafanaJson =
+			/^\d+\s+\d{4}-\d{2}-\d{2}T/.test(sample.trim()) && sample.includes('{"');
 		const isAwsCsv =
 			sample.includes(',"{') && /^\d{4}-\d{2}-\d{2}/.test(sample);
 		const isJson =
 			sample.trim().startsWith("{") || sample.trim().startsWith("[");
 
 		// Si el motor logra parsear ALGO, o si tiene la huella indudable de Grafana/AWS, BRILLA.
-		if (result.events.length > 0 || isGrafanaCsv || isAwsCsv) {
+		if (result.events.length > 0 || isGrafanaCsv || isAwsCsv || isGrafanaJson) {
 			detectedFormat.value = "Formato compatible detectado";
 
 			const type = toValue(targetType);
 			if (type === "checkout") {
 				if (isGrafanaCsv) {
 					detectedFormatName.value = "Grafana CSV Parser";
+				} else if (isGrafanaJson) {
+					detectedFormatName.value = "Grafana JSON Parser";
 				} else if (isAwsCsv) {
 					detectedFormatName.value = "AWS CSV Parser";
 				} else if (

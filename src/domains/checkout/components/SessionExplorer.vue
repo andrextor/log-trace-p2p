@@ -60,6 +60,7 @@ const sessions = computed(() => {
 
       <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2 relative">
         <button 
+          v-if="store.sessionIds.length > 1"
           @click="setSessionFilter(null)"
           class="w-full text-left px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center justify-between shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
           :class="!store.sessionFilter
@@ -70,7 +71,7 @@ const sessions = computed(() => {
           <span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-black/30 text-[9px] font-bold border border-slate-200 dark:border-white/5" :class="!store.sessionFilter ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'">{{ store.sessionIds.length }}</span>
         </button>
 
-        <div class="h-px bg-slate-200/50 dark:bg-white/5 my-3 mx-2"></div>
+        <div v-if="store.sessionIds.length > 1" class="h-px bg-slate-200/50 dark:bg-white/5 my-3 mx-2"></div>
 
         <button
           v-for="session in sessions" :key="session.id"

@@ -18,6 +18,7 @@ export function isMatch(event: LogEvent, targetId: string): boolean {
 			String(details?.awsRequestId).toLowerCase() === tId ||
 			String(details?.aws_request_id).toLowerCase() === tId ||
 			String(ctx?.aws_request_id).toLowerCase() === tId ||
+			String(ctx?.session_id).toLowerCase() === tId ||
 			String(
 				(ctx?.payload as Record<string, unknown>)?.session_id,
 			).toLowerCase() === tId
