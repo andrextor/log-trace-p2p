@@ -1,5 +1,7 @@
 <script setup lang="ts">
-defineProps<{
+import { onMounted, onUnmounted } from "vue";
+
+const props = defineProps<{
 	raw: string;
 	isReadingFile: boolean;
 	isDragging: boolean;
@@ -17,6 +19,42 @@ const emit = defineEmits<{
 function onPaste(e: ClipboardEvent) {
 	emit("paste", e);
 }
+
+function handleGlobalPaste(e: ClipboardEvent) {
+	// If we already have raw text (uploader is not empty), let the textarea handle it.
+	if (props.raw) {
+		return;
+	}
+
+	// Ignore if the user is typing in some other input or textarea.
+	const target = e.target as HTMLElement;
+	if (
+		target &&
+		(target.tagName === "INPUT" ||
+			target.tagName === "TEXTAREA" ||
+			target.isContentEditable)
+	) {
+		return;
+	}
+
+	// Make sure we have clipboard data
+	if (!e.clipboardData || !e.clipboardData.getData("text")) {
+		return;
+	}
+
+	// Emit the paste event and stop propagation
+	e.preventDefault();
+	e.stopPropagation();
+	emit("paste", e);
+}
+
+onMounted(() => {
+	window.addEventListener("paste", handleGlobalPaste);
+});
+
+onUnmounted(() => {
+	window.removeEventListener("paste", handleGlobalPaste);
+});
 </script>
 
 <template>

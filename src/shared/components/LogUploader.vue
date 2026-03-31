@@ -39,7 +39,7 @@ const {
 	clearEditor,
 	triggerProcess,
 	processRemaining,
-} = useLogUploader(props.targetType);
+} = useLogUploader(() => props.targetType);
 
 function confirmClearAll() {
 	store.clearLogsByApp(props.targetType);
