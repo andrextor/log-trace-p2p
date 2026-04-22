@@ -108,6 +108,27 @@ const formattedTime = computed(() => {
 function handleFilterId(id: string | number) {
 	emit("highlight-session", id);
 }
+
+const copiedRawLog = ref(false);
+const handleCopyRawLog = async () => {
+	if (!props.log.details?.rawTitle) return;
+	await navigator.clipboard.writeText(String(props.log.details.rawTitle));
+	copiedRawLog.value = true;
+	setTimeout(() => {
+		copiedRawLog.value = false;
+	}, 2000);
+};
+
+const copiedId = ref<string | null>(null);
+const handleCopyId = async (idValue: string | number) => {
+	await navigator.clipboard.writeText(String(idValue));
+	copiedId.value = String(idValue);
+	setTimeout(() => {
+		if (copiedId.value === String(idValue)) {
+			copiedId.value = null;
+		}
+	}, 2000);
+};
 </script>
 
 <template>
@@ -124,8 +145,8 @@ function handleFilterId(id: string | number) {
 
     <div class="flex flex-col p-4 sm:p-5 pl-5 sm:pl-6 cursor-pointer select-none" @click="isExpanded = !isExpanded">
       
-      <div class="flex flex-wrap sm:flex-nowrap justify-between items-center gap-3 mb-3 border-b border-slate-100 dark:border-white/5 pb-3">
-        <div class="flex items-center gap-2.5 flex-wrap">
+      <div class="flex flex-wrap sm:flex-nowrap justify-between items-start sm:items-center gap-3 mb-3 border-b border-slate-100 dark:border-white/5 pb-3">
+        <div class="flex items-center gap-2 flex-wrap">
           <span v-if="log.details?.statusCode" 
                 class="px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-mono font-black tracking-wider transition-all shadow-sm"
                 :class="statusCodeStyle">
@@ -133,8 +154,16 @@ function handleFilterId(id: string | number) {
           </span>
           <div v-if="log.details?.statusCode" class="w-px h-3.5 bg-slate-200 dark:bg-white/10 hidden sm:block"></div>
           
-          <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border transition-colors shadow-sm" 
+          <span class="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border transition-colors shadow-sm" 
                 :class="isHighlighted ? `${activeTheme?.bg} text-white border-white/10` : styles.classes">
+            <!-- Upload Icon -->
+            <svg v-if="log.category.includes('REQ')" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+            <!-- Download Icon -->
+            <svg v-else-if="log.category.includes('RES')" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            <!-- Error Icon -->
+            <svg v-else-if="log.category === 'ERROR'" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <!-- System/Default Icon -->
+            <svg v-else class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             {{ styles.label }}
           </span>
 
@@ -142,31 +171,49 @@ function handleFilterId(id: string | number) {
             <svg class="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
             {{ log.details.method }}
           </span>
+
+          <div v-if="displayEndpoint" 
+               class="flex items-center gap-1.5 py-0.5 px-2 bg-transparent text-slate-400 dark:text-slate-500 max-w-[200px] sm:max-w-xs md:max-w-md">
+            <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span class="font-mono text-[9px] sm:text-[10px] truncate">
+              {{ displayEndpoint }}
+            </span>
+          </div>
         </div>
 
-        <div class="flex items-center gap-1.5 text-slate-400 shrink-0 bg-slate-50 dark:bg-black/20 px-2.5 py-1 rounded-md border border-slate-100 dark:border-white/5 shadow-sm">
-           <svg class="w-3.5 h-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-           <span class="font-mono text-[10px] sm:text-[11px] font-bold tracking-tight">
-             {{ formattedTime }}
-           </span>
-        </div>
-      </div>
-
-      <div class="py-1">
-        <h3 class="font-medium text-[14px] sm:text-[15px] leading-snug text-slate-800 dark:text-slate-100 transition-colors"
-            :class="{ 'font-bold text-rose-600 dark:text-rose-400': isErrorState, 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400': !isErrorState }">
-          {{ log.message }}
-        </h3>
-
-        <div v-if="log.details?.rawTitle && log.details.rawTitle !== log.message" 
-             class="mt-1.5 px-2 py-1 bg-slate-100/50 dark:bg-white/5 rounded border border-slate-200/50 dark:border-white/5 w-fit">
-          <p class="font-mono text-[10px] text-slate-400 dark:text-slate-500 break-all leading-relaxed uppercase tracking-tighter">
-            {{ log.details.rawTitle }}
-          </p>
+        <div class="flex flex-col items-end shrink-0 gap-1 mt-1 sm:mt-0">
+           <div class="flex items-center gap-1.5 text-slate-400 opacity-80">
+              <span class="font-mono text-[10px] sm:text-[11px] tracking-tight">
+                {{ formattedTime }}
+              </span>
+           </div>
         </div>
       </div>
 
-      <div class="flex items-start sm:items-center justify-between mt-4">
+      <div class="py-1 flex gap-3 items-start">
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-[15px] sm:text-[17px] leading-tight text-slate-800 dark:text-slate-100 transition-colors"
+              :class="{ 'text-rose-600 dark:text-rose-400': isErrorState, 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400': !isErrorState }">
+            {{ log.message }}
+          </h3>
+          
+          <div v-if="log.details?.rawTitle && log.details.rawTitle !== log.message" 
+               class="mt-2 px-2 py-1 bg-slate-100/50 dark:bg-white/5 rounded border border-slate-200/50 dark:border-white/5 w-fit flex items-center gap-2 group/raw">
+            <p class="font-mono text-[9px] text-slate-400 dark:text-slate-500 break-all leading-relaxed tracking-tighter">
+              raw log: {{ log.details.rawTitle }}
+            </p>
+            <button @click.stop="handleCopyRawLog" 
+                    class="p-1 rounded hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-indigo-500 transition-all opacity-0 group-hover/raw:opacity-100"
+                    :class="{ 'opacity-100 text-emerald-500': copiedRawLog }"
+                    title="Copy Raw Log">
+              <svg v-if="!copiedRawLog" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+              <svg v-else class="w-3 h-3 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-start sm:items-center justify-between mt-5 pt-3 border-t border-slate-50 dark:border-white/[0.02]">
         <div class="flex flex-wrap items-center gap-2">
 
            <span v-if="displayProvider" 
@@ -176,20 +223,18 @@ function handleFilterId(id: string | number) {
            </span>
 
            <button v-for="id in essentialIdentifiers" :key="id.label" 
-                   @click.stop="handleFilterId(id.value as string)"
+                   @click.stop="handleCopyId(id.value as string)"
                    class="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-indigo-500/10 px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 hover:border-indigo-500/30 transition-all shadow-sm group/id"
-                   :title="`Filter by ${id.label}: ${id.value}`">
-              <span class="text-[9px] font-black uppercase text-slate-400 group-hover/id:text-indigo-500 transition-colors">{{ id.label }}</span>
-              <span class="text-[9px] sm:text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 truncate max-w-[80px] sm:max-w-[120px]" :title="String(id.value)">{{ id.value }}</span>
+                   :title="`Copy ${id.label}`">
+              <span class="text-[9px] font-black uppercase transition-colors flex items-center gap-1"
+                    :class="{ 'text-emerald-500': copiedId === String(id.value), 'text-slate-400 group-hover/id:text-indigo-500': copiedId !== String(id.value) }">
+                <svg v-if="copiedId === String(id.value)" class="w-3 h-3 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                <template v-else>{{ id.label }}</template>
+              </span>
+              <span class="text-[9px] sm:text-[10px] font-mono font-bold truncate max-w-[80px] sm:max-w-[120px] transition-colors" 
+                    :class="{ 'text-emerald-600 dark:text-emerald-400': copiedId === String(id.value), 'text-slate-600 dark:text-slate-300': copiedId !== String(id.value) }"
+                    :title="String(id.value)">{{ id.value }}</span>
            </button>
-
-           <div v-if="displayEndpoint" 
-                class="hidden lg:flex items-center gap-2 py-1 px-2.5 bg-slate-50 dark:bg-black/30 rounded-md border border-slate-100 dark:border-white/5 transition-all group-hover:border-indigo-500/30 group-hover:bg-white dark:group-hover:bg-black/50 shadow-sm max-w-[150px] xl:max-w-xs">
-             <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-             <span class="font-mono text-[10px] sm:text-xs truncate text-slate-500 dark:text-slate-400">
-               {{ displayEndpoint }}
-             </span>
-           </div>
         </div>
 
         <div class="flex items-center gap-3 shrink-0 ml-4">

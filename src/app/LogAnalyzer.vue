@@ -163,7 +163,7 @@ const handleUploadComplete = async () => {
         
         <div v-if="hasEventsForCurrentTab" key="timeline" class="h-full flex flex-col">
           <div class="sticky top-14 z-40 bg-white/70 dark:bg-[#0a0a0b]/70 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/5 py-3 px-4 sm:px-6 w-full shadow-sm">
-             <div class="max-w-7xl mx-auto w-full">
+             <div class="w-full">
                <AnalyzerControlBar 
                  :active-tab="store.activeTab" 
                  :active-filter-theme="activeFilterTheme"
@@ -187,14 +187,14 @@ const handleUploadComplete = async () => {
           </div>
 
           <div class="flex-1 w-full px-2 sm:px-6 py-4 custom-scrollbar">
-            <div class="max-w-7xl mx-auto w-full pb-20">
+            <div class="w-full pb-20">
               <CheckoutTimeline v-if="store.activeTab === APP_TYPES.CHECKOUT" />
               <RestTimeline v-else />
             </div>
           </div>
         </div>
 
-        <div v-else key="uploader" class="h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-4 animate-in fade-in slide-in-from-bottom-6 duration-700 w-full max-w-7xl mx-auto">
+        <div v-else key="uploader" class="h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-4 animate-in fade-in slide-in-from-bottom-6 duration-700 w-full">
           <div class="text-center mb-10 space-y-4">
             <div class="flex flex-col items-center justify-center gap-4">
               <div class="p-4 bg-indigo-500/10 rounded-2xl ring-1 ring-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-indigo-500/10">
