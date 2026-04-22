@@ -77,7 +77,10 @@ export function useSessionFunnel() {
 			if (
 				endpoint.includes("/otp/generate") ||
 				endpoint.includes("/otp/validate") ||
-				action === "checkOtp"
+				endpoint.includes("/wallet/otp") ||
+				action === "checkOtp" ||
+				action === "walletOtpGenerate" ||
+				action === "walletOtpValidate"
 			)
 				row.steps.generateOtp = 1;
 			if (endpoint.includes("/mpi/lookup") || msg.includes("3DS"))

@@ -144,6 +144,12 @@ export const useLogStore = defineStore("logs", () => {
 				const fingerprint = `${event.timestamp}_${msgStr.slice(0, 60)}`;
 
 				if (!processedHashes.has(fingerprint)) {
+					// Identify Frontend source for "Request trace" messages
+					if (msgStr.includes("Request trace")) {
+						if (!event.details) event.details = {};
+						event.details.source = "FRONTEND";
+					}
+
 					newEvents.push(event);
 					processedHashes.add(fingerprint);
 				}
