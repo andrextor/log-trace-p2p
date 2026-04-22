@@ -23,9 +23,17 @@ const scrollToGroup = () => {
 <template>
   <section 
     ref="sectionRef"
-    class="relative mb-12 flex flex-col group/block w-full scroll-mt-24"
+    class="relative mb-12 flex flex-col group/block w-full scroll-mt-24 pl-8 md:pl-12"
   >
-    <div class="sticky top-2 z-20 hidden md:block mb-6">
+    <!-- Vertical Backbone Line -->
+    <div class="absolute left-2.5 md:left-5 top-8 bottom-[-3rem] w-px bg-slate-200 dark:bg-white/10 group-last/block:bottom-0"></div>
+
+    <div class="sticky top-2 z-20 hidden md:flex items-center mb-6 -ml-[2.3rem]">
+      <!-- Timeline Node -->
+      <div class="w-8 h-8 rounded-full bg-slate-50 dark:bg-[#161618] border border-slate-200 dark:border-white/10 flex items-center justify-center relative z-10 mr-4 shadow-sm">
+        <div class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
+      </div>
+      
       <button 
         @click="scrollToGroup"
         title="Scroll to start of this block"
@@ -38,9 +46,12 @@ const scrollToGroup = () => {
       </button>
     </div>
     
-    <div class="md:hidden w-full flex items-center gap-2 mb-6 sticky top-0 bg-white/95 dark:bg-[#161618]/95 backdrop-blur z-10 py-3 border-b border-slate-100 dark:border-white/5">
-      <span class="bg-indigo-600 text-white text-[10px] font-black px-2.5 py-1 rounded-md shadow-sm">{{ group.label }}</span>
-      <span class="text-xs font-mono font-bold text-slate-500">{{ group.timeDisplay }}</span>
+    <div class="md:hidden w-full flex items-center gap-3 mb-6 sticky top-0 bg-white/95 dark:bg-[#161618]/95 backdrop-blur z-10 py-3 border-b border-slate-100 dark:border-white/5 -ml-8 pl-8">
+      <div class="w-2 h-2 rounded-full bg-indigo-500 shrink-0 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
+      <div class="flex items-center gap-2">
+        <span class="bg-indigo-600 text-white text-[10px] font-black px-2.5 py-1 rounded-md shadow-sm">{{ group.label }}</span>
+        <span class="text-xs font-mono font-bold text-slate-500">{{ group.timeDisplay }}</span>
+      </div>
     </div>
   
     <div class="w-full space-y-5 relative animate-in slide-in-from-bottom-6">
