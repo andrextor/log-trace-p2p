@@ -137,6 +137,17 @@ const handleCopyRawLog = async () => {
 		copiedRawLog.value = false;
 	}, 2000);
 };
+
+const copiedId = ref<string | null>(null);
+const handleCopyId = async (idValue: string | number) => {
+	await navigator.clipboard.writeText(String(idValue));
+	copiedId.value = String(idValue);
+	setTimeout(() => {
+		if (copiedId.value === String(idValue)) {
+			copiedId.value = null;
+		}
+	}, 2000);
+};
 </script>
 
 <template>
@@ -248,11 +259,17 @@ const handleCopyRawLog = async () => {
            </span>
 
            <button v-for="id in essentialIdentifiers" :key="id.label" 
-                   @click.stop="handleFilterId(id.value as string)"
+                   @click.stop="handleCopyId(id.value as string)"
                    class="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-indigo-500/10 px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 hover:border-indigo-500/30 transition-all shadow-sm group/id"
-                   :title="`Filter by ${id.label}: ${id.value}`">
-              <span class="text-[9px] font-black uppercase text-slate-400 group-hover/id:text-indigo-500 transition-colors">{{ id.label }}</span>
-              <span class="text-[9px] sm:text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 truncate max-w-[80px] sm:max-w-[120px]" :title="String(id.value)">{{ id.value }}</span>
+                   :title="`Copy ${id.label}`">
+              <span class="text-[9px] font-black uppercase transition-colors flex items-center gap-1"
+                    :class="{ 'text-emerald-500': copiedId === String(id.value), 'text-slate-400 group-hover/id:text-indigo-500': copiedId !== String(id.value) }">
+                <svg v-if="copiedId === String(id.value)" class="w-3 h-3 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                <template v-else>{{ id.label }}</template>
+              </span>
+              <span class="text-[9px] sm:text-[10px] font-mono font-bold truncate max-w-[80px] sm:max-w-[120px] transition-colors" 
+                    :class="{ 'text-emerald-600 dark:text-emerald-400': copiedId === String(id.value), 'text-slate-600 dark:text-slate-300': copiedId !== String(id.value) }"
+                    :title="String(id.value)">{{ id.value }}</span>
            </button>
         </div>
 
