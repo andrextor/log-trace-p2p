@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import type { LogEvent } from "../../../shared/types";
 import type { TimeGroup } from "../../../shared/types";
 import LogCard from "../LogCard.vue";
@@ -11,16 +12,30 @@ defineProps<{
 }>();
 
 defineEmits(["highlight-session"]);
+
+const sectionRef = ref<HTMLElement | null>(null);
+
+const scrollToGroup = () => {
+	sectionRef.value?.scrollIntoView({ behavior: "smooth", block: "start" });
+};
 </script>
 
 <template>
   <section 
-    class="relative mb-12 flex flex-col group/block w-full"
+    ref="sectionRef"
+    class="relative mb-12 flex flex-col group/block w-full scroll-mt-24"
   >
     <div class="sticky top-2 z-20 hidden md:block mb-6">
-      <div class="bg-white/95 dark:bg-[#0a0a0b]/95 border border-slate-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg backdrop-blur-md transition-transform group-hover/block:scale-105 inline-block">
+      <button 
+        @click="scrollToGroup"
+        title="Scroll to start of this block"
+        class="bg-white/95 dark:bg-[#0a0a0b]/95 border border-slate-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg backdrop-blur-md transition-all hover:scale-105 active:scale-95 hover:border-indigo-500/50 hover:shadow-indigo-500/20 group/btn flex items-center gap-2 cursor-pointer"
+      >
+        <svg class="w-3 h-3 -translate-y-px opacity-0 group-hover/btn:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7 7 7" />
+        </svg>
         {{ group.label }} • <span class="font-mono">{{ group.timeDisplay }}</span>
-      </div>
+      </button>
     </div>
     
     <div class="md:hidden w-full flex items-center gap-2 mb-6 sticky top-0 bg-white/95 dark:bg-[#161618]/95 backdrop-blur z-10 py-3 border-b border-slate-100 dark:border-white/5">
