@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-04-21
+
+### Changed
+- **Timeline Layout**: Transitioned the timeline visualization from a constrained zigzag layout to a full-width vertical backbone, improving screen real estate utilization.
+- **Log Cards Aesthetics**: Refined the visual hierarchy of log cards, enlarging primary log messages and softening metadata for cleaner scannability. Added category-specific icons (upload, download, error, user action) for immediate recognition.
+- **Log Parsing Engine**: Bumped `p2p-log-parser` dependency to `1.2.3` to incorporate improved "Frontend Request" descriptions and robust source identification.
+
+### Added
+- **Interactive Sticky Headers**: Timeline headers are now clickable buttons that trigger smooth scrolling (`scrollIntoView`) back to the start of their corresponding log block.
+- **Quick-Copy Metadata**: The "Essential Identifiers" (Trace Hash, Reference, Tenant) at the bottom of the log cards now act as one-click copy buttons with instant visual success feedback, replacing the previous session-filtering behavior.
+- **Copy Raw Log**: Introduced a hover-activated button on the raw log indicator to easily copy the unformatted log title directly to the clipboard.
+
+### Fixed
+- **UI Styling**: Resolved a typo (`group/terminall`) in the JSON payload viewer component.
+
 ## [1.2.1] - 2026-03-30
 ### Added
 - **Timeline Session Context**: The `TimelineHeader` now elegantly displays the extracted `TENANT_DOMAIN` and the current `session_id` as a badge whenever a specific Session is actively filtered or is perfectly singular in the file.

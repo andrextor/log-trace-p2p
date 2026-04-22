@@ -23,17 +23,9 @@ const scrollToGroup = () => {
 <template>
   <section 
     ref="sectionRef"
-    class="relative mb-12 flex flex-col group/block w-full scroll-mt-24 pl-8 md:pl-12"
+    class="relative mb-12 flex flex-col group/block w-full scroll-mt-24"
   >
-    <!-- Vertical Backbone Line -->
-    <div class="absolute left-2.5 md:left-5 top-8 bottom-[-3rem] w-px bg-slate-200 dark:bg-white/10 group-last/block:bottom-0"></div>
-
-    <div class="sticky top-2 z-20 hidden md:flex items-center mb-6 -ml-[2.3rem]">
-      <!-- Timeline Node -->
-      <div class="w-8 h-8 rounded-full bg-slate-50 dark:bg-[#161618] border border-slate-200 dark:border-white/10 flex items-center justify-center relative z-10 mr-4 shadow-sm">
-        <div class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
-      </div>
-      
+    <div class="sticky top-2 z-20 hidden md:block mb-6">
       <button 
         @click="scrollToGroup"
         title="Scroll to start of this block"
