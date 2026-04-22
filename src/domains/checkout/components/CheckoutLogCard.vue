@@ -127,6 +127,16 @@ const formattedTime = computed(() => {
 function handleFilterId(id: string | number) {
 	emit("highlight-session", id);
 }
+
+const copiedRawLog = ref(false);
+const handleCopyRawLog = async () => {
+	if (!props.log.details?.rawTitle) return;
+	await navigator.clipboard.writeText(String(props.log.details.rawTitle));
+	copiedRawLog.value = true;
+	setTimeout(() => {
+		copiedRawLog.value = false;
+	}, 2000);
+};
 </script>
 
 <template>
@@ -178,10 +188,17 @@ function handleFilterId(id: string | number) {
         </h3>
         
         <div v-if="log.details?.rawTitle && log.details.rawTitle !== log.message" 
-             class="mt-1.5 px-2 py-1 bg-slate-100/50 dark:bg-white/5 rounded border border-slate-200/50 dark:border-white/5 w-fit">
+             class="mt-1.5 px-2 py-1 bg-slate-100/50 dark:bg-white/5 rounded border border-slate-200/50 dark:border-white/5 w-fit flex items-center gap-2 group/raw">
           <p class="font-mono text-[10px] text-slate-500 dark:text-slate-100 break-all leading-relaxed tracking-tighter">
             raw log: {{ log.details.rawTitle }}
           </p>
+          <button @click.stop="handleCopyRawLog" 
+                  class="p-1 rounded hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-indigo-500 transition-all opacity-0 group-hover/raw:opacity-100"
+                  :class="{ 'opacity-100 text-emerald-500': copiedRawLog }"
+                  title="Copy Raw Log">
+            <svg v-if="!copiedRawLog" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            <svg v-else class="w-3 h-3 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+          </button>
         </div>
       </div>
 

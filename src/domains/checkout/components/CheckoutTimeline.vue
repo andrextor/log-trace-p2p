@@ -59,12 +59,11 @@ const handleSessionFromFunnel = (sessionId: string | number) => {
 
       <div class="flex-1 overflow-y-auto px-2 md:px-4 custom-scrollbar scroll-smooth pb-20 relative">
         <transition name="fade" mode="out-in">
-          <div v-if="showFunnel" key="funnel" class="max-w-6xl mx-auto py-4">
+          <div v-if="showFunnel" key="funnel" class="w-full py-4">
             <SessionFunnelReport @filter-session="handleSessionFromFunnel" />
           </div>
 
-          <div v-else key="timeline" class="relative max-w-5xl mx-auto py-4">
-            <div class="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-slate-200 dark:via-white/10 to-transparent transform -translate-x-1/2 hidden md:block"></div>
+          <div v-else key="timeline" class="relative w-full py-4">
 
             <TimelineGroup 
               v-for="(group, index) in timelineGroups" 
