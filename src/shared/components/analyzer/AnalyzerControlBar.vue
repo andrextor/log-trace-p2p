@@ -72,6 +72,7 @@ defineEmits(["toggle-errors", "reset-filters", "clear-data"]);
         <button
           v-if="levelFilter !== 'ALL' || activeFilterTheme"
           @click="$emit('reset-filters')"
+          aria-label="Reset all filters"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-slate-400 hover:text-indigo-500 transition-colors"
         >
           <svg
@@ -95,6 +96,7 @@ defineEmits(["toggle-errors", "reset-filters", "clear-data"]);
 
       <button
         @click="$emit('clear-data')"
+        aria-label="Clear all logs for current analyzer"
         class="px-3 py-2 text-[10px] font-bold uppercase tracking-tight text-slate-400 hover:text-red-500 transition-colors"
       >
         Clear Logs

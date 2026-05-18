@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { APP_TYPES } from "../../../shared/types";
 import type { ActiveFilterInfo } from "../../../shared/types";
 import { isMatch } from "../../../shared/ui/LogUIHelper";
 import { useLogStore } from "../../../store/logStore";
 import LogExporter from "../LogExporter.vue";
+import ParsingErrorsModal from "../ParsingErrorsModal.vue";
 
 defineProps<{
 	search: string;
@@ -20,6 +21,7 @@ const emit = defineEmits([
 	"toggleFunnel",
 ]);
 const store = useLogStore();
+const showErrorsModal = ref(false);
 
 const activeSessionInfo = computed(() => {
 	if (store.activeTab !== APP_TYPES.CHECKOUT) return null;
@@ -55,10 +57,11 @@ const activeSessionInfo = computed(() => {
         <input 
           :value="search"
           @input="e => emit('update:search', (e.target as HTMLInputElement).value)"
-          placeholder="Search trace..." 
+          placeholder="Search trace..."
+          aria-label="Search traces"
           class="w-full bg-white dark:bg-[#0a0a0b] border border-slate-200 dark:border-white/10 pl-10 pr-10 py-2.5 rounded-xl text-sm font-medium outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/5 transition-all shadow-sm" 
         />
-        <button v-if="search" @click="emit('clearSearch')" class="absolute right-3 top-3 text-slate-300 hover:text-slate-500">
+        <button v-if="search" @click="emit('clearSearch')" class="absolute right-3 top-3 text-slate-300 hover:text-slate-500" aria-label="Clear search">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
@@ -71,7 +74,7 @@ const activeSessionInfo = computed(() => {
                 : 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-500/5 dark:border-indigo-500/20 dark:text-indigo-400'">
           <span class="opacity-50 uppercase tracking-widest text-[9px] mr-2">{{ activeFilterInfo.label }}</span>
           <span class="font-mono text-xs">{{ activeFilterInfo.value }}</span>
-          <button @click="emit('clearFilter')" class="ml-3 p-0.5 hover:bg-current/10 rounded-md transition-colors">
+          <button @click="emit('clearFilter')" class="ml-3 p-0.5 hover:bg-current/10 rounded-md transition-colors" aria-label="Clear filter">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -108,7 +111,25 @@ const activeSessionInfo = computed(() => {
         </button>
 
         <LogExporter />
+
+        <button
+          v-if="store.parsingErrors.length > 0"
+          @click="showErrorsModal = true"
+          aria-label="Show parsing errors"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-all"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          {{ store.parsingErrors.length }} {{ store.parsingErrors.length === 1 ? 'Error' : 'Errors' }}
+        </button>
       </div>
     </div>
   </header>
+
+  <ParsingErrorsModal
+    :is-open="showErrorsModal"
+    :errors="store.parsingErrors"
+    @close="showErrorsModal = false"
+  />
 </template>

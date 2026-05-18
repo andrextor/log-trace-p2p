@@ -44,7 +44,10 @@ const essentialIdentifiers = computed(() => {
 const isErrorState = computed(() => {
 	const code = Number(props.log.details?.statusCode);
 	return (
-		props.log.level === "ERROR" || props.log.category === "ERROR" || code >= 400
+		props.log.level === "ERROR" ||
+		props.log.level === "CRITICAL" ||
+		props.log.category === "ERROR" ||
+		code >= 400
 	);
 });
 
@@ -128,6 +131,11 @@ const handleCopyId = async (idValue: string | number) => {
 			copiedId.value = null;
 		}
 	}, 2000);
+};
+
+const handleIdentifierClick = (idValue: string | number) => {
+	handleCopyId(idValue);
+	emit("highlight-session", idValue);
 };
 </script>
 
@@ -223,7 +231,7 @@ const handleCopyId = async (idValue: string | number) => {
            </span>
 
            <button v-for="id in essentialIdentifiers" :key="id.label" 
-                   @click.stop="handleCopyId(id.value as string)"
+                   @click.stop="handleIdentifierClick(id.value as string)"
                    class="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-indigo-500/10 px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 hover:border-indigo-500/30 transition-all shadow-sm group/id"
                    :title="`Copy ${id.label}`">
               <span class="text-[9px] font-black uppercase transition-colors flex items-center gap-1"

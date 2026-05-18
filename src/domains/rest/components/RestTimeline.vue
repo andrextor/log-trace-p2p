@@ -4,18 +4,31 @@ import type { ActiveFilterInfo, LogEvent } from "../../../shared/types";
 import { getFilterIdentity, isMatch } from "../../../shared/ui/LogUIHelper";
 import { useLogStore } from "../../../store/logStore";
 
-import ParsingErrorsModal from "../../../shared/components/ParsingErrorsModal.vue";
 import TimelineGroup from "../../../shared/components/timeline/TimelineGroup.vue";
 import TimelineHeader from "../../../shared/components/timeline/TimelineHeader.vue";
 
 const store = useLogStore();
-const showErrorsModal = ref(false);
-const MAX_INITIAL_GROUPS = 40;
+const BATCH_SIZE = 40;
+const visibleGroups = ref(BATCH_SIZE);
+
+const allGroups = computed(() => {
+	return store.groupedEvents ? Object.values(store.groupedEvents) : [];
+});
 
 const timelineGroups = computed(() => {
-	const groups = store.groupedEvents ? Object.values(store.groupedEvents) : [];
-	return groups.slice(0, MAX_INITIAL_GROUPS);
+	return allGroups.value.slice(0, visibleGroups.value);
 });
+
+const remainingGroups = computed(() => {
+	return Math.max(0, allGroups.value.length - visibleGroups.value);
+});
+
+const loadMore = () => {
+	visibleGroups.value = Math.min(
+		visibleGroups.value + BATCH_SIZE,
+		allGroups.value.length,
+	);
+};
 
 const activeFilterInfo = computed<ActiveFilterInfo | null>(() => {
 	if (!store.highlightedSessionId) return null;
@@ -60,6 +73,19 @@ const isLogHighlighted = (event: LogEvent) => {
               :is-log-highlighted="isLogHighlighted"
               @highlight-session="store.toggleHighlight"
             />
+
+            <div v-if="remainingGroups > 0" class="flex justify-center py-8">
+              <button
+                @click="loadMore"
+                class="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-sm"
+              >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7m14-8l-7 7-7-7" />
+                </svg>
+                Load {{ Math.min(BATCH_SIZE, remainingGroups) }} More Blocks
+                <span class="text-[10px] opacity-60">({{ remainingGroups }} remaining)</span>
+              </button>
+            </div>
             
             <div v-if="timelineGroups.length === 0" class="flex flex-col items-center justify-center py-24 opacity-40">
               <svg class="w-12 h-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -71,12 +97,6 @@ const isLogHighlighted = (event: LogEvent) => {
         </transition>
       </div>
     </div>
-
-    <ParsingErrorsModal 
-      :is-open="showErrorsModal" 
-      :errors="store.parsingErrors" 
-      @close="showErrorsModal = false" 
-    />
   </div>
 </template>
 
