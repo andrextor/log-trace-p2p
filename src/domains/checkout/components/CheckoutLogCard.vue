@@ -55,7 +55,6 @@ const essentialIdentifiers = computed(() => {
 	const d = props.log.details as Record<string, unknown>;
 	return [
 		{ label: "SID", value: d.sessionId },
-		{ label: "TX", value: d.transactionId },
 		{ label: "Trace", value: d.awsRequestId || d.aws_request_id },
 	].filter((c) => c.value);
 });
@@ -114,6 +113,11 @@ const styles = computed(
 		},
 );
 
+const hasBodyContent = computed(() => {
+	const d = props.log.details as Record<string, unknown>;
+	return !!(d?.payload || d?.sessionId || d?.transactionId || d?.provider);
+});
+
 const formattedTime = computed(() => {
 	try {
 		const timePart = props.log.timestamp.split("T")[1];
@@ -126,10 +130,6 @@ const formattedTime = computed(() => {
 		return props.log.timestamp;
 	}
 });
-
-function handleFilterId(id: string | number) {
-	emit("highlight-session", id);
-}
 
 const copiedRawLog = ref(false);
 const handleCopyRawLog = async () => {
@@ -150,11 +150,6 @@ const handleCopyId = async (idValue: string | number) => {
 			copiedId.value = null;
 		}
 	}, 2000);
-};
-
-const handleIdentifierClick = (idValue: string | number) => {
-	handleCopyId(idValue);
-	emit("highlight-session", idValue);
 };
 </script>
 
@@ -267,17 +262,18 @@ const handleIdentifierClick = (idValue: string | number) => {
            </span>
 
            <button v-for="id in essentialIdentifiers" :key="id.label" 
-                   @click.stop="handleIdentifierClick(id.value as string)"
+                   @click.stop="id.label === 'Trace' ? (handleCopyId(id.value as string), emit('highlight-session', id.value as string)) : handleCopyId(id.value as string)"
                    class="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-indigo-500/10 px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 hover:border-indigo-500/30 transition-all shadow-sm group/id"
-                   :title="`Copy ${id.label}`">
+                   :title="id.label === 'Trace' ? 'Filter & copy Trace ID' : `Copy ${id.label}`">
               <span class="text-[9px] font-black uppercase transition-colors flex items-center gap-1"
                     :class="{ 'text-emerald-500': copiedId === String(id.value), 'text-slate-400 group-hover/id:text-indigo-500': copiedId !== String(id.value) }">
                 <svg v-if="copiedId === String(id.value)" class="w-3 h-3 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
                 <template v-else>{{ id.label }}</template>
               </span>
-              <span class="text-[9px] sm:text-[10px] font-mono font-bold truncate max-w-[80px] sm:max-w-[120px] transition-colors" 
+              <span class="text-[9px] sm:text-[10px] font-mono font-bold truncate max-w-[100px] sm:max-w-[180px] transition-colors" 
                     :class="{ 'text-emerald-600 dark:text-emerald-400': copiedId === String(id.value), 'text-slate-600 dark:text-slate-300': copiedId !== String(id.value) }"
                     :title="String(id.value)">{{ id.value }}</span>
+              <svg v-if="id.label === 'Trace'" class="w-3 h-3 text-slate-300 dark:text-white/10 opacity-0 group-hover/id:opacity-100 transition-all group-hover/id:text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
            </button>
         </div>
 
@@ -286,7 +282,9 @@ const handleIdentifierClick = (idValue: string | number) => {
              <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
              Tracing
            </span>
-           <div class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 group-hover:bg-indigo-500 group-hover:border-indigo-500 group-hover:text-white text-slate-400 transition-all duration-300 shadow-sm relative">
+           <div class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 group-hover:bg-indigo-500 group-hover:border-indigo-500 group-hover:text-white text-slate-400 transition-all duration-300 shadow-sm relative"
+                :class="{ 'ring-2 ring-indigo-500/20': hasBodyContent && !isExpanded }">
+              <div v-if="hasBodyContent && !isExpanded" class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_6px_rgba(99,102,241,0.6)]"></div>
               <svg class="w-4 h-4 transform transition-transform duration-300" 
                    :class="{ 'rotate-180': isExpanded }" 
                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -306,8 +304,6 @@ const handleIdentifierClick = (idValue: string | number) => {
           <div class="p-4 sm:p-6 lg:p-8">
             <CheckoutBody
               :details="log.details"
-              :is-highlighted="isHighlighted"
-              @filter-id="handleFilterId"
             />
           </div>
         </div>
