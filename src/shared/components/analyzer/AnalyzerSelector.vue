@@ -19,8 +19,11 @@ const availableAnalyzers = computed(() => {
 });
 
 function selectAnalyzer(id: AnalyzerType) {
+	const previousAnalyzer = store.currentAnalyzer as AnalyzerType;
 	store.currentAnalyzer = id;
-	store.clearLogs();
+	if (previousAnalyzer !== id) {
+		store.clearLogsByApp(previousAnalyzer);
+	}
 }
 </script>
 

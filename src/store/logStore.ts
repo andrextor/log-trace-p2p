@@ -129,14 +129,25 @@ export const useLogStore = defineStore("logs", () => {
 
 			const result = engine.parse(rawContent, type);
 			const newEvents: LogEvent[] = [];
+			const totalEvents = result.events.length;
 
-			for (const event of result.events) {
+			for (let i = 0; i < result.events.length; i++) {
+				const event = result.events[i];
+
+				progress.value =
+					totalEvents > 0 ? Math.round((i / totalEvents) * 100) : 100;
+
 				// Force the event type to match the targeted upload type, overriding library miscategorizations
 				if (type !== "ALL" && event.appType !== type) {
 					event.appType = type;
 				}
 
-				if (activeTab.value !== event.appType && activeTab.value !== "ALL") {
+				// Only auto-switch tab if no events are loaded yet (first upload)
+				if (
+					events.value.length === 0 &&
+					activeTab.value !== event.appType &&
+					activeTab.value !== "ALL"
+				) {
 					activeTab.value = event.appType;
 				}
 

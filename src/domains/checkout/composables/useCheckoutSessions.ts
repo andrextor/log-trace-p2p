@@ -79,8 +79,33 @@ export function useCheckoutSessions() {
 	};
 
 	const sessionEventCount = (sid: string) => {
-		return store.events.filter((e) => isMatch(e, sid)).length;
+		return eventCountBySession.value.get(sid) ?? 0;
 	};
+
+	const eventCountBySession = computed(() => {
+		const map = new Map<string, number>();
+		for (const e of store.events) {
+			if (e.appType !== APP_TYPES.CHECKOUT) continue;
+			const ctx = (e.context || {}) as Record<string, unknown>;
+			const details = (e.details || {}) as Record<string, unknown>;
+			const pay = (ctx.payload || details.payload || {}) as Record<
+				string,
+				unknown
+			>;
+			const sid =
+				details.sessionId ||
+				details.session_id ||
+				ctx.session_id ||
+				ctx.sessionId ||
+				pay.session_id ||
+				pay.sessionId;
+			if (sid) {
+				const key = String(sid);
+				map.set(key, (map.get(key) ?? 0) + 1);
+			}
+		}
+		return map;
+	});
 
 	const getSessionTypeColor = (type: string) => {
 		switch (type?.toUpperCase()) {
