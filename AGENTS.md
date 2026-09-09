@@ -30,20 +30,22 @@ CI runs sequentially: `pnpm lint` → `pnpm typecheck` → `pnpm test:run` → `
 - `src/store/` — Pinia store (application/state layer).
 - `src/shared/` — cross-cutting types, UI helpers, common components.
 - `src/domains/checkout/`, `src/domains/rest/` — domain-specific composables and components.
-- Complex logic goes in composables within the relevant domain, or in `src/shared/ui/LogUIHelper.ts` when two domains need it; Vue components should stay presentational.
+- Complex logic goes in composables within the relevant domain, or in `src/shared/ui/` when two domains need it (`LogUIHelper.ts` for predicates and formatting, `eventBadges.ts`, `facets.ts`, `batchSummary.ts`); Vue components should stay presentational.
+- **One way to filter.** Every filter goes through the store: `outcomeFilter`, `search`, `sessionFilter` and `facetFilters`. Panels that offer filtering (`ProviderPanel`, `BatchSummary`) drive the existing facets rather than keeping state of their own — two mechanisms for the same filter end up disagreeing.
 
 See `.agents/workflows/p2p-viwer.md` for full naming and code-style conventions.
 
 ## Store Gotchas
 
 - Events use `shallowRef<LogEvent[]>([])` — only array reference changes trigger reactivity. Mutating in place won't update the UI.
-- Batch processing: BATCH_SIZE = 5000, hard cap at MAX_STORE_LIMIT = 20000 lines. Events deduplicated via `processedHashes` Set (timestamp + first 60 chars of message).
+- Batch processing: BATCH_SIZE = 5000, hard cap at MAX_STORE_LIMIT = 20000 lines. Events deduplicated via `processedHashes` Set, keyed by `event.id` — which the parser derives from the content (epoch timestamp + full message + trace id), so it neither truncates nor collides across traces.
 
 ## Tooling Quirks
 
 - **Biome**: indentation is **tabs**, quotes are **double**, rules are **recommended**. Uses `.gitignore` for file ignores.
 - **Vitest**: environment `jsdom`. `globals: true` is set, but **import `describe` / `it` / `expect` from `"vitest"` anyway**: the tsconfig does not declare `vitest/globals`, so relying on the globals compiles under Vitest and then fails `pnpm typecheck`, which runs before the tests in CI.
-- **Tests**: `src/shared/utils/placeholder.test.ts` (trivial, satisfies CI) and `src/shared/ui/LogUIHelper.test.ts` (status badge + request/response pairing). No test setup file.
+- **Tests**: unit tests for the shared UI logic (`src/shared/ui/*.test.ts`: badges, facets, batch summary, pairing, predicates) plus component tests mounted in jsdom (`LogUploader`, `ProviderPanel`) and store-level tests (`src/store/logStore.test.ts`). No test setup file.
+- **`src/shims-vue.d.ts`** is what lets a `.ts` test import a `.vue` component: `astro check` resolves SFCs, the `tsc --noEmit` that CI runs afterwards does not.
 - **TypeScript**: extends `astro/tsconfigs/strict`. No `any` allowed.
 - `test_parse.ts` at root is a standalone smoke-test script — not part of the test suite, not run by CI.
 

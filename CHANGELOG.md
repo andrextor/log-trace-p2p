@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-09
+
+Cierra el plan de UI/UX (`docs/plan-ux.md`): fases 4, 5 y 6.
+
+### Added
+- **Franja de contexto del lote**: ventana temporal, total, fallos, líneas sin reconocer y reparto por categoría, bajo la barra de control. Se calcula sobre los eventos de la pestaña activa y no sobre `ParseStats`, porque este describe una sola llamada al parser mientras el store acumula varias subidas.
+- **El panel de proveedores navega**: pulsar un proveedor —o uno de sus fallos— enciende y apaga su faceta. Acciona el filtro que ya existía en vez de estrenar uno propio.
+
+### Changed
+- **Jerarquía de la tarjeta**: cabecera común (`LogCardHeader`) para los dos dominios, con el mensaje como único elemento con peso tipográfico, la fila de badges deliberadamente tenue y la ruta recortada por el centro, que conserva la cola —que es lo que identifica una llamada—. `durationMs` sube a la cabecera también en Checkout.
+- La hora se formatea igual en las tarjetas y en el intercambio; antes eran dos relojes distintos en la misma pantalla.
+- **Micrositios sale de la interfaz.** La librería solo le ofrece un formato frente a los cinco de Checkout y los tres de REST, así que sus eventos salen sin enriquecer. Se le dará pestaña cuando tenga estrategias propias. Cae también `AnalyzerSelector.vue`, que no importaba nadie.
+
+### Fixed
+- **La deduplicación perdía eventos.** `processedHashes` usaba `timestamp + los primeros 60 caracteres del mensaje`, así que dos peticiones seguidas a la misma ruta que solo se diferencian en el identificador del final colisionaban y se descartaba una, en silencio. Ahora la clave es `event.id`, que el parser deriva del contenido completo y de la traza.
+
 ## [1.4.0] - 2026-09-09
 
 Revisión de UI/UX guiada por `docs/plan-ux.md`: se corrigen cuatro fallos de
