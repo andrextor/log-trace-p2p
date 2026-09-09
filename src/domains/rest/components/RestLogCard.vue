@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import { CATEGORY_STYLES } from "../../../shared/constants/ui-styles";
 import type { HighlightTheme, LogEvent } from "../../../shared/types";
-import { getStatusBadge } from "../../../shared/ui/LogUIHelper";
+import { getStatusBadge, isFailure } from "../../../shared/ui/LogUIHelper";
 import { useLogStore } from "../../../store/logStore";
 import type { RestDetails } from "../types";
 import RestBody from "./RestBody.vue";
@@ -42,14 +42,7 @@ const essentialIdentifiers = computed(() => {
 	].filter((c) => c.value);
 });
 
-// El parser resuelve el resultado; el nivel y la categoría se quedan cortos
-// porque un rechazo del proveedor llega como INFO o WARNING.
-const isErrorState = computed(
-	() =>
-		props.log.outcome?.isError ||
-		props.log.level === "ERROR" ||
-		props.log.level === "CRITICAL",
-);
+const isErrorState = computed(() => isFailure(props.log));
 
 const duration = computed(() => {
 	const ms = props.log.durationMs;

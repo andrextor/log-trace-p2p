@@ -117,3 +117,43 @@ export function toTimelineRows(events: LogEvent[]): TimelineRow[] {
 
 	return rows;
 }
+
+/**
+ * Único criterio de fallo de la aplicación. `level` no basta: un rechazo del
+ * proveedor llega como INFO o WARNING y el parser lo resuelve en `outcome`.
+ * Contarlo con un criterio y filtrarlo con otro hacía que el botón dijera doce
+ * fallos y aparecieran tres.
+ */
+export function isFailure(event: LogEvent): boolean {
+	return Boolean(
+		event.outcome?.isError ||
+			event.level === "ERROR" ||
+			event.level === "CRITICAL",
+	);
+}
+
+/**
+ * Texto sobre el que busca el filtro libre. Antes solo miraba `message` e `id`,
+ * así que pegar una referencia o un BIN —que el parser ya tiene resueltos en
+ * `correlation`— no encontraba nada.
+ */
+export function eventMatchesText(event: LogEvent, term: string): boolean {
+	if (!term) return true;
+
+	const details = event.details as Record<string, unknown>;
+	const haystack: Array<unknown> = [
+		event.message,
+		event.id,
+		details?.endpoint,
+		details?.operation,
+		details?.provider,
+		...Object.values(event.correlation ?? {}),
+	];
+
+	return haystack.some(
+		(value) =>
+			value !== undefined &&
+			value !== null &&
+			String(value).toLowerCase().includes(term),
+	);
+}

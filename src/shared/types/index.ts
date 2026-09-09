@@ -2,14 +2,4 @@
 // (`Outcome`, `CheckoutFunnelSteps`…) y el fallo salía lejos del sitio.
 export * from "./base";
 
-export type {
-	ViewMode,
-	TimeGroup,
-	StoreStats,
-	ActiveFilterInfo,
-	FilterTheme,
-	FiltersCacheEntry,
-	CategoryStyle,
-	HighlightTheme,
-	LevelFilter,
-} from "./store";
+export * from "./store";

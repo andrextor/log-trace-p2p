@@ -6,10 +6,10 @@ defineProps<{
 	activeTab: string;
 	activeFilterTheme: FilterTheme | null;
 	stats: StoreStats;
-	levelFilter: string;
+	outcomeFilter: string;
 }>();
 
-defineEmits(["toggle-errors", "reset-filters", "clear-data"]);
+defineEmits(["toggle-errors", "reset-filters", "clear-data", "add-logs"]);
 </script>
 
 <template>
@@ -41,26 +41,26 @@ defineEmits(["toggle-errors", "reset-filters", "clear-data"]);
         class="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200/50 dark:border-white/5"
       >
         <button
-          v-if="stats.errors > 0 || levelFilter === 'ERROR'"
+          v-if="stats.errors > 0 || outcomeFilter === 'ERRORS'"
           @click="$emit('toggle-errors')"
           class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all border"
-          :class="levelFilter === 'ERROR' 
+          :class="outcomeFilter === 'ERRORS' 
     ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 ring-4 ring-red-500/5' 
     : 'bg-transparent text-red-500 border-transparent hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-100 dark:hover:border-red-500/20'"
         >
           <div class="relative flex h-1.5 w-1.5">
             <span
-              v-if="levelFilter === 'ERROR'"
+              v-if="outcomeFilter === 'ERRORS'"
               class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"
             ></span>
             <span
               class="relative inline-flex rounded-full h-1.5 w-1.5"
-              :class="levelFilter === 'ERROR' ? 'bg-red-500' : 'bg-red-400/50'"
+              :class="outcomeFilter === 'ERRORS' ? 'bg-red-500' : 'bg-red-400/50'"
             ></span>
           </div>
 
           <span>
-            <template v-if="levelFilter === 'ERROR'">
+            <template v-if="outcomeFilter === 'ERRORS'">
               Showing failures
             </template>
             <template v-else>
@@ -70,7 +70,7 @@ defineEmits(["toggle-errors", "reset-filters", "clear-data"]);
         </button>
 
         <button
-          v-if="levelFilter !== 'ALL' || activeFilterTheme"
+          v-if="outcomeFilter !== 'ALL' || activeFilterTheme"
           @click="$emit('reset-filters')"
           aria-label="Reset all filters"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-slate-400 hover:text-indigo-500 transition-colors"
@@ -93,6 +93,17 @@ defineEmits(["toggle-errors", "reset-filters", "clear-data"]);
       </div>
 
       <div class="h-6 w-px bg-slate-200 dark:bg-white/10 mx-1"></div>
+
+      <button
+        @click="$emit('add-logs')"
+        aria-label="Add more logs to the current analyzer"
+        class="flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-tight text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+        </svg>
+        Add logs
+      </button>
 
       <button
         @click="$emit('clear-data')"

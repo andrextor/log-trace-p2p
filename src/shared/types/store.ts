@@ -1,4 +1,4 @@
-import type { AnalyzerType, LogEvent, LogLevel } from "./base";
+import type { AnalyzerType, LogEvent } from "./base";
 
 export type ViewMode = AnalyzerType | "ALL";
 
@@ -30,7 +30,7 @@ export interface FilterTheme {
 export interface FiltersCacheEntry {
 	search: string;
 	highlighted: string | number | null;
-	level: LevelFilter;
+	outcome: OutcomeFilter;
 }
 
 export interface CategoryStyle {
@@ -43,4 +43,8 @@ export interface HighlightTheme {
 	bg: string;
 }
 
-export type LevelFilter = LogLevel | "ALL";
+/**
+ * El filtro de resultado sustituye al de nivel: `level` no describe el
+ * resultado de la operación, solo la severidad con que el emisor la registró.
+ */
+export type OutcomeFilter = "ALL" | "ERRORS";

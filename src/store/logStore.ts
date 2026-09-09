@@ -5,13 +5,13 @@ import { APP_TYPES } from "../shared/types";
 import type { AnalyzerType, LogEvent } from "../shared/types";
 import type {
 	CheckoutParseMetadata,
-	LevelFilter,
+	OutcomeFilter,
 	ParseMetadata,
 	StoreStats,
 	TimeGroup,
 	ViewMode,
 } from "../shared/types";
-import { isMatch } from "../shared/ui/LogUIHelper";
+import { eventMatchesText, isFailure, isMatch } from "../shared/ui/LogUIHelper";
 
 export type { ViewMode } from "../shared/types";
 
@@ -19,7 +19,7 @@ export const useLogStore = defineStore("logs", () => {
 	const events = shallowRef<LogEvent[]>([]);
 	const activeTab = ref<ViewMode>(APP_TYPES.CHECKOUT);
 	const search = ref("");
-	const levelFilter = ref<LevelFilter>("ALL");
+	const outcomeFilter = ref<OutcomeFilter>("ALL");
 	const highlightedSessionId = ref<string | number | null>(null);
 	const parsingErrors = ref<string[]>([]);
 	const isProcessing = ref(false);
@@ -50,12 +50,7 @@ export const useLogStore = defineStore("logs", () => {
 		return {
 			total: filtered.length,
 			globalTotal: events.value.length,
-			// `outcome.isError` cubre los fallos que el nivel no delata: un rechazo
-			// del proveedor llega como INFO o WARNING.
-			errors: filtered.filter(
-				(e) =>
-					e.outcome?.isError || e.level === "ERROR" || e.level === "CRITICAL",
-			).length,
+			errors: filtered.filter(isFailure).length,
 		};
 	});
 
@@ -64,12 +59,14 @@ export const useLogStore = defineStore("logs", () => {
 		if (allEvents.length === 0) return [];
 
 		const searchTerm = search.value.toLowerCase().trim();
-		const activeLevel = levelFilter.value;
+		const onlyFailures = outcomeFilter.value === "ERRORS";
 		const currentTab = activeTab.value;
 
 		return allEvents.filter((event) => {
 			if (currentTab !== "ALL" && event.appType !== currentTab) return false;
-			if (activeLevel !== "ALL" && event.level !== activeLevel) return false;
+			// Mismo predicado que `stats.errors`: el contador y el filtro no pueden
+			// describir conjuntos distintos.
+			if (onlyFailures && !isFailure(event)) return false;
 
 			if (sessionFilter.value) {
 				if (!isMatch(event, sessionFilter.value)) return false;
@@ -80,11 +77,7 @@ export const useLogStore = defineStore("logs", () => {
 				if (!isMatch(event, targetId)) return false;
 			}
 
-			if (!searchTerm) return true;
-			return (
-				event.message.toLowerCase().includes(searchTerm) ||
-				String(event.id).toLowerCase().includes(searchTerm)
-			);
+			return eventMatchesText(event, searchTerm);
 		});
 	});
 
@@ -244,7 +237,7 @@ export const useLogStore = defineStore("logs", () => {
 		unrecognized.value = 0;
 		processedHashes.clear();
 		search.value = "";
-		levelFilter.value = "ALL";
+		outcomeFilter.value = "ALL";
 		highlightedSessionId.value = null;
 		sessionIds.value = [];
 		sessionFilter.value = null;
@@ -262,7 +255,7 @@ export const useLogStore = defineStore("logs", () => {
 		activeTab,
 		parsingErrors,
 		search,
-		levelFilter,
+		outcomeFilter,
 		highlightedSessionId,
 		isProcessing,
 		progress,

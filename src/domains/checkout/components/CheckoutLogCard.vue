@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import { CATEGORY_STYLES } from "../../../shared/constants/ui-styles";
 import type { HighlightTheme, LogEvent } from "../../../shared/types";
-import { getStatusBadge } from "../../../shared/ui/LogUIHelper";
+import { getStatusBadge, isFailure } from "../../../shared/ui/LogUIHelper";
 import { useLogStore } from "../../../store/logStore";
 import CheckoutBody from "./CheckoutBody.vue";
 
@@ -60,14 +60,7 @@ const essentialIdentifiers = computed(() => {
 	].filter((c) => c.value);
 });
 
-// El parser resuelve el resultado. `category` no sirve para esto: ante un fallo
-// REST la cambia a ERROR y Checkout la deja como transporte (`HTTP_RES`).
-const isErrorState = computed(
-	() =>
-		props.log.outcome?.isError ||
-		props.log.level === "ERROR" ||
-		props.log.level === "CRITICAL",
-);
+const isErrorState = computed(() => isFailure(props.log));
 
 const statusBadge = computed(() => getStatusBadge(props.log));
 
