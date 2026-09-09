@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-09
+
+Esta versión traslada al parser todo lo que la capa visual venía derivando por su
+cuenta. Requiere `p2p-log-parser@2.1.0`.
+
+### Changed
+- **Detección de errores unificada**: `CheckoutLogCard` usa `outcome.isError` en vez de combinar nivel, categoría y `statusCode`. La categoría no servía para esto: ante un fallo, REST la cambia a `ERROR` mientras Checkout la deja como transporte.
+- **Identificación de sesión**: `useCheckoutSessions` lee `correlation.sessionId` en lugar de recorrer seis rutas a mano.
+- **Embudo de sesión**: `useSessionFunnel` pasó de deducir los pasos con `endpoint.includes(...)` y `msg.includes("3DS")` a leer `metadata.sessions`. Sigue respetando el filtro activo, recortando a las sesiones visibles.
+- **Badge de estado**: la v2 dejó de inventar el `statusCode`, así que donde antes había un `200` fabricado ahora se muestra `outcome.status` (`OK` / `FAILED` / `REJECTED` / `PENDING`), que sí sale del log.
+
+### Added
+- **Panel de proveedores**: `ProviderPanel` pinta peticiones por proveedor, los diez intercambios más lentos y los fallos del lote sobre la timeline REST.
+- **Líneas no reconocidas**: `stats.unrecognized` se muestra en la cabecera y en el modal de errores. Es la señal de «te equivocaste de aplicación» o «formato no soportado»; antes el log salía vacío sin explicación.
+- **Agrupación por intercambio**: petición y respuesta se pintan como una sola fila con su duración; la petición se despliega bajo demanda. Lo que se queda sin pareja sigue suelto.
+- **`OutcomeAlert`**: el bloque de error, antes duplicado, lo comparten REST y Checkout.
+
+### Fixed
+- **Builds nativos bloqueados**: `pnpm-workspace.yaml` traía el texto de ejemplo como valor (`'@biomejs/biome': set this to true or false`), que no es un booleano. pnpm abortaba con `ERR_PNPM_IGNORED_BUILDS` en cada comando y biome, esbuild y sharp se quedaban sin su postinstall.
+- **Barrel de tipos**: `shared/types/index.ts` era una lista escrita a mano que se quedaba corta cada vez que la librería ganaba un tipo, y el fallo aparecía lejos del sitio real.
+
 ## [1.2.2] - 2026-04-21
 
 ### Changed

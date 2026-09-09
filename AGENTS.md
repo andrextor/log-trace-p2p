@@ -26,27 +26,33 @@ CI runs sequentially: `pnpm lint` → `pnpm typecheck` → `pnpm test:run` → `
 
 ## DDD Directory Conventions
 
-- `src/logic/types.ts` — single source of truth for all domain types (never duplicate interfaces).
+- Domain types come from `@andrextor_ia11012/p2p-log-parser`, re-exported through `src/shared/types/base.ts`. Never redeclare them locally: the parser derives the data, and a local copy drifts silently (that is exactly how the old `RestParseMetadata` stopped matching what the library emitted).
 - `src/store/` — Pinia store (application/state layer).
 - `src/shared/` — cross-cutting types, UI helpers, common components.
 - `src/domains/checkout/`, `src/domains/rest/` — domain-specific composables and components.
-- Complex logic goes in composables within the relevant domain or `src/logic/`; Vue components should stay presentational.
+- Complex logic goes in composables within the relevant domain, or in `src/shared/ui/LogUIHelper.ts` when two domains need it; Vue components should stay presentational.
 
 See `.agents/workflows/p2p-viwer.md` for full naming and code-style conventions.
 
 ## Store Gotchas
 
 - Events use `shallowRef<LogEvent[]>([])` — only array reference changes trigger reactivity. Mutating in place won't update the UI.
-- The store overrides `event.appType` to match the targeted upload type (workaround for parser engine mis-categorization).
 - Batch processing: BATCH_SIZE = 5000, hard cap at MAX_STORE_LIMIT = 20000 lines. Events deduplicated via `processedHashes` Set (timestamp + first 60 chars of message).
 
 ## Tooling Quirks
 
 - **Biome**: indentation is **tabs**, quotes are **double**, rules are **recommended**. Uses `.gitignore` for file ignores.
-- **Vitest**: `globals: true` — `describe`, `it`, `expect` are available without imports. Environment: `jsdom`.
-- **Only test file**: `src/shared/utils/placeholder.test.ts` (trivial 1+1=2, satisfies CI). No test setup file.
+- **Vitest**: environment `jsdom`. `globals: true` is set, but **import `describe` / `it` / `expect` from `"vitest"` anyway**: the tsconfig does not declare `vitest/globals`, so relying on the globals compiles under Vitest and then fails `pnpm typecheck`, which runs before the tests in CI.
+- **Tests**: `src/shared/utils/placeholder.test.ts` (trivial, satisfies CI) and `src/shared/ui/LogUIHelper.test.ts` (status badge + request/response pairing). No test setup file.
 - **TypeScript**: extends `astro/tsconfigs/strict`. No `any` allowed.
 - `test_parse.ts` at root is a standalone smoke-test script — not part of the test suite, not run by CI.
+
+## pnpm-workspace.yaml
+
+`allowBuilds` must hold real booleans. It once shipped with pnpm's placeholder
+text as the value, and pnpm then aborted every command with
+`ERR_PNPM_IGNORED_BUILDS`, leaving biome, esbuild and sharp without the
+postinstall that fetches their native binary.
 
 ## Deploy
 
