@@ -34,40 +34,20 @@ Y en `ParseResult`: `stats` `{total, byApp, byCategory, byLevel, errorCount, unr
 - `RestLogCard.vue` usa `outcome.isError` y muestra `durationMs`.
 - `logStore.ts`: fuera el forzado de `event.appType`, el `details.source = "FRONTEND"` manual y la extracción de `session_id` por seis rutas.
 - `shared/types/base.ts` y `domains/rest/types.ts` reexportan los tipos de la librería en vez de redeclararlos.
-
-Neto: −259 / +108 líneas.
+- **Checkout, mismo tratamiento que REST:** `CheckoutLogCard.isErrorState` usa
+  `outcome.isError`; `useCheckoutSessions` lee `correlation.sessionId`;
+  `CheckoutBody` pinta el fallo resuelto.
+- **Badge de estado unificado:** `getStatusBadge` (en `LogUIHelper`) cae a
+  `outcome.status` cuando la v2 no da `statusCode`, y reemplaza el
+  `statusCodeStyle` que estaba duplicado en las dos tarjetas.
+- El bloque de error, idéntico en ambos dominios, vive en
+  `shared/components/OutcomeAlert.vue`.
 
 ---
 
 ## Pendiente
 
-### 1. Checkout: mismo tratamiento que REST *(prioridad alta)*
-
-El dominio Checkout quedó sin migrar; conserva los mismos rodeos que se
-borraron en REST.
-
-- `domains/checkout/components/CheckoutLogCard.vue:63` — `isErrorState` combina
-  nivel, categoría y `statusCode`. Sustituir por `outcome.isError`, igual que
-  en `RestLogCard.vue:50`.
-- `domains/checkout/composables/useCheckoutSessions.ts:91-100` — recorre cinco
-  rutas buscando el id de sesión (`details.sessionId`, `details.session_id`,
-  `ctx.session_id`, `pay.session_id`…). Sustituir por `event.correlation.sessionId`.
-- `CheckoutBody.vue` — mostrar el error resuelto (`outcome`) como hace
-  `RestBody.vue`, en vez de dejarlo solo en el JSON crudo.
-
-**Criterio:** ninguna referencia a `session_id`, `dinError` ni combinaciones de
-`level`/`category`/`statusCode` fuera de la librería.
-
-### 2. `statusCode` ahora puede ser `null` *(revisar antes de desplegar)*
-
-La v2 dejó de inventar el código de estado: donde antes había un `200` o `500`
-fabricado, ahora puede no haber nada. `CheckoutLogCard.vue:172` y
-`RestLogCard.vue` renderizan el badge con `v-if="log.details?.statusCode"`, así
-que simplemente deja de aparecer. Es correcto —ese 200 era falso—, pero conviene
-decidir qué se muestra en su lugar: probablemente `outcome.status`
-(`OK` / `FAILED` / `REJECTED` / `PENDING`), que sí es información real.
-
-### 3. Embudo de sesión: dejar de recalcularlo *(prioridad media)*
+### 1. Embudo de sesión: dejar de recalcularlo *(prioridad media)*
 
 `domains/checkout/composables/useSessionFunnel.ts:75-91` deduce los pasos
 haciendo `endpoint.includes("/otp/generate")`, `msg.includes("3DS")`, etc. El
@@ -79,7 +59,7 @@ sesión** (antes exigía dos).
 Migrar el embudo a `metadata.sessions`. Si falta algún paso que la librería no
 cubra, añadirlo allí en vez de reimplementarlo aquí.
 
-### 4. Superficie de `stats` sin usar *(prioridad media)*
+### 2. Superficie de `stats` sin usar *(prioridad media)*
 
 `LogAnalyzer.vue:77,170` usa el `StoreStats` local `{total, globalTotal, errors}`
 e ignora el `ParseResult.stats` de la librería. Interesa sobre todo
@@ -91,13 +71,13 @@ sale vacío.
 Mostrarlo junto a los errores de parseo en `ParsingErrorsModal.vue`.
 Nota: la fila de cabecera de un CSV cuenta como una unidad no reconocida.
 
-### 5. Agrupar por intercambio *(prioridad baja)*
+### 3. Agrupar por intercambio *(prioridad baja)*
 
 `pairKey` permite pintar petición y respuesta como una sola fila plegable con su
 duración, en vez de dos eventos sueltos. Afecta a `TimelineGroup.vue`. Es un
 cambio de diseño, no una corrección: decidir primero si aporta.
 
-### 6. Panel de proveedores *(prioridad baja)*
+### 4. Panel de proveedores *(prioridad baja)*
 
 `RestParseMetadata` trae `requestsByProvider`, `errors[]` y `slowest[]` (los
 diez intercambios más lentos) y nadie los consume. Alimentan directamente un
@@ -107,9 +87,13 @@ panel de latencia y fallos por proveedor.
 
 ## Trampas conocidas
 
-- **Orden de despliegue:** este repo declara `^2.0.0`, que no existe en npm
-  hasta que el parser se mergea a `main` y su CI publica. Mergear el parser
-  primero.
+- **v2.0.0 no está en npm todavía.** El tag `v2.0.0` sí está en el remoto del
+  parser, pero su CI condicionaba `pnpm publish` a que el tag *no* existiera, y
+  con `fetch-depth: 0` el tag viaja en el clon: taguear antes de mergear apagó
+  la publicación. Corregido en el parser (`fix(ci)`, sin pushear) para preguntar
+  a npm en vez de al tag. Hasta que ese workflow corra, `pnpm install
+  --frozen-lockfile` falla aquí y con él todo el CI: el lockfile sigue en
+  `^1.3.0`. Regenerarlo (`pnpm install`) en cuanto la 2.0.0 esté publicada.
 - **`processedHashes`** (`logStore.ts`) deduplica con
   `` `${timestamp}_${message.slice(0,60)}` ``. Ahora `event.id` es estable y
   deriva del contenido, así que sirve para lo mismo sin recortar cadenas.
