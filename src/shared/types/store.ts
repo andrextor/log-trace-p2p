@@ -1,3 +1,4 @@
+import type { FacetSelection } from "../ui/facets";
 import type { AnalyzerType, LogEvent } from "./base";
 
 export type ViewMode = AnalyzerType | "ALL";
@@ -31,6 +32,7 @@ export interface FiltersCacheEntry {
 	search: string;
 	highlighted: string | number | null;
 	outcome: OutcomeFilter;
+	facets: FacetSelection;
 }
 
 export interface CategoryStyle {

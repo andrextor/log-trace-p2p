@@ -20,12 +20,23 @@ import LogUploader from "../shared/components/LogUploader.vue";
 import ThemeSelector from "../shared/components/ThemeSelector.vue";
 import AnalysisProgress from "../shared/components/analyzer/AnalysisProgress.vue";
 import AnalyzerControlBar from "../shared/components/analyzer/AnalyzerControlBar.vue";
+import FacetBar from "../shared/components/analyzer/FacetBar.vue";
 
 const store = useLogStore();
 
 const filtersCache = ref<Record<string, FiltersCacheEntry>>({
-	[APP_TYPES.CHECKOUT]: { search: "", highlighted: null, outcome: "ALL" },
-	[APP_TYPES.REST]: { search: "", highlighted: null, outcome: "ALL" },
+	[APP_TYPES.CHECKOUT]: {
+		search: "",
+		highlighted: null,
+		outcome: "ALL",
+		facets: {},
+	},
+	[APP_TYPES.REST]: {
+		search: "",
+		highlighted: null,
+		outcome: "ALL",
+		facets: {},
+	},
 });
 
 const showUploadModal = ref(false);
@@ -62,6 +73,7 @@ const setTab = (newTab: AnalyzerType) => {
 		search: store.search,
 		highlighted: store.highlightedSessionId,
 		outcome: store.outcomeFilter,
+		facets: store.facetFilters,
 	};
 	store.activeTab = newTab;
 	store.sessionFilter = null;
@@ -69,10 +81,19 @@ const setTab = (newTab: AnalyzerType) => {
 		search: "",
 		highlighted: null,
 		outcome: "ALL",
+		facets: {},
 	};
 	store.search = cached.search;
 	store.highlightedSessionId = cached.highlighted;
 	store.outcomeFilter = cached.outcome;
+	store.facetFilters = cached.facets;
+};
+
+const resetFilters = () => {
+	store.outcomeFilter = "ALL";
+	store.search = "";
+	store.highlightedSessionId = null;
+	store.facetFilters = {};
 };
 
 const toggleErrorFilter = () => {
@@ -88,9 +109,11 @@ const handleClearContext = () => {
 		search: "",
 		highlighted: null,
 		outcome: "ALL",
+		facets: {},
 	};
 	store.search = "";
 	store.outcomeFilter = "ALL";
+	store.facetFilters = {};
 	store.highlightedSessionId = null;
 	showClearModal.value = false;
 	toast.success(`${ANALYZER_NAMES[currentTab]} data cleared`);
@@ -174,7 +197,7 @@ const handleUploadComplete = async () => {
                  :stats="store.stats"
                  :outcome-filter="store.outcomeFilter"
                  @toggle-errors="toggleErrorFilter"
-                 @reset-filters="() => { store.outcomeFilter = 'ALL'; store.search = ''; store.highlightedSessionId = null; }"
+                 @reset-filters="resetFilters"
                  @add-logs="showUploadModal = true"
                  @clear-data="showClearModal = true"
                >
@@ -188,6 +211,7 @@ const handleUploadComplete = async () => {
                    </Transition>
                  </template>
                </AnalyzerControlBar>
+               <FacetBar />
              </div>
           </div>
 

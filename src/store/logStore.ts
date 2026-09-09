@@ -12,6 +12,7 @@ import type {
 	ViewMode,
 } from "../shared/types";
 import { eventMatchesText, isFailure, isMatch } from "../shared/ui/LogUIHelper";
+import { type FacetSelection, matchesFacets } from "../shared/ui/facets";
 
 export type { ViewMode } from "../shared/types";
 
@@ -20,6 +21,7 @@ export const useLogStore = defineStore("logs", () => {
 	const activeTab = ref<ViewMode>(APP_TYPES.CHECKOUT);
 	const search = ref("");
 	const outcomeFilter = ref<OutcomeFilter>("ALL");
+	const facetFilters = ref<FacetSelection>({});
 	const highlightedSessionId = ref<string | number | null>(null);
 	const parsingErrors = ref<string[]>([]);
 	const isProcessing = ref(false);
@@ -54,7 +56,11 @@ export const useLogStore = defineStore("logs", () => {
 		};
 	});
 
-	const filteredEvents = computed(() => {
+	/**
+	 * Todo menos las facetas. Es la base sobre la que se cuentan, para que un
+	 * valor no anuncie resultados que luego no aparecen.
+	 */
+	const facetBaseEvents = computed(() => {
 		const allEvents = events.value;
 		if (allEvents.length === 0) return [];
 
@@ -80,6 +86,12 @@ export const useLogStore = defineStore("logs", () => {
 			return eventMatchesText(event, searchTerm);
 		});
 	});
+
+	const filteredEvents = computed(() =>
+		facetBaseEvents.value.filter((event) =>
+			matchesFacets(event, facetFilters.value),
+		),
+	);
 
 	const groupedEvents = computed(() => {
 		const groups: Record<string, TimeGroup> = {};
@@ -238,6 +250,7 @@ export const useLogStore = defineStore("logs", () => {
 		processedHashes.clear();
 		search.value = "";
 		outcomeFilter.value = "ALL";
+		facetFilters.value = {};
 		highlightedSessionId.value = null;
 		sessionIds.value = [];
 		sessionFilter.value = null;
@@ -256,6 +269,8 @@ export const useLogStore = defineStore("logs", () => {
 		parsingErrors,
 		search,
 		outcomeFilter,
+		facetFilters,
+		facetBaseEvents,
 		highlightedSessionId,
 		isProcessing,
 		progress,
