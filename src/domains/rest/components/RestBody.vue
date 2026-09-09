@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import type { ExceptionInfo, RestDetails } from "../types";
+import OutcomeAlert from "../../../shared/components/OutcomeAlert.vue";
+import type { Outcome } from "../../../shared/types";
+import type { RestDetails } from "../types";
 
 const props = defineProps<{
 	details: RestDetails;
+	outcome?: Outcome;
 	isHighlighted: boolean;
 }>();
 
@@ -39,40 +42,6 @@ const contextChips = computed(() => {
 			value: String(value),
 			filterable: ["id", "bin", "reference", "tenantId"].includes(key),
 		}));
-});
-
-const errorDetail = computed(() => {
-	if (props.details.exception) {
-		const exc = props.details.exception;
-		return {
-			title: "System / Guzzle Exception",
-			message: exc.message,
-			code: props.details.statusCode || 500,
-			sub: `File: ${exc.file?.split("/").pop()}:${exc.line || "?"}`,
-		};
-	}
-
-	const payloadData = props.details.payload as Record<string, unknown>;
-	const ctx = (payloadData?.context as Record<string, unknown>)?.data as
-		| Record<string, unknown>
-		| undefined;
-	const source = ctx || payloadData;
-	const bizError = (source?.dinError || source?.error) as
-		| Record<string, unknown>
-		| undefined;
-
-	if (bizError && bizError.codigo !== "0000" && bizError.codigo !== undefined) {
-		return {
-			title: `Provider Error [${props.details.provider}]`,
-			message: String(
-				bizError.mensaje || bizError.message || "Operation rejected",
-			),
-			code: bizError.codigo,
-			sub: String(bizError.detalle || "Check JSON trace for more details"),
-		};
-	}
-
-	return null;
 });
 
 async function copyJSON() {
@@ -128,24 +97,7 @@ async function copyJSON() {
       </div>
     </div>
 
-    <div v-if="errorDetail" class="animate-in fade-in zoom-in duration-300">
-      <div class="bg-rose-500/5 border-2 border-rose-500/20 rounded-2xl p-4 space-y-3 relative overflow-hidden">
-        <div class="absolute top-0 right-0 p-1">
-            <div class="px-2 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded-bl-lg shadow-lg uppercase font-mono">
-                Status: {{ errorDetail.code }}
-            </div>
-        </div>
-        <div class="flex items-center gap-2 text-rose-600 dark:text-rose-400">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-          <span class="text-[10px] font-black uppercase tracking-widest">{{ errorDetail.title }}</span>
-        </div>
-        <div class="space-y-1">
-          <p class="text-[11px] font-bold text-rose-700 dark:text-rose-300 leading-relaxed pr-16">{{ errorDetail.message }}</p>
-          <p v-if="errorDetail.sub" class="text-[9px] font-mono text-rose-400/80 break-all leading-tight italic">{{ errorDetail.sub }}</p>
-        </div>
-      </div>
-    </div>
-
+    <OutcomeAlert :outcome="outcome" />
 
     <div v-if="details.payload" class="relative">
        <div class="flex justify-between items-center mb-2 px-1">

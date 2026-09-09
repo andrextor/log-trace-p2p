@@ -1,4 +1,8 @@
-import type { BaseDetails } from "../../shared/types";
+import type {
+	BaseDetails,
+	CheckoutFunnelSteps,
+	CheckoutSessionMetadata,
+} from "../../shared/types";
 
 export interface CheckoutDetails extends BaseDetails {
 	url?: string;
@@ -17,28 +21,17 @@ export interface MicrositiosDetails extends BaseDetails {
 	sessionId?: string | number;
 }
 
-export interface SessionFunnelSteps {
-	created: number;
-	entry: number;
-	show: number;
-	information: number;
-	interest: number;
-	generateOtp: number;
-	threeDS: number;
-	process: number;
-}
-
-export type SessionType = "PAYMENT" | "COLLECT" | "UNKNOWN";
+// Los hitos y el tipo de sesión los deriva `CheckoutMetadataExtractor`.
+// Redeclararlos aquí era mantener el embudo en paralelo al parser.
+export type SessionFunnelSteps = CheckoutFunnelSteps;
+export type SessionType = CheckoutSessionMetadata["sessionType"];
 
 export interface SessionFunnelRow {
 	sessionId: string;
 	sessionType: SessionType;
+	finalState: string;
 	steps: SessionFunnelSteps;
-	_rawTimestamps: {
-		created: number | null;
-		entry: number | null;
-		show: number | null;
-	};
+	/** Ya formateadas para pintar; `null` cuando el parser no pudo medirlas. */
 	durations: {
 		timeToEntry: string | null;
 		timeToShow: string | null;

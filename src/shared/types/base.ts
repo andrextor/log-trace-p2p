@@ -1,102 +1,31 @@
-export const APP_TYPES = {
-	CHECKOUT: "checkout",
-	MICROSITIOS: "micrositios",
-	REST: "rest",
-} as const;
+// Los tipos del dominio los define la librería de parseo: redeclararlos aquí
+// hacía que consumidor y librería se separaran sin que nada avisara (la forma
+// local de `RestParseMetadata` no coincidía con la que la librería emitía).
+export {
+	AppTypes as APP_TYPES,
+	AppNames as ANALYZER_NAMES,
+} from "@andrextor_ia11012/p2p-log-parser";
 
-export type AnalyzerType = (typeof APP_TYPES)[keyof typeof APP_TYPES];
-
-export const ANALYZER_NAMES: Record<AnalyzerType, string> = {
-	[APP_TYPES.CHECKOUT]: "Checkout",
-	[APP_TYPES.MICROSITIOS]: "Micrositios",
-	[APP_TYPES.REST]: "API REST Core",
-};
-
-export type LogLevel = "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL";
-
-export type LogCategory =
-	| "HTTP_REQ_OUT"
-	| "HTTP_REQ_IN"
-	| "HTTP_RES"
-	| "DB_OP"
-	| "NOTIFICATION"
-	| "RETURN_NOTIFICATION"
-	| "BROWSER_LOAD"
-	| "USER_ACTION"
-	| "BACKEND_LOG"
-	| "APPLICATION_LOG"
-	| "ERROR"
-	| "PAYMENT"
-	| "GENERIC";
-
-export interface BaseDetails {
-	method?: string | null;
-	endpoint?: string | null;
-	statusCode?: number | string | null;
-	payload?: unknown;
-	source?: string | null;
-	title?: string;
-	rawTitle?: string;
-}
-
-export interface LogEvent {
-	id: string;
-	timestamp: string;
-	level: LogLevel;
-	message: string;
-	category: LogCategory;
-	appType: AnalyzerType;
-	details: BaseDetails;
-	context: unknown;
-	rawStream?: string;
-}
-
-export interface NormalizedLogData {
-	timestamp: string;
-	level: string;
-	message: string;
-	context: Record<string, unknown>;
-	sourceType?: "AWS_CSV" | "LARAVEL_LOCAL" | "NEW_RELIC_JSON" | "UNKNOWN";
-}
-
-export interface DomainMetadata {
-	[key: string]: unknown;
-}
-
-export interface CheckoutSessionMetadata {
-	sessionId: string;
-	sessionType: "PAYMENT" | "COLLECT" | "SUBSCRIPTION" | "AUTOPAY" | "UNKNOWN";
-	finalState: string;
-	hasSuccessfulTransaction: boolean;
-	reference?: string;
-	flags: {
-		otp: boolean;
-		threeDS: boolean;
-		interest: boolean;
-	};
-}
-
-export interface CheckoutParseMetadata extends DomainMetadata {
-	totalSessions: number;
-	sessions: CheckoutSessionMetadata[];
-}
-
-export interface RestParseMetadata extends DomainMetadata {
-	totalRequests: number;
-	requestsByProvider: Record<string, number>;
-}
-
-export interface MicrositesParseMetadata extends DomainMetadata {
-	totalViews: number;
-}
-
-export type ParseMetadata =
-	| CheckoutParseMetadata
-	| RestParseMetadata
-	| MicrositesParseMetadata;
-
-export interface SupportedFormat {
-	name: string;
-	detectionRule: string;
-	description: string;
-}
+export type {
+	AppType as AnalyzerType,
+	LogLevel,
+	LogCategory,
+	BaseDetails,
+	LogEvent,
+	NormalizedLogData,
+	Correlation,
+	Outcome,
+	RestDetails,
+	CheckoutDetails,
+	DomainMetadata,
+	ParseMetadata,
+	ParseStats,
+	CheckoutParseMetadata,
+	CheckoutSessionMetadata,
+	CheckoutFunnelSteps,
+	RestParseMetadata,
+	MicrositesParseMetadata,
+	RestErrorSummary,
+	RestExchangeSummary,
+	StrategyMetadata as SupportedFormat,
+} from "@andrextor_ia11012/p2p-log-parser";

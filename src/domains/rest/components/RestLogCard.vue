@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { CATEGORY_STYLES } from "../../../shared/constants/ui-styles";
 import type { HighlightTheme, LogEvent } from "../../../shared/types";
+import { getStatusBadge } from "../../../shared/ui/LogUIHelper";
 import { useLogStore } from "../../../store/logStore";
 import type { RestDetails } from "../types";
 import RestBody from "./RestBody.vue";
@@ -41,25 +42,22 @@ const essentialIdentifiers = computed(() => {
 	].filter((c) => c.value);
 });
 
-const isErrorState = computed(() => {
-	const code = Number(props.log.details?.statusCode);
-	return (
+// El parser resuelve el resultado; el nivel y la categoría se quedan cortos
+// porque un rechazo del proveedor llega como INFO o WARNING.
+const isErrorState = computed(
+	() =>
+		props.log.outcome?.isError ||
 		props.log.level === "ERROR" ||
-		props.log.level === "CRITICAL" ||
-		props.log.category === "ERROR" ||
-		code >= 400
-	);
+		props.log.level === "CRITICAL",
+);
+
+const duration = computed(() => {
+	const ms = props.log.durationMs;
+	if (ms === undefined) return null;
+	return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${ms} ms`;
 });
 
-const statusCodeStyle = computed(() => {
-	const code = Number(props.log.details?.statusCode);
-	if (!code || Number.isNaN(code)) return null;
-	if (code >= 500)
-		return "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400";
-	if (code >= 400)
-		return "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400";
-	return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400";
-});
+const statusBadge = computed(() => getStatusBadge(props.log));
 
 const activeTheme = computed<HighlightTheme | null>(() => {
 	if (!props.isHighlighted) return null;
@@ -155,12 +153,12 @@ const handleIdentifierClick = (idValue: string | number) => {
       
       <div class="flex flex-wrap sm:flex-nowrap justify-between items-start sm:items-center gap-3 mb-3 border-b border-slate-100 dark:border-white/5 pb-3">
         <div class="flex items-center gap-2 flex-wrap">
-          <span v-if="log.details?.statusCode" 
+          <span v-if="statusBadge" 
                 class="px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-mono font-black tracking-wider transition-all shadow-sm"
-                :class="statusCodeStyle">
-            {{ log.details.statusCode }}
+                :class="statusBadge.classes">
+            {{ statusBadge.text }}
           </span>
-          <div v-if="log.details?.statusCode" class="w-px h-3.5 bg-slate-200 dark:bg-white/10 hidden sm:block"></div>
+          <div v-if="statusBadge" class="w-px h-3.5 bg-slate-200 dark:bg-white/10 hidden sm:block"></div>
           
           <span class="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border transition-colors shadow-sm" 
                 :class="isHighlighted ? `${activeTheme?.bg} text-white border-white/10` : styles.classes">
@@ -191,6 +189,11 @@ const handleIdentifierClick = (idValue: string | number) => {
 
         <div class="flex flex-col items-end shrink-0 gap-1 mt-1 sm:mt-0">
            <div class="flex items-center gap-1.5 text-slate-400 opacity-80">
+              <span v-if="duration"
+                    class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 font-mono text-[9px] font-bold text-slate-500 dark:text-slate-400"
+                    title="Tiempo entre la petición y su respuesta">
+                {{ duration }}
+              </span>
               <span class="font-mono text-[10px] sm:text-[11px] tracking-tight">
                 {{ formattedTime }}
               </span>
@@ -270,6 +273,7 @@ const handleIdentifierClick = (idValue: string | number) => {
           <div class="p-4 sm:p-6 lg:p-8">
             <RestBody
               :details="log.details as RestDetails"
+              :outcome="log.outcome"
               :is-highlighted="isHighlighted"
               @filter-id="handleFilterId"
             />

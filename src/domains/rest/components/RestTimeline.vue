@@ -6,6 +6,7 @@ import { useLogStore } from "../../../store/logStore";
 
 import TimelineGroup from "../../../shared/components/timeline/TimelineGroup.vue";
 import TimelineHeader from "../../../shared/components/timeline/TimelineHeader.vue";
+import ProviderPanel from "./ProviderPanel.vue";
 
 const store = useLogStore();
 const BATCH_SIZE = 40;
@@ -59,6 +60,8 @@ const isLogHighlighted = (event: LogEvent) => {
         @clearSearch="store.search = ''"
         @clearFilter="store.highlightedSessionId = null"
       />
+
+      <ProviderPanel />
 
       <div class="flex-1 overflow-y-auto px-2 md:px-4 custom-scrollbar scroll-smooth pb-20 relative">
         <transition name="fade" mode="out-in">

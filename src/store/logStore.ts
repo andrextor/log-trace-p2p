@@ -27,6 +27,10 @@ export const useLogStore = defineStore("logs", () => {
 	const sessionIds = ref<string[]>([]);
 	const sessionFilter = ref<string | null>(null);
 	const metadata = ref<ParseMetadata | null>(null);
+	// Líneas que ninguna estrategia convirtió en evento. Es la señal directa de
+	// «te equivocaste de aplicación» o «este formato no está soportado»: sin
+	// mostrarla, el log simplemente sale vacío y el usuario no sabe por qué.
+	const unrecognized = ref(0);
 
 	const processedHashes = new Set<string>();
 
@@ -46,8 +50,11 @@ export const useLogStore = defineStore("logs", () => {
 		return {
 			total: filtered.length,
 			globalTotal: events.value.length,
+			// `outcome.isError` cubre los fallos que el nivel no delata: un rechazo
+			// del proveedor llega como INFO o WARNING.
 			errors: filtered.filter(
-				(e) => e.level === "ERROR" || e.level === "CRITICAL",
+				(e) =>
+					e.outcome?.isError || e.level === "ERROR" || e.level === "CRITICAL",
 			).length,
 		};
 	});
@@ -137,11 +144,6 @@ export const useLogStore = defineStore("logs", () => {
 				progress.value =
 					totalEvents > 0 ? Math.round((i / totalEvents) * 100) : 100;
 
-				// Force the event type to match the targeted upload type, overriding library miscategorizations
-				if (type !== "ALL" && event.appType !== type) {
-					event.appType = type;
-				}
-
 				// Only auto-switch tab if no events are loaded yet (first upload)
 				if (
 					events.value.length === 0 &&
@@ -155,20 +157,13 @@ export const useLogStore = defineStore("logs", () => {
 				const fingerprint = `${event.timestamp}_${msgStr.slice(0, 60)}`;
 
 				if (!processedHashes.has(fingerprint)) {
-					// Identify Frontend source for "Request trace" messages
-					if (msgStr.includes("Request trace")) {
-						if (!event.details) event.details = {};
-						event.details.source = "FRONTEND";
-					}
-
 					newEvents.push(event);
 					processedHashes.add(fingerprint);
 				}
 			}
 
 			if (result.metadata) {
-				// Cast to local ParseMetadata via unknown to bridge library/local types
-				const meta = result.metadata as unknown as ParseMetadata;
+				const meta = result.metadata;
 				metadata.value = meta;
 
 				if (type === APP_TYPES.CHECKOUT) {
@@ -197,33 +192,15 @@ export const useLogStore = defineStore("logs", () => {
 				const existing = new Set(sessionIds.value);
 				// Fallback manual extraction from newEvents to ensure we capture untracked sessions (e.g. from generic JSON or Grafana formats)
 				for (const e of newEvents) {
-					if (e.appType === APP_TYPES.CHECKOUT) {
-						const ctx = (e.context || {}) as Record<string, unknown>;
-						const details = (e.details || {}) as Record<string, unknown>;
-						const pay = (ctx.payload || details.payload || {}) as Record<
-							string,
-							unknown
-						>;
-						const sid =
-							details.sessionId ||
-							details.session_id ||
-							ctx.session_id ||
-							ctx.sessionId ||
-							pay.session_id ||
-							pay.sessionId;
-
-						if (
-							sid &&
-							String(sid).trim() !== "" &&
-							String(sid) !== "undefined" &&
-							!existing.has(String(sid))
-						) {
-							sessionIds.value.push(String(sid));
-							existing.add(String(sid));
-						}
+					const sid = e.correlation.sessionId;
+					if (sid && !existing.has(sid)) {
+						sessionIds.value.push(sid);
+						existing.add(sid);
 					}
 				}
 			}
+
+			unrecognized.value += result.stats.unrecognized;
 
 			if (result.errors && result.errors.length > 0) {
 				for (const err of result.errors) {
@@ -258,11 +235,13 @@ export const useLogStore = defineStore("logs", () => {
 		}
 
 		parsingErrors.value = [];
+		unrecognized.value = 0;
 	}
 
 	function clearLogs() {
 		events.value = [];
 		parsingErrors.value = [];
+		unrecognized.value = 0;
 		processedHashes.clear();
 		search.value = "";
 		levelFilter.value = "ALL";
@@ -290,6 +269,7 @@ export const useLogStore = defineStore("logs", () => {
 		sessionIds,
 		sessionFilter,
 		metadata,
+		unrecognized,
 		stats,
 		counts,
 		filteredEvents,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { APP_TYPES } from "../../../shared/types";
+import { APP_TYPES, type CheckoutParseMetadata } from "../../../shared/types";
 import { useLogStore } from "../../../store/logStore";
 import { useFunnelExport } from "../composables/useFunnelExport";
 import { useSessionFunnel } from "../composables/useSessionFunnel";
@@ -22,24 +22,38 @@ const STEP_CONFIG: readonly StepConfig[] = [
 	{ key: "show", label: "Show", full: "Data Visualization (Show)" },
 	{ key: "information", label: "Info", full: "Information Query" },
 	{ key: "interest", label: "Interest", full: "Interest Calculation" },
-	{ key: "generateOtp", label: "OTP", full: "OTP Generation / Validation" },
+	{ key: "otp", label: "OTP", full: "OTP Generation / Validation" },
 	{ key: "threeDS", label: "3DS", full: "3DS / MPI Validation" },
 	{ key: "process", label: "Process", full: "Payment / Collect Execution" },
 ] as const;
 
 const reportData = computed(() => {
 	if (store.activeTab !== APP_TYPES.CHECKOUT) return [];
-	return generateReport(store.filteredEvents);
+	const meta = store.metadata as CheckoutParseMetadata | null;
+	if (!meta?.sessions?.length) return [];
+
+	// La metadata describe el lote entero; el informe sigue respetando el filtro
+	// activo, así que se recorta a las sesiones que quedan a la vista.
+	const visible = new Set(
+		store.filteredEvents
+			.map((e) => e.correlation.sessionId)
+			.filter((id): id is string => Boolean(id)),
+	);
+	return generateReport(meta.sessions, visible);
 });
 
 const stats = computed<FunnelStats | null>(() => {
 	const data = reportData.value;
 	if (data.length === 0) return null;
 	const total = data.length;
-	const finished = data.filter((r) => r.steps.process === 1).length;
+	const finished = data.filter((r) => r.steps.process).length;
 	return {
 		total,
-		payments: data.filter((r) => r.sessionType === "PAYMENT").length,
+		// SUBSCRIPTION y AUTOPAY también son cobros al cliente: antes la librería
+		// no los distinguía y todos caían en PAYMENT.
+		payments: data.filter(
+			(r) => r.sessionType !== "COLLECT" && r.sessionType !== "UNKNOWN",
+		).length,
 		collects: data.filter((r) => r.sessionType === "COLLECT").length,
 		conversionRate: ((finished / total) * 100).toFixed(1),
 	};
@@ -52,7 +66,7 @@ const funnelSteps = computed<FunnelStep[]>(() => {
 		["created", "entry", "show", "information", "process"].includes(s.key),
 	).map((s) => {
 		const count = data.filter(
-			(r) => r.steps[s.key as keyof SessionFunnelSteps] === 1,
+			(r) => r.steps[s.key as keyof SessionFunnelSteps],
 		).length;
 		return {
 			...s,

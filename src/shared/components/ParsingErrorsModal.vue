@@ -4,6 +4,8 @@ import { ref } from "vue";
 const props = defineProps<{
 	isOpen: boolean;
 	errors: string[];
+	/** Unidades de texto que ninguna estrategia convirtió en evento. */
+	unrecognized?: number;
 }>();
 
 const emit = defineEmits(["close"]);
@@ -45,7 +47,8 @@ const copyAll = async () => {
             <div>
               <h3 class="text-lg font-bold text-slate-800 dark:text-white">Errores de Lectura</h3>
               <p class="text-xs text-slate-500 dark:text-slate-400">
-                Se encontraron {{ errors.length }} líneas con formato desconocido.
+                <template v-if="errors.length">Se encontraron {{ errors.length }} líneas con formato desconocido.</template>
+                <template v-else>Ninguna línea falló, pero hay texto que no produjo eventos.</template>
               </p>
             </div>
           </div>
@@ -61,6 +64,17 @@ const copyAll = async () => {
         </div>
 
         <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-100 dark:bg-black/20">
+          <div v-if="unrecognized" class="mb-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+            <p class="text-xs font-bold text-amber-700 dark:text-amber-400">
+              {{ unrecognized }} {{ unrecognized === 1 ? 'unidad no reconocida' : 'unidades no reconocidas' }}
+            </p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              Ninguna estrategia las convirtió en evento. Si el número es alto, suele
+              ser que se eligió la aplicación equivocada o que el export trae un
+              formato todavía no soportado. La cabecera de un CSV cuenta aquí.
+            </p>
+          </div>
+
           <div class="space-y-3">
             <div 
               v-for="(line, idx) in errors" 

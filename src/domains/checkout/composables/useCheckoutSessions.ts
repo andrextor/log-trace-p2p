@@ -86,22 +86,11 @@ export function useCheckoutSessions() {
 		const map = new Map<string, number>();
 		for (const e of store.events) {
 			if (e.appType !== APP_TYPES.CHECKOUT) continue;
-			const ctx = (e.context || {}) as Record<string, unknown>;
-			const details = (e.details || {}) as Record<string, unknown>;
-			const pay = (ctx.payload || details.payload || {}) as Record<
-				string,
-				unknown
-			>;
-			const sid =
-				details.sessionId ||
-				details.session_id ||
-				ctx.session_id ||
-				ctx.sessionId ||
-				pay.session_id ||
-				pay.sessionId;
+			// El parser resuelve el id de sesión mire donde mire el emisor; antes
+			// aquí se recorrían seis rutas a mano que se desincronizaban solas.
+			const sid = e.correlation.sessionId;
 			if (sid) {
-				const key = String(sid);
-				map.set(key, (map.get(key) ?? 0) + 1);
+				map.set(sid, (map.get(sid) ?? 0) + 1);
 			}
 		}
 		return map;

@@ -1,3 +1,4 @@
+import { matchEvent } from "@andrextor_ia11012/p2p-log-parser";
 import { APP_TYPES, type LogEvent } from "../types";
 
 export interface FilterIdentity {
@@ -5,76 +6,114 @@ export interface FilterIdentity {
 	colorClass: "indigo" | "orange";
 }
 
-export function isMatch(event: LogEvent, targetId: string): boolean {
-	const tId = String(targetId).toLowerCase();
-	const ctx = (event.context || {}) as Record<string, unknown>;
-	const details = event.details as Record<string, unknown>;
+// `matchEvent` vive en la librería: compara el id del evento, todos sus
+// identificadores de correlación y la clave del intercambio. Antes esto era una
+// lista de rutas escrita a mano que había que mantener en paralelo al parser.
+export const isMatch = matchEvent;
 
-	if (event.appType === APP_TYPES.CHECKOUT) {
-		return (
-			String(event.id).toLowerCase() === tId ||
-			String(details?.sessionId).toLowerCase() === tId ||
-			String(details?.session_id).toLowerCase() === tId ||
-			String(details?.transactionId).toLowerCase() === tId ||
-			String(details?.awsRequestId).toLowerCase() === tId ||
-			String(details?.aws_request_id).toLowerCase() === tId ||
-			String(ctx?.aws_request_id).toLowerCase() === tId ||
-			String(ctx?.session_id).toLowerCase() === tId ||
-			String(ctx?.sessionId).toLowerCase() === tId ||
-			String(
-				(ctx?.payload as Record<string, unknown>)?.session_id,
-			).toLowerCase() === tId ||
-			String(
-				(ctx?.payload as Record<string, unknown>)?.sessionId,
-			).toLowerCase() === tId
-		);
-	}
-
-	if (event.appType === APP_TYPES.REST) {
-		return (
-			String(event.id).toLowerCase() === tId ||
-			String(details?.id).toLowerCase() === tId ||
-			String(details?.awsRequestId).toLowerCase() === tId ||
-			String(ctx?.awsRequestId).toLowerCase() === tId ||
-			String(
-				(details?.payload as Record<string, unknown>)?.id,
-			).toLowerCase() === tId ||
-			String((ctx?.payload as Record<string, unknown>)?.id).toLowerCase() ===
-				tId ||
-			String(ctx?.id).toLowerCase() === tId
-		);
-	}
-
-	return String(event.id).toLowerCase() === tId;
-}
-
+/** Explica *por qué* un evento coincide, para etiquetar el filtro activo. */
 export function getFilterIdentity(
 	event: LogEvent,
 	targetId: string,
 ): FilterIdentity {
-	const details = event.details as Record<string, unknown>;
-	const ctx = (event.context || {}) as Record<string, unknown>;
+	const { correlation } = event;
+	const target = String(targetId).toLowerCase();
+	const is = (value?: string | number) =>
+		value !== undefined && String(value).toLowerCase() === target;
 
-	if (event.appType === APP_TYPES.CHECKOUT) {
-		if (details?.sessionId && String(details.sessionId) === targetId) {
-			return { label: "Session", colorClass: "indigo" };
-		}
-		return { label: "Trace / ID", colorClass: "orange" };
+	if (is(correlation.sessionId)) {
+		return { label: "Session", colorClass: "indigo" };
 	}
-
-	if (event.appType === APP_TYPES.REST) {
-		if (details?.awsRequestId && String(details.awsRequestId) === targetId) {
-			return { label: "AWS Request ID", colorClass: "indigo" };
-		}
-		if (
-			((details?.payload as Record<string, unknown>)?.id &&
-				String((details.payload as Record<string, unknown>).id) === targetId) ||
-			(ctx?.id && String(ctx.id) === targetId)
-		) {
-			return { label: "Interdin ID", colorClass: "indigo" };
-		}
-		return { label: "Hash", colorClass: "orange" };
+	if (is(correlation.transactionId) || is(correlation.placetopayId)) {
+		return { label: "Transaction", colorClass: "indigo" };
+	}
+	if (is(correlation.traceId)) {
+		const label =
+			event.appType === APP_TYPES.REST ? "Provider trace" : "AWS Request ID";
+		return { label, colorClass: "indigo" };
+	}
+	if (is(correlation.reference) || is(correlation.internalReference)) {
+		return { label: "Reference", colorClass: "indigo" };
 	}
 
 	return { label: "ID", colorClass: "orange" };
+}
+
+export interface StatusBadge {
+	text: string;
+	classes: string;
+}
+
+const HTTP_BADGE = (code: number) =>
+	code >= 500
+		? "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400"
+		: code >= 400
+			? "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400"
+			: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400";
+
+const STATUS_BADGE: Record<string, string> = {
+	OK: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400",
+	FAILED: "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400",
+	REJECTED:
+		"bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400",
+	PENDING:
+		"bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400",
+};
+
+/**
+ * El badge de la cabecera de una tarjeta. La v2 dejó de inventar `statusCode`:
+ * donde antes había un 200 fabricado ahora no hay nada, así que se cae a
+ * `outcome.status`, que sí es información derivada del log.
+ */
+export function getStatusBadge(event: LogEvent): StatusBadge | null {
+	const code = Number(event.details?.statusCode);
+	if (code && !Number.isNaN(code)) {
+		return { text: String(code), classes: HTTP_BADGE(code) };
+	}
+
+	const status = event.outcome?.status;
+	if (status) return { text: status, classes: STATUS_BADGE[status] };
+
+	return null;
+}
+
+export interface Exchange {
+	key: string;
+	request: LogEvent;
+	response: LogEvent;
+}
+
+export type TimelineRow = { single?: LogEvent; pair?: Exchange };
+
+/**
+ * `pairKey` une la ida y la vuelta del mismo intercambio. Pintarlos como dos
+ * eventos sueltos obligaba a buscar la respuesta a ojo. Los que se quedan sin
+ * pareja —petición sin respuesta, export recortado, dos peticiones seguidas
+ * sobre la misma traza— se devuelven sueltos: emparejar de más mentiría sobre
+ * la duración.
+ */
+export function toTimelineRows(events: LogEvent[]): TimelineRow[] {
+	const rows: TimelineRow[] = [];
+	const open = new Map<string, number>();
+
+	for (const event of events) {
+		const key = event.pairKey;
+		if (!key) {
+			rows.push({ single: event });
+			continue;
+		}
+
+		const at = open.get(key);
+		const waiting = at === undefined ? undefined : rows[at];
+		if (at !== undefined && waiting?.single && event.pairRole === "response") {
+			rows[at] = { pair: { key, request: waiting.single, response: event } };
+			open.delete(key);
+			continue;
+		}
+
+		rows.push({ single: event });
+		if (event.pairRole !== "response") open.set(key, rows.length - 1);
+	}
+
+	return rows;
 }

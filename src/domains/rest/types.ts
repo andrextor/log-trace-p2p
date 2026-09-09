@@ -1,17 +1,6 @@
-import type { BaseDetails } from "../../shared/types";
-
-export interface ExceptionInfo {
-	message: string;
-	file?: string;
-	line?: number;
-	trace?: string;
-}
-
-export interface RestDetails extends BaseDetails {
-	provider: string;
-	operation: string;
-	action: string;
-	awsRequestId?: string | null;
-	exception?: ExceptionInfo | null;
-	isLaravel?: boolean;
-}
+// La forma de `RestDetails` la define la librería de parseo; redeclararla aquí
+// dejaba fuera los campos que fue ganando (`channel`, `transport`, `simulator`).
+export type {
+	RestDetails,
+	RestException as ExceptionInfo,
+} from "@andrextor_ia11012/p2p-log-parser";

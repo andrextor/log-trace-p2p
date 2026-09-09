@@ -1,0 +1,6 @@
+allowBuilds:
+  '@biomejs/biome': true
+  esbuild: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - '@andrextor_ia11012/p2p-log-parser@2.1.0'
