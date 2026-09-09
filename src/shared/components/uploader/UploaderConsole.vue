@@ -75,7 +75,7 @@ onUnmounted(() => {
       </div>
       
       <h3 class="text-lg font-bold text-slate-700 dark:text-slate-200 mb-3 tracking-tight">Sube o arrastra tus logs aquí</h3>
-      <p class="text-sm font-medium text-slate-500 dark:text-slate-400 text-center max-w-sm leading-relaxed">
+      <p class="text-sm font-medium text-slate-600 dark:text-slate-400 text-center max-w-sm leading-relaxed">
         Puedes pegar directamente (<kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-white/10 rounded-md border border-slate-200 dark:border-white/5 font-mono text-[11px] text-slate-600 dark:text-slate-300 shadow-sm tracking-tighter">Ctrl+V</kbd>), arrastrar un archivo de texto, o <span class="text-indigo-500 font-bold underline decoration-indigo-200 dark:decoration-indigo-500/30 underline-offset-4">hacer clic para explorar</span>.
       </p>
     </div>
@@ -84,8 +84,8 @@ onUnmounted(() => {
     <div v-else class="w-full h-full flex flex-col bg-slate-50/30 dark:bg-black/10">
       <div class="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-[#131315]">
         <div class="flex items-center gap-2 px-2">
-          <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
-          <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Datos Originales (Crudo)</span>
+          <svg class="w-4 h-4 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+          <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400">Datos Originales (Crudo)</span>
         </div>
       </div>
       <textarea

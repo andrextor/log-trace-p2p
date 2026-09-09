@@ -93,7 +93,7 @@ const handleExport = () => {
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div v-for="(v, l) in { 'Total': stats?.total, 'Payments': stats?.payments, 'Collects': stats?.collects, 'Conversion': stats?.conversionRate + '%' }" :key="l"
              class="bg-white dark:bg-white/5 p-4 rounded-2xl border border-slate-200 dark:border-white/10">
-          <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{{ l }}</p>
+          <p class="text-[8px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-1">{{ l }}</p>
           <p class="text-xl font-black text-indigo-500">{{ v }}</p>
         </div>
       </div>
@@ -104,12 +104,12 @@ const handleExport = () => {
             <div class="w-full bg-indigo-500 transition-all duration-700" :style="{ height: step.percentage + '%' }"></div>
             <span class="absolute inset-0 flex items-center justify-center text-[10px] font-black">{{ step.percentage }}%</span>
           </div>
-          <span class="text-[8px] font-black uppercase text-slate-400">{{ step.label }}</span>
+          <span class="text-[8px] font-black uppercase text-slate-600 dark:text-slate-400">{{ step.label }}</span>
         </div>
       </div>
 
       <div class="flex justify-between items-center">
-        <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Recent Traceability</h3>
+        <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">Recent Traceability</h3>
         <button @click="handleExport" class="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:scale-105 transition-transform">
           Export Full Report
         </button>
@@ -117,7 +117,7 @@ const handleExport = () => {
 
       <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-transparent">
         <table class="w-full text-left text-[10px] font-mono whitespace-nowrap">
-          <thead class="bg-slate-50 dark:bg-black/20 text-slate-400 uppercase tracking-widest">
+          <thead class="bg-slate-50 dark:bg-black/20 text-slate-600 dark:text-slate-400 uppercase tracking-widest">
             <tr>
               <th class="px-4 py-3 font-black">ID</th>
               <th class="px-4 py-3 text-center">TYPE</th>
@@ -143,8 +143,8 @@ const handleExport = () => {
                 <div v-if="row.steps[s.key as keyof typeof row.steps]" class="w-1.5 h-1.5 rounded-full bg-emerald-500 mx-auto"></div>
                 <div v-else class="w-1 h-1 rounded-full bg-slate-200 dark:bg-white/10 mx-auto"></div>
               </td>
-              <td class="px-4 py-3 text-right font-bold text-slate-400">{{ row.durations.timeToEntry || '--' }}</td>
-              <td class="px-4 py-3 text-right font-bold text-slate-400">{{ row.durations.timeToShow || '--' }}</td>
+              <td class="px-4 py-3 text-right font-bold text-slate-600 dark:text-slate-400">{{ row.durations.timeToEntry || '--' }}</td>
+              <td class="px-4 py-3 text-right font-bold text-slate-600 dark:text-slate-400">{{ row.durations.timeToShow || '--' }}</td>
             </tr>
           </tbody>
         </table>

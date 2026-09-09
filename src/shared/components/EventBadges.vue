@@ -13,14 +13,20 @@ const props = defineProps<{
 // El color solo significa resultado. Todo lo demás es neutro, para que un fallo
 // se vea desde el otro extremo de la pantalla. `alert` es la única excepción:
 // el simulador cambia por completo la lectura de un fallo.
+//
+// En claro los tonos van al 700 y el neutro lleva fondo y borde propios: sobre
+// blanco, un `-600` en texto de 10px se queda en torno a 3.6:1, por debajo del
+// 4.5:1 que hace falta para leerlo sin esfuerzo. En oscuro se mantienen los
+// claros, que ahí sí contrastan.
 const TONE: Record<BadgeTone, string> = {
-	danger: "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400",
-	warn: "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400",
-	ok: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400",
+	danger:
+		"bg-rose-500/10 text-rose-700 border-rose-500/30 dark:text-rose-400 dark:border-rose-500/20",
+	warn: "bg-orange-500/10 text-orange-700 border-orange-500/30 dark:text-orange-400 dark:border-orange-500/20",
+	ok: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/20",
 	alert:
-		"bg-amber-400/20 text-amber-700 border-amber-500/40 dark:text-amber-300",
+		"bg-amber-400/20 text-amber-800 border-amber-500/50 dark:text-amber-300 dark:border-amber-500/40",
 	neutral:
-		"bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10",
+		"bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-400 border-slate-300 dark:border-white/10",
 };
 
 const badges = computed(() => getEventBadges(props.log, props.only));

@@ -42,7 +42,7 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
               <h3 class="text-lg font-bold text-slate-900 dark:text-white">
                 {{ title || '¿Estás seguro?' }}
               </h3>
-              <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {{ message || 'Esta acción no se puede deshacer.' }}
               </p>
             </div>

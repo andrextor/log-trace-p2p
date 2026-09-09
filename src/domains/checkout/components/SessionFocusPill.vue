@@ -28,7 +28,7 @@ const {
            <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
         </div>
         <div class="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-          <span class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-0.5 sm:mb-0">Session Focus</span>
+          <span class="text-[8px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-[0.2em] leading-none mb-0.5 sm:mb-0">Session Focus</span>
           <span class="font-mono text-[13px] font-bold text-indigo-600 dark:text-indigo-400 tracking-tight select-all leading-none">{{ store.sessionFilter }}</span>
         </div>
         <span class="px-1.5 py-0.5 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-md text-[10px] text-indigo-600 dark:text-indigo-300 font-black ml-1 border border-indigo-500/20">

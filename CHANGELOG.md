@@ -21,6 +21,7 @@ Cierra el plan de UI/UX (`docs/plan-ux.md`): fases 4, 5 y 6.
 - **Micrositios sale de la interfaz.** La librería solo le ofrece un formato frente a los cinco de Checkout y los tres de REST, así que sus eventos salen sin enriquecer. Se le dará pestaña cuando tenga estrategias propias. Cae también `AnalyzerSelector.vue`, que no importaba nadie.
 
 ### Fixed
+- **El modo claro no se leía.** Los grises de texto usaban `slate-400`, que sobre blanco da 2.56:1 —muy por debajo del 4.5:1 que exige WCAG AA—, y los badges tiraban de `emerald-600` (3.77:1) y `orange-600` (3.56:1). Los tonos suben a `slate-600` y a la familia `-700`, y el neutro de los badges gana fondo y borde propios. El modo oscuro queda intacto: cada gris subido lleva anclado su valor anterior en `dark:`, así que solo cambia el claro.
 - **La deduplicación perdía eventos.** `processedHashes` usaba `timestamp + los primeros 60 caracteres del mensaje`, así que dos peticiones seguidas a la misma ruta que solo se diferencian en el identificador del final colisionaban y se descartaba una, en silencio. Ahora la clave es `event.id`, que el parser deriva del contenido completo y de la traza.
 
 ## [1.4.0] - 2026-09-09

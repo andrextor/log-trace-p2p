@@ -51,7 +51,7 @@ defineProps<{
             <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.15s]"></div>
             <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce"></div>
           </div>
-          <p class="text-[10px] text-slate-400 dark:text-gray-500 font-mono uppercase tracking-tight">
+          <p class="text-[10px] text-slate-600 dark:text-slate-400 dark:text-gray-500 font-mono uppercase tracking-tight">
             No cierres la pestaña
           </p>
         </div>

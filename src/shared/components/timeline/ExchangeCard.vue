@@ -67,7 +67,7 @@ const hasBody = (event: Exchange["request"]) =>
     >
       <EventBadges :log="pair.response" :only="['outcome', 'service', 'source', 'flow']" />
 
-      <span class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-300 dark:text-slate-600">
+      <span class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-600">
         Exchange
       </span>
 
@@ -79,7 +79,7 @@ const hasBody = (event: Exchange["request"]) =>
         >
           {{ duration }}
         </span>
-        <span class="font-mono text-[11px] text-slate-400 tracking-tight">
+        <span class="font-mono text-[11px] text-slate-600 dark:text-slate-400 tracking-tight">
           {{ timeOf(pair.request.timestamp) }}
         </span>
 
@@ -88,7 +88,7 @@ const hasBody = (event: Exchange["request"]) =>
           class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-wide transition-all active:scale-95"
           :class="isExpanded
             ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
-            : 'bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-indigo-500/40 hover:text-indigo-500'"
+            : 'bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-indigo-500/40 hover:text-indigo-500'"
         >
           <svg
             class="w-3 h-3 transition-transform duration-300"
@@ -124,7 +124,7 @@ const hasBody = (event: Exchange["request"]) =>
 
           <EventBadges :log="side.event" :only="['transport']" />
 
-          <span class="font-mono text-[10px] text-slate-400 ml-auto">
+          <span class="font-mono text-[10px] text-slate-600 dark:text-slate-400 ml-auto">
             {{ timeOf(side.event.timestamp) }}
           </span>
         </div>
@@ -149,7 +149,7 @@ const hasBody = (event: Exchange["request"]) =>
                 @filter-id="id => emit('highlight-session', id)"
               />
             </div>
-            <p v-else class="pt-4 text-[10px] italic text-slate-400">
+            <p v-else class="pt-4 text-[10px] italic text-slate-600 dark:text-slate-400">
               Sin payload en este registro.
             </p>
           </div>
