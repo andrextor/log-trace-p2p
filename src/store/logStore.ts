@@ -174,12 +174,14 @@ export const useLogStore = defineStore("logs", () => {
 					activeTab.value = event.appType;
 				}
 
-				const msgStr = String(event.message || "");
-				const fingerprint = `${event.timestamp}_${msgStr.slice(0, 60)}`;
-
-				if (!processedHashes.has(fingerprint)) {
+				// `event.id` deriva del contenido: la marca ya en epoch, el mensaje
+				// **entero** y la traza. La huella anterior recortaba el mensaje a 60
+				// caracteres, asi que dos llamadas seguidas a la misma ruta que solo
+				// se diferencian por el identificador del final colisionaban y se
+				// perdia una.
+				if (!processedHashes.has(event.id)) {
 					newEvents.push(event);
-					processedHashes.add(fingerprint);
+					processedHashes.add(event.id);
 				}
 			}
 
@@ -245,8 +247,7 @@ export const useLogStore = defineStore("logs", () => {
 
 		processedHashes.clear();
 		for (const e of events.value) {
-			const fingerprint = `${e.timestamp}_${e.message.slice(0, 60)}`;
-			processedHashes.add(fingerprint);
+			processedHashes.add(e.id);
 		}
 
 		if (type === APP_TYPES.CHECKOUT) {
