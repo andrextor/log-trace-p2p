@@ -115,7 +115,7 @@ async function copyJSON() {
        </div>
        
        <div class="relative group/json">
-           <pre class="p-4 bg-[#0d0d0e] rounded-2xl text-[10px] text-emerald-400/90 overflow-x-auto border border-white/5 shadow-2xl max-h-96 custom-scrollbar font-mono leading-relaxed ring-1 ring-white/5">{{ JSON.stringify(details.payload, null, 2) }}</pre>
+           <pre class="p-4 bg-[#0d0d0e] rounded-2xl text-[10px] text-emerald-400/90 overflow-x-auto border border-white/5 shadow-2xl custom-scrollbar font-mono leading-relaxed ring-1 ring-white/5">{{ JSON.stringify(details.payload, null, 2) }}</pre>
            <div class="absolute bottom-3 right-4 text-[7px] font-black text-white/5 uppercase tracking-[0.4em] pointer-events-none group-hover/json:text-white/20 transition-colors">
              REST_TRACE_CONSOLE
            </div>
