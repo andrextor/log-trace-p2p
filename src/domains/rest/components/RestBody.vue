@@ -74,9 +74,11 @@ async function copyJSON() {
           {{ details.operation }}
         </span>
       </div>
-      <div class="ml-auto flex items-center gap-2">
+      <div v-if="details.isLaravel || details.action" class="ml-auto flex items-center gap-2">
+        <!-- `action` es opcional en la libreria: la linea que no la trae no
+             debe tumbar el render de la tarjeta entera. -->
         <span class="px-2.5 py-1 rounded-lg bg-white dark:bg-black/20 text-[9px] font-black uppercase border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400">
-          {{ details.isLaravel ? 'LARAVEL_SYSTEM' : details.action.replace('-', ' ') }}
+          {{ details.isLaravel ? 'LARAVEL_SYSTEM' : details.action?.replace('-', ' ') }}
         </span>
       </div>
     </div>
