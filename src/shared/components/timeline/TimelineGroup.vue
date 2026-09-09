@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import type { LogEvent } from "../../../shared/types";
 import type { TimeGroup } from "../../../shared/types";
-import { type Exchange, toTimelineRows } from "../../ui/LogUIHelper";
+import type { Exchange } from "../../ui/LogUIHelper";
 import LogCard from "../LogCard.vue";
 
 const props = defineProps<{
@@ -15,8 +15,6 @@ const props = defineProps<{
 defineEmits(["highlight-session"]);
 
 const sectionRef = ref<HTMLElement | null>(null);
-
-const rows = computed(() => toTimelineRows(props.group.events));
 
 // Un intercambio se abre y se cierra entero: son las dos mitades de lo mismo.
 const openPairs = ref(new Set<string>());
@@ -65,7 +63,7 @@ const scrollToGroup = () => {
     </div>
   
     <div class="w-full space-y-5 relative animate-in slide-in-from-bottom-6">
-      <template v-for="row in rows" :key="row.single?.id ?? row.pair?.key">
+      <template v-for="row in group.rows" :key="row.single?.id ?? row.pair?.key">
         <LogCard
           v-if="row.single"
           :log="row.single"
@@ -90,15 +88,16 @@ const scrollToGroup = () => {
 
           <!-- Ida y vuelta en paralelo, cada una rotulada: el badge de la
                tarjeta dice el metodo, no el papel, y apiladas en movil el orden
-               por si solo no basta. Se apilan cuando no caben dos columnas. -->
-          <div class="grid gap-2 items-start lg:grid-cols-2">
+               por si solo no basta. Se apilan por debajo de `xl`, contando con que el Checkout gasta 256px en el panel de sesiones. -->
+          <div class="grid gap-2 items-start xl:grid-cols-2">
             <div class="min-w-0">
-              <div class="flex items-center gap-1.5 px-1 pb-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
+              <div class="inline-flex items-center gap-1.5 mb-1.5 px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-white/10 border border-slate-300/60 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-200">
                 <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7-7 7M3 12h18" /></svg>
                 Request
               </div>
               <LogCard
                 :log="row.pair.request"
+                grouped
                 :expanded="isPairOpen(row.pair.key)"
                 @update:expanded="open => setPairOpen(row.pair!.key, open)"
                 :is-highlighted="isLogHighlighted(row.pair.request)"
@@ -107,12 +106,13 @@ const scrollToGroup = () => {
             </div>
 
             <div class="min-w-0">
-              <div class="flex items-center gap-1.5 px-1 pb-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
+              <div class="inline-flex items-center gap-1.5 mb-1.5 px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-white/10 border border-slate-300/60 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-200">
                 <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7 7-7M21 12H3" /></svg>
                 Response
               </div>
               <LogCard
                 :log="row.pair.response"
+                grouped
                 :expanded="isPairOpen(row.pair.key)"
                 @update:expanded="open => setPairOpen(row.pair!.key, open)"
                 :is-highlighted="isLogHighlighted(row.pair.response)"

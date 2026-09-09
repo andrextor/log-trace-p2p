@@ -1,5 +1,6 @@
+import type { TimelineRow } from "../ui/LogUIHelper";
 import type { FacetSelection } from "../ui/facets";
-import type { AnalyzerType, LogEvent } from "./base";
+import type { AnalyzerType } from "./base";
 
 export type ViewMode = AnalyzerType | "ALL";
 
@@ -7,7 +8,8 @@ export interface TimeGroup {
 	label: string;
 	timeDisplay: string;
 	timeKey: string;
-	events: LogEvent[];
+	/** Filas ya emparejadas: un intercambio no se puede partir en dos bloques. */
+	rows: TimelineRow[];
 }
 
 export interface StoreStats {

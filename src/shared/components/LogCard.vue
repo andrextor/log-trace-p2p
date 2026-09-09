@@ -9,6 +9,8 @@ import RestLogCard from "../../domains/rest/components/RestLogCard.vue";
 const props = defineProps<{
 	log: LogEvent;
 	isHighlighted: boolean;
+	/** Dentro de un intercambio manda el boton del contenedor, no el de la tarjeta. */
+	grouped?: boolean;
 }>();
 
 const emit =
@@ -37,6 +39,7 @@ function handleHighlightSession(id: string | number) {
     :log="log" 
     v-model:expanded="isExpanded"
     :is-highlighted="isHighlighted"
+    :grouped="grouped"
     @highlight-session="handleHighlightSession"
   />
 </template>

@@ -11,7 +11,12 @@ import type {
 	TimeGroup,
 	ViewMode,
 } from "../shared/types";
-import { eventMatchesText, isFailure, isMatch } from "../shared/ui/LogUIHelper";
+import {
+	eventMatchesText,
+	isFailure,
+	isMatch,
+	toTimelineRows,
+} from "../shared/ui/LogUIHelper";
 import { type FacetSelection, matchesFacets } from "../shared/ui/facets";
 
 export type { ViewMode } from "../shared/types";
@@ -97,13 +102,17 @@ export const useLogStore = defineStore("logs", () => {
 		const groups: Record<string, TimeGroup> = {};
 		let blockCounter = 1;
 
-		const sorted = [...filteredEvents.value].sort(
-			(a, b) =>
-				new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-		);
+		const sorted = [...filteredEvents.value].sort((a, b) => a.ts - b.ts);
 
-		for (const event of sorted) {
-			const date = new Date(event.timestamp);
+		// Emparejar va antes de agrupar: los bloques son de un minuto, asi que
+		// una peticion a las 12:04:59 y su respuesta a las 12:05:01 caian en
+		// bloques distintos y no llegaban a juntarse nunca.
+		for (const row of toTimelineRows(sorted)) {
+			// La fila cuelga del minuto en que empieza el intercambio.
+			const anchor = row.single ?? row.pair?.request;
+			if (!anchor) continue;
+
+			const date = new Date(anchor.timestamp);
 			if (Number.isNaN(date.getTime())) continue;
 
 			const timeKey = date.toLocaleString("es-CO", {
@@ -120,10 +129,10 @@ export const useLogStore = defineStore("logs", () => {
 					label: `Block ${blockCounter++}`,
 					timeDisplay: timeKey,
 					timeKey: timeKey,
-					events: [],
+					rows: [],
 				};
 			}
-			groups[timeKey].events.push(event);
+			groups[timeKey].rows.push(row);
 		}
 		return groups;
 	});
