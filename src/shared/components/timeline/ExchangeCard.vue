@@ -2,7 +2,11 @@
 import { computed, ref } from "vue";
 import { useLogStore } from "../../../store/logStore";
 import type { Exchange } from "../../ui/LogUIHelper";
-import { isFailure } from "../../ui/LogUIHelper";
+import {
+	formatDuration,
+	formatEventTime,
+	isFailure,
+} from "../../ui/LogUIHelper";
 import EventBadges from "../EventBadges.vue";
 import LogBody from "../LogBody.vue";
 
@@ -26,14 +30,15 @@ const isHighlighted = computed(
 		props.isLogHighlighted(props.pair.response),
 );
 
-const duration = computed(() => {
-	const ms = props.pair.response.durationMs ?? props.pair.request.durationMs;
-	if (ms === undefined) return null;
-	return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${ms} ms`;
-});
+const duration = computed(() =>
+	formatDuration(
+		props.pair.response.durationMs ?? props.pair.request.durationMs,
+	),
+);
 
-const timeOf = (ts: string) =>
-	new Date(ts).toLocaleTimeString("es-CO", { hour12: false });
+// El mismo formato que las tarjetas sueltas: dos relojes distintos en la misma
+// pantalla obligan a traducir mentalmente entre uno y otro.
+const timeOf = formatEventTime;
 
 const hasBody = (event: Exchange["request"]) =>
 	Boolean((event.details as { payload?: unknown })?.payload);

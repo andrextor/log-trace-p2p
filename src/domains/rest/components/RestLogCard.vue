@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import EventBadges from "../../../shared/components/EventBadges.vue";
+import LogCardHeader from "../../../shared/components/LogCardHeader.vue";
 import { CATEGORY_STYLES } from "../../../shared/constants/ui-styles";
 import type { HighlightTheme, LogEvent } from "../../../shared/types";
 import { isFailure } from "../../../shared/ui/LogUIHelper";
@@ -19,13 +19,6 @@ const isExpanded = ref(false);
 const emit =
 	defineEmits<(e: "highlight-session", id: string | number) => void>();
 
-const displayEndpoint = computed(() => {
-	const details = props.log.details as Record<string, unknown>;
-	return details?.endpoint && details.endpoint !== "N/A"
-		? String(details.endpoint)
-		: null;
-});
-
 const essentialIdentifiers = computed(() => {
 	const d = props.log.details as Record<string, unknown>;
 	const p = (d.payload || {}) as Record<string, unknown>;
@@ -37,12 +30,6 @@ const essentialIdentifiers = computed(() => {
 });
 
 const isErrorState = computed(() => isFailure(props.log));
-
-const duration = computed(() => {
-	const ms = props.log.durationMs;
-	if (ms === undefined) return null;
-	return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${ms} ms`;
-});
 
 const activeTheme = computed<HighlightTheme | null>(() => {
 	if (!props.isHighlighted) return null;
@@ -78,32 +65,9 @@ const styles = computed(
 		},
 );
 
-const formattedTime = computed(() => {
-	try {
-		const timePart = props.log.timestamp.split("T")[1];
-		if (timePart) {
-			const cleanTime = timePart.split("-")[0].split("+")[0];
-			return cleanTime;
-		}
-		return props.log.timestamp;
-	} catch (e) {
-		return props.log.timestamp;
-	}
-});
-
 function handleFilterId(id: string | number) {
 	emit("highlight-session", id);
 }
-
-const copiedRawLog = ref(false);
-const handleCopyRawLog = async () => {
-	if (!props.log.details?.rawTitle) return;
-	await navigator.clipboard.writeText(String(props.log.details.rawTitle));
-	copiedRawLog.value = true;
-	setTimeout(() => {
-		copiedRawLog.value = false;
-	}, 2000);
-};
 
 const copiedId = ref<string | null>(null);
 const handleCopyId = async (idValue: string | number) => {
@@ -136,55 +100,7 @@ const handleIdentifierClick = (idValue: string | number) => {
 
     <div class="flex flex-col p-4 sm:p-5 pl-5 sm:pl-6 cursor-pointer select-none" @click="isExpanded = !isExpanded">
       
-      <div class="flex flex-wrap sm:flex-nowrap justify-between items-start sm:items-center gap-3 mb-3 border-b border-slate-100 dark:border-white/5 pb-3">
-        <div class="flex items-center gap-2 flex-wrap">
-          <EventBadges :log="log" />
-
-          <div v-if="displayEndpoint" 
-               class="flex items-center gap-1.5 py-0.5 px-2 bg-transparent text-slate-400 dark:text-slate-500 max-w-[200px] sm:max-w-xs md:max-w-md">
-            <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span class="font-mono text-[9px] sm:text-[10px] truncate">
-              {{ displayEndpoint }}
-            </span>
-          </div>
-        </div>
-
-        <div class="flex flex-col items-end shrink-0 gap-1 mt-1 sm:mt-0">
-           <div class="flex items-center gap-1.5 text-slate-400 opacity-80">
-              <span v-if="duration"
-                    class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 font-mono text-[9px] font-bold text-slate-500 dark:text-slate-400"
-                    title="Tiempo entre la petición y su respuesta">
-                {{ duration }}
-              </span>
-              <span class="font-mono text-[10px] sm:text-[11px] tracking-tight">
-                {{ formattedTime }}
-              </span>
-           </div>
-        </div>
-      </div>
-
-      <div class="py-1 flex gap-3 items-start">
-        <div class="flex-1 min-w-0">
-          <h3 class="font-bold text-[15px] sm:text-[17px] leading-tight text-slate-800 dark:text-slate-100 transition-colors"
-              :class="{ 'text-rose-600 dark:text-rose-400': isErrorState, 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400': !isErrorState }">
-            {{ log.message }}
-          </h3>
-          
-          <div v-if="log.details?.rawTitle && log.details.rawTitle !== log.message" 
-               class="mt-2 px-2 py-1 bg-slate-100/50 dark:bg-white/5 rounded border border-slate-200/50 dark:border-white/5 w-fit flex items-center gap-2 group/raw">
-            <p class="font-mono text-[9px] text-slate-400 dark:text-slate-500 break-all leading-relaxed tracking-tighter">
-              raw log: {{ log.details.rawTitle }}
-            </p>
-            <button @click.stop="handleCopyRawLog" 
-                    class="p-1 rounded hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-indigo-500 transition-all opacity-0 group-hover/raw:opacity-100"
-                    :class="{ 'opacity-100 text-emerald-500': copiedRawLog }"
-                    title="Copy Raw Log">
-              <svg v-if="!copiedRawLog" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-              <svg v-else class="w-3 h-3 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-            </button>
-          </div>
-        </div>
-      </div>
+      <LogCardHeader :log="log" :is-expanded="isExpanded" />
 
       <div class="flex items-start sm:items-center justify-between mt-5 pt-3 border-t border-slate-50 dark:border-white/[0.02]">
         <div class="flex flex-wrap items-center gap-2">
