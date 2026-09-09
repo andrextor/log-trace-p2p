@@ -13,7 +13,10 @@ const props = defineProps<{
 }>();
 
 const store = useLogStore();
-const isExpanded = ref(false);
+// El desplegado sale del componente para que un intercambio agrupado pueda
+// abrir ida y vuelta con un solo mando. Sin `v-model:expanded` se comporta como
+// antes, con estado propio.
+const isExpanded = defineModel<boolean>("expanded", { default: false });
 
 const emit =
 	defineEmits<(e: "highlight-session", id: string | number) => void>();

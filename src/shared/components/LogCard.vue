@@ -14,6 +14,8 @@ const props = defineProps<{
 const emit =
 	defineEmits<(e: "highlight-session", id: string | number) => void>();
 
+const isExpanded = defineModel<boolean>("expanded", { default: false });
+
 const cardComponents: Record<string, Component> = {
 	[APP_TYPES.CHECKOUT]: CheckoutLogCard,
 	[APP_TYPES.MICROSITIOS]: CheckoutLogCard,
@@ -33,6 +35,7 @@ function handleHighlightSession(id: string | number) {
   <component 
     :is="currentCardComponent" 
     :log="log" 
+    v-model:expanded="isExpanded"
     :is-highlighted="isHighlighted"
     @highlight-session="handleHighlightSession"
   />
