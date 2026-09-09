@@ -3,4 +3,4 @@ allowBuilds:
   esbuild: true
   sharp: true
 minimumReleaseAgeExclude:
-  - '@andrextor_ia11012/p2p-log-parser@2.1.0 || 2.2.0'
+  - '@andrextor_ia11012/p2p-log-parser@2.1.0 || 2.2.0 || 2.3.0 || 2.4.0'

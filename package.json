@@ -13,7 +13,7 @@
 		"test:run": "vitest run"
 	},
 	"dependencies": {
-		"@andrextor_ia11012/p2p-log-parser": "^2.2.0",
+		"@andrextor_ia11012/p2p-log-parser": "^2.4.0",
 		"@astrojs/check": "^0.9.9",
 		"@astrojs/vue": "^6.0.1",
 		"@pinia/testing": "^1.0.3",
