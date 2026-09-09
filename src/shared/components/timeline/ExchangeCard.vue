@@ -67,7 +67,7 @@ const hasBody = (event: Exchange["request"]) =>
     >
       <EventBadges :log="pair.response" :only="['outcome', 'service', 'source', 'flow']" />
 
-      <span class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-600">
+      <span class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
         Exchange
       </span>
 

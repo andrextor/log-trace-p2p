@@ -70,7 +70,7 @@ const copyRawLog = async () => {
   </h3>
 
   <!-- Contexto: la ruta recortada por el centro, que conserva la cola. -->
-  <div v-if="endpoint" class="flex items-center gap-1.5 mt-1 text-slate-600 dark:text-slate-500">
+  <div v-if="endpoint" class="flex items-center gap-1.5 mt-1 text-slate-600 dark:text-slate-400">
     <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
     <span class="font-mono text-[10px]" :title="endpoint">{{ truncateMiddle(endpoint) }}</span>
   </div>
@@ -79,7 +79,7 @@ const copyRawLog = async () => {
     v-if="rawTitle"
     class="mt-2 px-2 py-1 bg-slate-100 dark:bg-white/5 rounded border border-slate-200 dark:border-white/5 w-fit flex items-center gap-2 group/raw"
   >
-    <p class="font-mono text-[9px] text-slate-600 dark:text-slate-500 break-all leading-relaxed tracking-tighter">
+    <p class="font-mono text-[9px] text-slate-600 dark:text-slate-400 break-all leading-relaxed tracking-tighter">
       raw log: {{ rawTitle }}
     </p>
     <button
