@@ -1,7 +1,7 @@
 # Plan — aprovechar el parser v2
 
-Estado: en curso · Rama: `features/parser-v2` · Requiere
-`@andrextor_ia11012/p2p-log-parser@2.0.0`
+Estado: aplicado, a la espera de que se publique la librería · Rama:
+`features/parser-v2` · Requiere `@andrextor_ia11012/p2p-log-parser@2.1.0`
 
 ## Contexto
 
@@ -45,56 +45,37 @@ Y en `ParseResult`: `stats` `{total, byApp, byCategory, byLevel, errorCount, unr
 
 ---
 
-## Pendiente
+## Hecho (segunda tanda)
 
-### 1. Embudo de sesión: dejar de recalcularlo *(prioridad media)*
-
-`domains/checkout/composables/useSessionFunnel.ts:75-91` deduce los pasos
-haciendo `endpoint.includes("/otp/generate")`, `msg.includes("3DS")`, etc. El
-`CheckoutMetadataExtractor` de la librería ya calcula por sesión
-`flags {otp, threeDS, interest}`, `finalState`, `hasSuccessfulTransaction`,
-`sessionType` y `reference`, y ahora los devuelve **también con una sola
-sesión** (antes exigía dos).
-
-Migrar el embudo a `metadata.sessions`. Si falta algún paso que la librería no
-cubra, añadirlo allí en vez de reimplementarlo aquí.
-
-### 2. Superficie de `stats` sin usar *(prioridad media)*
-
-`LogAnalyzer.vue:77,170` usa el `StoreStats` local `{total, globalTotal, errors}`
-e ignora el `ParseResult.stats` de la librería. Interesa sobre todo
-**`unrecognized`**: el número de líneas que ninguna estrategia convirtió en
-evento. Es la señal directa de «te equivocaste de aplicación» o «este formato
-todavía no está soportado», y hoy el usuario no ve nada — el log simplemente
-sale vacío.
-
-Mostrarlo junto a los errores de parseo en `ParsingErrorsModal.vue`.
-Nota: la fila de cabecera de un CSV cuenta como una unidad no reconocida.
-
-### 3. Agrupar por intercambio *(prioridad baja)*
-
-`pairKey` permite pintar petición y respuesta como una sola fila plegable con su
-duración, en vez de dos eventos sueltos. Afecta a `TimelineGroup.vue`. Es un
-cambio de diseño, no una corrección: decidir primero si aporta.
-
-### 4. Panel de proveedores *(prioridad baja)*
-
-`RestParseMetadata` trae `requestsByProvider`, `errors[]` y `slowest[]` (los
-diez intercambios más lentos) y nadie los consume. Alimentan directamente un
-panel de latencia y fallos por proveedor.
+- **Embudo de sesión**: `useSessionFunnel` ya no deduce los pasos con
+  `endpoint.includes(...)`. Lee `metadata.sessions`, que ahora publica los ocho
+  hitos y las duraciones (hizo falta extender la librería: ver 2.1.0). Sigue
+  respetando el filtro activo recortando a las sesiones visibles.
+- **`stats.unrecognized`** se acumula en el store y sale en el badge de la
+  cabecera y en `ParsingErrorsModal`, también cuando no hubo errores de línea.
+- **Agrupación por `pairKey`**: `toTimelineRows` une petición y respuesta en una
+  fila con su duración; la petición se despliega bajo demanda. Lo que se queda
+  sin pareja sigue suelto — emparejar de más mentiría sobre la duración.
+- **Panel de proveedores**: `ProviderPanel.vue` consume `requestsByProvider`,
+  `slowest` y `errors` sobre la timeline REST.
+- El barrel `shared/types/index.ts` era una lista explícita que se quedaba corta
+  cada vez que la librería ganaba un tipo. Ahora reexporta todo.
 
 ---
 
 ## Trampas conocidas
 
-- **v2.0.0 no está en npm todavía.** El tag `v2.0.0` sí está en el remoto del
-  parser, pero su CI condicionaba `pnpm publish` a que el tag *no* existiera, y
-  con `fetch-depth: 0` el tag viaja en el clon: taguear antes de mergear apagó
-  la publicación. Corregido en el parser (`fix(ci)`, sin pushear) para preguntar
-  a npm en vez de al tag. Hasta que ese workflow corra, `pnpm install
+- **La librería sigue sin publicarse.** npm está en 1.3.0. El paso `Publish
+  Package to NPM` sí se ejecuta y **falla**, tanto en el merge de la v2 como
+  después; `pnpm publish --dry-run` empaqueta bien en local, así que apunta a
+  credenciales (`NPM_TOKEN`), no al build. El log del run necesita permisos de
+  admin sobre el repo para leerse. Hasta que salga la 2.1.0, `pnpm install
   --frozen-lockfile` falla aquí y con él todo el CI: el lockfile sigue en
-  `^1.3.0`. Regenerarlo (`pnpm install`) en cuanto la 2.0.0 esté publicada.
-- **`processedHashes`** (`logStore.ts`) deduplica con
+  `^1.3.0`. Regenerarlo (`pnpm install`) en cuanto esté publicada.
+- **`sessionType` ya no es solo PAYMENT/COLLECT.** La 2.1.0 distingue
+  SUBSCRIPTION y AUTOPAY, que antes caían en PAYMENT. El contador «Payments»
+  del embudo cuenta todo lo que no es COLLECT ni UNKNOWN para no perderlos.
+- **`processedHashes`** (`logStore.ts`) sigue deduplicando con
   `` `${timestamp}_${message.slice(0,60)}` ``. Ahora `event.id` es estable y
   deriva del contenido, así que sirve para lo mismo sin recortar cadenas.
 - **Microsites sigue sin enriquecer.** No hay logs reales contra los que

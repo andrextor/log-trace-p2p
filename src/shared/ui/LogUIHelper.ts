@@ -76,3 +76,44 @@ export function getStatusBadge(event: LogEvent): StatusBadge | null {
 
 	return null;
 }
+
+export interface Exchange {
+	key: string;
+	request: LogEvent;
+	response: LogEvent;
+}
+
+export type TimelineRow = { single?: LogEvent; pair?: Exchange };
+
+/**
+ * `pairKey` une la ida y la vuelta del mismo intercambio. Pintarlos como dos
+ * eventos sueltos obligaba a buscar la respuesta a ojo. Los que se quedan sin
+ * pareja —petición sin respuesta, export recortado, dos peticiones seguidas
+ * sobre la misma traza— se devuelven sueltos: emparejar de más mentiría sobre
+ * la duración.
+ */
+export function toTimelineRows(events: LogEvent[]): TimelineRow[] {
+	const rows: TimelineRow[] = [];
+	const open = new Map<string, number>();
+
+	for (const event of events) {
+		const key = event.pairKey;
+		if (!key) {
+			rows.push({ single: event });
+			continue;
+		}
+
+		const at = open.get(key);
+		const waiting = at === undefined ? undefined : rows[at];
+		if (at !== undefined && waiting?.single && event.pairRole === "response") {
+			rows[at] = { pair: { key, request: waiting.single, response: event } };
+			open.delete(key);
+			continue;
+		}
+
+		rows.push({ single: event });
+		if (event.pairRole !== "response") open.set(key, rows.length - 1);
+	}
+
+	return rows;
+}

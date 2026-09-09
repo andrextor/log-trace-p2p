@@ -22,6 +22,7 @@ export type {
 	ParseStats,
 	CheckoutParseMetadata,
 	CheckoutSessionMetadata,
+	CheckoutFunnelSteps,
 	RestParseMetadata,
 	MicrositesParseMetadata,
 	RestErrorSummary,

@@ -53,12 +53,12 @@ export function useFunnelExport() {
 			for (const row of data) {
 				let lastStepLabel = "None";
 				for (const step of stepConfig) {
-					if (row.steps[step.key as keyof typeof row.steps] === 1) {
+					if (row.steps[step.key as keyof typeof row.steps]) {
 						lastStepLabel = step.label;
 					}
 				}
 
-				const isFinished = row.steps.process === 1;
+				const isFinished = row.steps.process;
 
 				lines.push(
 					formatRow([
@@ -67,7 +67,7 @@ export function useFunnelExport() {
 						isFinished ? "COMPLETED" : "ABANDONED",
 						isFinished ? "--" : lastStepLabel,
 						...stepConfig.map((sc) =>
-							row.steps[sc.key as keyof typeof row.steps] === 1 ? "OK" : "",
+							row.steps[sc.key as keyof typeof row.steps] ? "OK" : "",
 						),
 						row.durations.timeToEntry || "",
 						row.durations.timeToShow || "",
