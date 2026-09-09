@@ -39,7 +39,7 @@ const scrollToGroup = () => {
       </button>
     </div>
     
-    <div class="md:hidden w-full flex items-center gap-3 mb-6 sticky top-0 bg-white/95 dark:bg-[#161618]/95 backdrop-blur z-10 py-3 border-b border-slate-100 dark:border-white/5 -ml-8 pl-8">
+    <div class="md:hidden w-full flex items-center gap-3 mb-6 sticky top-0 bg-white/95 dark:bg-[#161618]/95 backdrop-blur z-10 py-3 border-b border-slate-100 dark:border-white/5">
       <div class="w-2 h-2 rounded-full bg-indigo-500 shrink-0 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
       <div class="flex items-center gap-2">
         <span class="bg-indigo-600 text-white text-[10px] font-black px-2.5 py-1 rounded-md shadow-sm">{{ group.label }}</span>

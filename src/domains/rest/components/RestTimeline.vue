@@ -49,7 +49,7 @@ const isLogHighlighted = (event: LogEvent) => {
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-180px)] animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden bg-slate-50/30 dark:bg-transparent rounded-2xl border border-slate-200/50 dark:border-white/5">
+  <div class="flex h-full min-h-[420px] animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden bg-slate-50/30 dark:bg-transparent rounded-2xl border border-slate-200/50 dark:border-white/5">
     
     <!-- MAIN CONTENT AREA -->
     <div class="flex-1 flex flex-col min-w-0 bg-white/30 dark:bg-transparent relative">

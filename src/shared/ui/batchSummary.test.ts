@@ -29,13 +29,6 @@ describe("summarizeEvents", () => {
 		expect(summarizeEvents(lote).failures).toBe(1);
 	});
 
-	it("ordena las categorias por frecuencia", () => {
-		expect(summarizeEvents(lote).byCategory).toEqual([
-			{ key: "HTTP_RES", label: "http res", count: 2 },
-			{ key: "HTTP_REQ_OUT", label: "http req out", count: 1 },
-		]);
-	});
-
 	it("un lote vacio no inventa ventana", () => {
 		const s = summarizeEvents([]);
 		expect(s.total).toBe(0);

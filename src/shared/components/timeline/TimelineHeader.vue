@@ -88,7 +88,7 @@ const activeSessionInfo = computed(() => {
       </Transition>
     </div>
 
-    <div class="flex items-center gap-6">
+    <div class="flex flex-wrap items-center justify-end gap-3 sm:gap-6 w-full md:w-auto">
       <div class="flex flex-col items-end">
         <span class="text-[9px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Results</span>
         <span class="text-sm font-mono font-bold text-slate-700 dark:text-indigo-400">{{ visibleCount.toLocaleString('es-ES') }}</span>
