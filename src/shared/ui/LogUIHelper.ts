@@ -119,3 +119,29 @@ export function eventMatchesText(event: LogEvent, term: string): boolean {
 			String(value).toLowerCase().includes(term),
 	);
 }
+
+/**
+ * Recorta por el centro, conservando el final. Una ruta se identifica por su
+ * cola (`/process`, `/otp/generate`), así que truncar por la derecha —lo que
+ * hace `truncate` de CSS— se lleva justo la parte que distingue una llamada de
+ * otra.
+ */
+export function truncateMiddle(text: string, max = 44): string {
+	if (text.length <= max) return text;
+	const keep = max - 1;
+	const head = Math.ceil(keep / 3);
+	return `${text.slice(0, head)}…${text.slice(text.length - (keep - head))}`;
+}
+
+/** La hora del evento, sin fecha ni desfase horario. */
+export function formatEventTime(timestamp: string): string {
+	const timePart = String(timestamp).split("T")[1];
+	if (!timePart) return String(timestamp);
+	return timePart.split("-")[0].split("+")[0];
+}
+
+/** `durationMs` en la unidad que se lee de un vistazo. */
+export function formatDuration(ms: number | undefined): string | null {
+	if (ms === undefined) return null;
+	return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${ms} ms`;
+}

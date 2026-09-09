@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { LogEvent } from "../types";
-import { eventMatchesText, isFailure, toTimelineRows } from "./LogUIHelper";
+import {
+	eventMatchesText,
+	formatDuration,
+	formatEventTime,
+	isFailure,
+	toTimelineRows,
+	truncateMiddle,
+} from "./LogUIHelper";
 
 describe("toTimelineRows", () => {
 	const ev = (
@@ -95,5 +102,44 @@ describe("eventMatchesText", () => {
 
 	it("un termino vacio no filtra nada", () => {
 		expect(eventMatchesText(event, "")).toBe(true);
+	});
+});
+
+describe("truncateMiddle", () => {
+	it("deja intacto lo que cabe", () => {
+		expect(truncateMiddle("/api/process", 44)).toBe("/api/process");
+	});
+
+	it("conserva la cola, que es lo que identifica una ruta", () => {
+		const largo =
+			"/api/v4/session/3856691/39d3f5fc647b8b605df787509e67c140/process";
+		const corto = truncateMiddle(largo, 24);
+		expect(corto).toHaveLength(24);
+		expect(corto).toContain("…");
+		expect(corto.endsWith("process")).toBe(true);
+	});
+});
+
+describe("formatEventTime", () => {
+	it("se queda con la hora, sin fecha ni desfase", () => {
+		expect(formatEventTime("2026-09-09T14:36:49.407136-05:00")).toBe(
+			"14:36:49.407136",
+		);
+		expect(formatEventTime("2026-09-09T14:36:49.000Z")).toBe("14:36:49.000Z");
+	});
+
+	it("devuelve el original si no reconoce la forma", () => {
+		expect(formatEventTime("sin hora")).toBe("sin hora");
+	});
+});
+
+describe("formatDuration", () => {
+	it("pasa a segundos a partir del millar", () => {
+		expect(formatDuration(940)).toBe("940 ms");
+		expect(formatDuration(1240)).toBe("1.24 s");
+	});
+
+	it("sin duracion no inventa un cero", () => {
+		expect(formatDuration(undefined)).toBeNull();
 	});
 });
