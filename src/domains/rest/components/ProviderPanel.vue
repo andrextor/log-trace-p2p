@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { APP_TYPES, type RestParseMetadata } from "../../../shared/types";
+import { toggleFacet } from "../../../shared/ui/facets";
 import { useLogStore } from "../../../store/logStore";
 
 const store = useLogStore();
@@ -28,6 +29,15 @@ const providers = computed(() => {
 
 const formatMs = (ms: number) =>
 	ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${ms} ms`;
+
+// El panel no estrena mecanismo de filtrado: acciona la faceta de proveedor que
+// ya existe. Dos formas de filtrar lo mismo acabarian discrepando.
+const isActive = (name: string) =>
+	(store.facetFilters.provider ?? []).includes(name);
+
+const filterByProvider = (name: string) => {
+	store.facetFilters = toggleFacet(store.facetFilters, "provider", name);
+};
 </script>
 
 <template>
@@ -53,15 +63,29 @@ const formatMs = (ms: number) =>
       <div v-if="isOpen" class="grid gap-5 p-4 pt-1 border-t border-slate-100 dark:border-white/5 md:grid-cols-3">
         <div class="space-y-1.5">
           <span class="text-[8px] font-black uppercase tracking-widest text-slate-400">Requests</span>
-          <div v-for="p in providers" :key="p.name" class="space-y-0.5">
+          <button
+            v-for="p in providers"
+            :key="p.name"
+            @click="filterByProvider(p.name)"
+            :title="isActive(p.name) ? `Quitar el filtro de ${p.name}` : `Filtrar por ${p.name}`"
+            class="w-full text-left space-y-0.5 px-1.5 py-1 -mx-1.5 rounded-md transition-colors"
+            :class="isActive(p.name) ? 'bg-indigo-500/10' : 'hover:bg-slate-100/70 dark:hover:bg-white/5'"
+          >
             <div class="flex justify-between text-[10px]">
-              <span class="font-mono font-bold text-slate-600 dark:text-slate-300 truncate">{{ p.name }}</span>
+              <span
+                class="font-mono font-bold truncate"
+                :class="isActive(p.name) ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300'"
+              >{{ p.name }}</span>
               <span class="font-mono text-slate-400">{{ p.count }}</span>
             </div>
             <div class="h-1 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
-              <div class="h-full rounded-full bg-indigo-500/60" :style="{ width: `${p.pct}%` }"></div>
+              <div
+                class="h-full rounded-full transition-colors"
+                :class="isActive(p.name) ? 'bg-indigo-500' : 'bg-indigo-500/60'"
+                :style="{ width: `${p.pct}%` }"
+              ></div>
             </div>
-          </div>
+          </button>
         </div>
 
         <div class="space-y-1.5">
@@ -79,14 +103,16 @@ const formatMs = (ms: number) =>
         <div class="space-y-1.5">
           <span class="text-[8px] font-black uppercase tracking-widest text-slate-400">Failures</span>
           <p v-if="!meta.errors.length" class="text-[10px] text-slate-400 italic">Ningún fallo en el lote.</p>
-          <div v-for="(e, i) in meta.errors" :key="`${e.provider}-${e.ts}-${i}`"
-               class="text-[10px] leading-tight">
+          <button v-for="(e, i) in meta.errors" :key="`${e.provider}-${e.ts}-${i}`"
+               @click="filterByProvider(e.provider)"
+               :title="`Filtrar por ${e.provider}`"
+               class="w-full text-left text-[10px] leading-tight px-1.5 py-0.5 -mx-1.5 rounded-md hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors">
             <div class="flex gap-1.5">
               <span class="font-mono font-bold text-rose-500 shrink-0">{{ e.code ?? '—' }}</span>
               <span class="font-mono text-slate-600 dark:text-slate-300 truncate">{{ e.provider }} · {{ e.operation }}</span>
             </div>
             <p class="text-slate-400 truncate">{{ e.message }}</p>
-          </div>
+          </button>
         </div>
       </div>
     </div>

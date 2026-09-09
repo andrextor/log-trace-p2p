@@ -273,15 +273,22 @@ seis chips del mismo tamaño.
 ## Fase 5 — Paridad entre dominios *(prioridad media)*
 
 `SessionExplorer` es el mejor componente de la aplicación y solo lo tiene
-Checkout. REST se merece su equivalente: un panel lateral agrupando por
-proveedor y operación, alimentado por `RestParseMetadata`, que ya trae
-`requestsByProvider`, `errors[]` y `slowest[]`. `ProviderPanel.vue` cubre hoy
-una parte; el paso es convertirlo en navegación, no solo lectura: pulsar un
-proveedor filtra.
+Checkout. REST se merece su equivalente, alimentado por `RestParseMetadata`, que
+ya trae `requestsByProvider`, `errors[]` y `slowest[]`.
 
-Y decidir sobre Micrositios: o se le da pestaña propia y tarjeta, o se retira
-de `APP_TYPES` en la interfaz. La rama muerta actual es peor que cualquiera de
-las dos.
+**Hecho, con una desviación:** en vez de un panel lateral con su propio filtro,
+`ProviderPanel` acciona la faceta de proveedor que la fase 3 ya construyó.
+Un panel aparte habría significado dos formas de filtrar lo mismo, que acaban
+discrepando; así el estado del filtro es uno solo y el panel se limita a ser
+otra puerta de entrada. Pulsar un proveedor —o uno de sus fallos— enciende y
+apaga esa faceta.
+
+**Micrositios, retirado de la interfaz.** La librería solo le ofrece un formato
+—el parser genérico de líneas Laravel— frente a los cinco de Checkout y los tres
+de REST, así que sus eventos salen sin fase, sin operación y sin `outcome` con
+detalle. Darle pestaña habría sido exponer algo a medias; se le dará cuando
+tenga estrategias propias y logs reales contra los que validarlas. De paso cae
+`AnalyzerSelector.vue`, que no importaba nadie.
 
 ---
 
