@@ -229,7 +229,10 @@ function flowBadge(event: LogEvent): Badge | null {
  * depende de qué haya presente: las tres primeras ranuras siempre significan lo
  * mismo, así el ojo aprende dónde mirar en vez de releer cada tarjeta.
  */
-export function getEventBadges(event: LogEvent): Badge[] {
+export function getEventBadges(
+	event: LogEvent,
+	only?: Badge["slot"][],
+): Badge[] {
 	const badges = [
 		outcomeBadge(event),
 		transportBadge(event),
@@ -237,5 +240,8 @@ export function getEventBadges(event: LogEvent): Badge[] {
 		simulatorBadge(event) ?? flowBadge(event),
 	].filter((b): b is Badge => b !== null);
 
-	return badges.slice(0, BADGE_BUDGET);
+	// Un intercambio reparte las ranuras entre su cabecera y cada mitad, para no
+	// repetir el proveedor y la operación una vez por lado.
+	const wanted = only ? badges.filter((b) => only.includes(b.slot)) : badges;
+	return wanted.slice(0, BADGE_BUDGET);
 }

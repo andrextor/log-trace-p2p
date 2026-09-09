@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { LogEvent } from "../types";
-import { type BadgeTone, getEventBadges } from "../ui/eventBadges";
+import type { Badge, BadgeTone } from "../ui/eventBadges";
+import { getEventBadges } from "../ui/eventBadges";
 
 const props = defineProps<{
 	log: LogEvent;
+	/** Limita a estas ranuras. Sin ello, las cuatro. */
+	only?: Badge["slot"][];
 }>();
 
 // El color solo significa resultado. Todo lo demás es neutro, para que un fallo
@@ -20,7 +23,7 @@ const TONE: Record<BadgeTone, string> = {
 		"bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10",
 };
 
-const badges = computed(() => getEventBadges(props.log));
+const badges = computed(() => getEventBadges(props.log, props.only));
 </script>
 
 <template>

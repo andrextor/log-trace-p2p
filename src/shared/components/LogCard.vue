@@ -9,14 +9,10 @@ import RestLogCard from "../../domains/rest/components/RestLogCard.vue";
 const props = defineProps<{
 	log: LogEvent;
 	isHighlighted: boolean;
-	/** Dentro de un intercambio manda el boton del contenedor, no el de la tarjeta. */
-	grouped?: boolean;
 }>();
 
 const emit =
 	defineEmits<(e: "highlight-session", id: string | number) => void>();
-
-const isExpanded = defineModel<boolean>("expanded", { default: false });
 
 const cardComponents: Record<string, Component> = {
 	[APP_TYPES.CHECKOUT]: CheckoutLogCard,
@@ -37,9 +33,7 @@ function handleHighlightSession(id: string | number) {
   <component 
     :is="currentCardComponent" 
     :log="log" 
-    v-model:expanded="isExpanded"
     :is-highlighted="isHighlighted"
-    :grouped="grouped"
     @highlight-session="handleHighlightSession"
   />
 </template>

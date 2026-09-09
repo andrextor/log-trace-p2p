@@ -11,14 +11,10 @@ import RestBody from "./RestBody.vue";
 const props = defineProps<{
 	log: LogEvent;
 	isHighlighted: boolean;
-	grouped?: boolean;
 }>();
 
 const store = useLogStore();
-// El desplegado sale del componente para que un intercambio agrupado pueda
-// abrir ida y vuelta con un solo mando. Sin `v-model:expanded` se comporta como
-// antes, con estado propio.
-const isExpanded = defineModel<boolean>("expanded", { default: false });
+const isExpanded = ref(false);
 
 const emit =
 	defineEmits<(e: "highlight-session", id: string | number) => void>();
@@ -213,7 +209,7 @@ const handleIdentifierClick = (idValue: string | number) => {
              <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
              Tracing
            </span>
-           <div v-if="!grouped" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 group-hover:bg-indigo-500 group-hover:border-indigo-500 group-hover:text-white text-slate-400 transition-all duration-300 shadow-sm relative">
+           <div class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 group-hover:bg-indigo-500 group-hover:border-indigo-500 group-hover:text-white text-slate-400 transition-all duration-300 shadow-sm relative">
               <svg class="w-4 h-4 transform transition-transform duration-300" 
                    :class="{ 'rotate-180': isExpanded }" 
                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
