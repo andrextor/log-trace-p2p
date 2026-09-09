@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-09-09
+
+### Changed
+- **Fuera la barra de facetas.** Resultado, Tipo de fallo, Proveedor, Operación, Transporte, Entorno, Fase y Categoría ocupaban tres filas de la barra superior para acotar un lote que casi siempre cabe en una pantalla de scroll. Se van también las fichas de categoría del resumen. Quedan el nombre del analizador, la ventana temporal con el tiempo transcurrido, los contadores del lote, el atajo de fallos críticos y el buscador. El panel de proveedores de REST sigue funcionando: acciona la misma faceta, que se conserva. Caen con ello `FacetBar.vue`, `buildFacets` y los recuentos por categoría y nivel de `summarizeEvents`, que ya no miraba nadie.
+
+### Fixed
+- **Subir logs a REST podía dejar la pantalla en blanco.** `RestBody` llamaba a `details.action.replace(...)`, y `action` es opcional en la librería de parseo: una sola línea sin acción lanzaba `Cannot read properties of null` y Vue abortaba el render de todo el árbol. La etiqueta se omite cuando no hay acción.
+- **La lectura de logs se descuadraba al estrechar la ventana.** La línea de tiempo medía `calc(100vh - 180px)`, un hueco calculado a ojo para la cabecera de escritorio; en móvil la barra de control envuelve a tres filas y esos 180px se quedaban cortos, así que la lista se salía de la pantalla y su scroll interno quedaba fuera de alcance. Ahora la altura se hereda del contenedor —`h-dvh` en la raíz, `flex-1 min-h-0` en medio— y no hay número que ajustar.
+- **El Session Explorer se comía el ancho del móvil.** Sus 256px fijos dejaban la línea de tiempo en un canal inservible. Por debajo de 768px arranca cerrado y se abre superpuesto sobre la lista, con fondo para cerrarlo; el botón para reabrirlo ya no exige tener un filtro de sesión activo. El panel sigue el cambio de tamaño de la ventana, no solo el arranque: encogerla con el panel abierto también lo cierra.
+- **Scroll horizontal en móvil.** La cabecera de cada bloque temporal usaba un `-ml-8` sin padre que lo absorbiera. Las acciones de la cabecera de la línea de tiempo (Results, Funnel, Export, Errors) ahora envuelven en vez de desbordar.
+
 ## [1.5.0] - 2026-09-09
 
 Cierra el plan de UI/UX (`docs/plan-ux.md`): fases 4, 5 y 6.

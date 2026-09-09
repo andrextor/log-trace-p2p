@@ -30,7 +30,7 @@ const sessions = computed(() => {
 <template>
   <transition name="slide-panel">
     <aside v-if="show" 
-           class="w-64 shrink-0 border-r border-slate-200 dark:border-white/5 bg-[#fafafa]/90 dark:bg-[#0a0a0b]/90 backdrop-blur-xl flex flex-col overflow-hidden z-20 shadow-[4px_0_24px_rgba(0,0,0,0.03)]">
+           class="absolute inset-y-0 left-0 z-30 w-64 shrink-0 md:static md:z-20 border-r border-slate-200 dark:border-white/5 bg-[#fafafa]/90 dark:bg-[#0a0a0b]/90 backdrop-blur-xl flex flex-col overflow-hidden z-20 shadow-[4px_0_24px_rgba(0,0,0,0.03)]">
       
       <div class="flex items-center justify-between px-4 py-4 border-b border-slate-200/50 dark:border-white/5 bg-white/50 dark:bg-black/20">
         <div class="flex items-center gap-2">

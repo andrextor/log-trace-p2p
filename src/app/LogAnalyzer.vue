@@ -21,7 +21,6 @@ import ThemeSelector from "../shared/components/ThemeSelector.vue";
 import AnalysisProgress from "../shared/components/analyzer/AnalysisProgress.vue";
 import AnalyzerControlBar from "../shared/components/analyzer/AnalyzerControlBar.vue";
 import BatchSummary from "../shared/components/analyzer/BatchSummary.vue";
-import FacetBar from "../shared/components/analyzer/FacetBar.vue";
 
 const store = useLogStore();
 
@@ -136,9 +135,9 @@ const handleUploadComplete = async () => {
     :progress="store.progress" 
   />
 
-  <div class="flex flex-col min-h-screen w-full font-sans text-slate-900 dark:text-slate-100 transition-colors duration-500">
+  <div class="flex flex-col h-dvh w-full overflow-hidden font-sans text-slate-900 dark:text-slate-100 transition-colors duration-500">
     
-    <header class="sticky top-0 z-50 bg-white/80 dark:bg-[#0a0a0b]/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/5 transition-colors">
+    <header class="shrink-0 z-50 bg-white/80 dark:bg-[#0a0a0b]/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/5 transition-colors">
       <div class="px-4 sm:px-6 h-14 flex items-center justify-between w-full">
         
         <div class="flex items-center gap-3 w-1/4">
@@ -186,11 +185,11 @@ const handleUploadComplete = async () => {
       </div>
     </header>
 
-    <main class="flex-1 w-full bg-slate-50/30 dark:bg-transparent relative">
+    <main class="flex-1 min-h-0 w-full overflow-y-auto bg-slate-50/30 dark:bg-transparent relative">
       <transition name="fade" mode="out-in">
         
-        <div v-if="hasEventsForCurrentTab" key="timeline" class="h-full flex flex-col">
-          <div class="sticky top-14 z-40 bg-white/70 dark:bg-[#0a0a0b]/70 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/5 py-3 px-4 sm:px-6 w-full shadow-sm">
+        <div v-if="hasEventsForCurrentTab" key="timeline" class="h-full min-h-0 flex flex-col">
+          <div class="shrink-0 z-40 bg-white/70 dark:bg-[#0a0a0b]/70 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/5 py-3 px-4 sm:px-6 w-full shadow-sm">
              <div class="w-full">
                <AnalyzerControlBar 
                  :active-tab="store.activeTab" 
@@ -213,19 +212,16 @@ const handleUploadComplete = async () => {
                  </template>
                </AnalyzerControlBar>
                <BatchSummary />
-               <FacetBar />
              </div>
           </div>
 
-          <div class="flex-1 w-full px-2 sm:px-6 py-4 custom-scrollbar">
-            <div class="w-full pb-20">
-              <CheckoutTimeline v-if="store.activeTab === APP_TYPES.CHECKOUT" />
-              <RestTimeline v-else />
-            </div>
+          <div class="flex-1 min-h-0 w-full px-2 sm:px-6 py-4">
+            <CheckoutTimeline v-if="store.activeTab === APP_TYPES.CHECKOUT" class="h-full" />
+            <RestTimeline v-else class="h-full" />
           </div>
         </div>
 
-        <div v-else key="uploader" class="h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-4 animate-in fade-in slide-in-from-bottom-6 duration-700 w-full">
+        <div v-else key="uploader" class="min-h-full flex flex-col items-center justify-center px-4 animate-in fade-in slide-in-from-bottom-6 duration-700 w-full">
           <div class="text-center mb-10 space-y-4">
             <div class="flex flex-col items-center justify-center gap-4">
               <div class="p-4 bg-indigo-500/10 rounded-2xl ring-1 ring-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-indigo-500/10">

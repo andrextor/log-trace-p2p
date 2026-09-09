@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useLogStore } from "../../../store/logStore";
 import { useCheckoutSessions } from "../composables/useCheckoutSessions";
 
@@ -11,7 +11,24 @@ import SessionFunnelReport from "./SessionFunnelReport.vue";
 
 const store = useLogStore();
 const showFunnel = ref(false);
-const showSessionPanel = ref(true);
+// En movil el panel se comeria la mitad del ancho, asi que arranca cerrado y
+// se abre superpuesto; en escritorio sigue fijo al lado de la linea de tiempo.
+// Se sigue el cambio de tamano, no solo el arranque: encoger la ventana con el
+// panel abierto dejaba la linea de tiempo en un canal de cien pixeles.
+const showSessionPanel = ref(false);
+const desktop = "(min-width: 768px)";
+let media: MediaQueryList | null = null;
+const syncPanel = (e: MediaQueryList | MediaQueryListEvent) => {
+	showSessionPanel.value = e.matches;
+};
+
+onMounted(() => {
+	media = window.matchMedia(desktop);
+	syncPanel(media);
+	media.addEventListener("change", syncPanel);
+});
+
+onUnmounted(() => media?.removeEventListener("change", syncPanel));
 const BATCH_SIZE = 40;
 const visibleGroups = ref(BATCH_SIZE);
 
@@ -45,13 +62,19 @@ const handleSessionFromFunnel = (sessionId: string | number) => {
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-180px)] animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden bg-slate-50/30 dark:bg-transparent rounded-2xl border border-slate-200/50 dark:border-white/5">
+  <div class="flex h-full min-h-[420px] animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden bg-slate-50/30 dark:bg-transparent rounded-2xl border border-slate-200/50 dark:border-white/5">
     
     <SessionExplorer v-model:show="showSessionPanel" />
 
-    <button v-if="hasSessionFilter && !showSessionPanel" 
+    <div
+      v-if="showSessionPanel"
+      @click="showSessionPanel = false"
+      class="absolute inset-0 z-20 bg-slate-900/40 md:hidden"
+    ></div>
+
+    <button v-if="!showSessionPanel" 
             @click="showSessionPanel = true"
-            class="absolute top-4 left-4 z-40 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/90 dark:bg-[#161618]/90 backdrop-blur-md border border-slate-200 dark:border-white/10 shadow-xl text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:border-indigo-500/50 hover:shadow-indigo-500/20 transition-all hover:scale-105 group slide-in-from-left-4 animate-in">
+            class="absolute bottom-4 left-4 md:top-4 md:bottom-auto z-40 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/90 dark:bg-[#161618]/90 backdrop-blur-md border border-slate-200 dark:border-white/10 shadow-xl text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:border-indigo-500/50 hover:shadow-indigo-500/20 transition-all hover:scale-105 group slide-in-from-left-4 animate-in">
       <svg class="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
       </svg>

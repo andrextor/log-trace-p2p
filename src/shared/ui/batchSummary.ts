@@ -1,12 +1,6 @@
 import type { LogEvent } from "../types";
 import { isFailure } from "./LogUIHelper";
 
-export interface CountedKey {
-	key: string;
-	label: string;
-	count: number;
-}
-
 export interface BatchSummary {
 	total: number;
 	failures: number;
@@ -14,8 +8,6 @@ export interface BatchSummary {
 	from?: number;
 	to?: number;
 	spanMs?: number;
-	byCategory: CountedKey[];
-	byLevel: CountedKey[];
 }
 
 /**
@@ -26,15 +18,11 @@ export interface BatchSummary {
  * interpretar fechas—, que es la pregunta que la pantalla hace de verdad.
  */
 export function summarizeEvents(events: LogEvent[]): BatchSummary {
-	const byCategory = new Map<string, number>();
-	const byLevel = new Map<string, number>();
 	let failures = 0;
 	let from: number | undefined;
 	let to: number | undefined;
 
 	for (const event of events) {
-		byCategory.set(event.category, (byCategory.get(event.category) ?? 0) + 1);
-		byLevel.set(event.level, (byLevel.get(event.level) ?? 0) + 1);
 		if (isFailure(event)) failures++;
 
 		const ts = event.ts;
@@ -44,19 +32,12 @@ export function summarizeEvents(events: LogEvent[]): BatchSummary {
 		}
 	}
 
-	const rank = (map: Map<string, number>, label: (k: string) => string) =>
-		[...map.entries()]
-			.map(([key, count]) => ({ key, label: label(key), count }))
-			.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-
 	return {
 		total: events.length,
 		failures,
 		from,
 		to,
 		spanMs: from !== undefined && to !== undefined ? to - from : undefined,
-		byCategory: rank(byCategory, (k) => k.replace(/_/g, " ").toLowerCase()),
-		byLevel: rank(byLevel, (k) => k),
 	};
 }
 
