@@ -294,10 +294,16 @@ tenga estrategias propias y logs reales contra los que validarlas. De paso cae
 
 ## Fase 6 — Contexto del lote *(prioridad baja)*
 
-Una franja de resumen bajo la barra de control, con lo que `ParseStats` ya
-calcula y nadie lee: ventana temporal (`timespan`), reparto por categoría y por
-nivel, y el `unrecognized` que ya se expone en el modal. Responde «¿qué acabo de
-cargar?» antes de empezar a leer tarjetas.
+Una franja de resumen bajo la barra de control: ventana temporal, reparto por
+categoría, fallos y el `unrecognized`. Responde «¿qué acabo de cargar?» antes de
+empezar a leer tarjetas.
+
+**Hecho, sin usar `ParseStats`.** Sus campos describen **una** llamada al
+parser, y el store acumula varias subidas repartidas por aplicación: enseñar las
+del último lote habría descrito otra cosa. `summarizeEvents` cuenta sobre los
+eventos ya parseados de la pestaña activa, usando el `ts` que el parser resolvió
+—sin volver a interpretar fechas— y el mismo `isFailure` que el resto de la
+aplicación. Las categorías accionan su faceta, como el panel de proveedores.
 
 ---
 

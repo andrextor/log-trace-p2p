@@ -20,6 +20,7 @@ import LogUploader from "../shared/components/LogUploader.vue";
 import ThemeSelector from "../shared/components/ThemeSelector.vue";
 import AnalysisProgress from "../shared/components/analyzer/AnalysisProgress.vue";
 import AnalyzerControlBar from "../shared/components/analyzer/AnalyzerControlBar.vue";
+import BatchSummary from "../shared/components/analyzer/BatchSummary.vue";
 import FacetBar from "../shared/components/analyzer/FacetBar.vue";
 
 const store = useLogStore();
@@ -211,6 +212,7 @@ const handleUploadComplete = async () => {
                    </Transition>
                  </template>
                </AnalyzerControlBar>
+               <BatchSummary />
                <FacetBar />
              </div>
           </div>

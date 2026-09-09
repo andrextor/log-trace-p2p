@@ -61,6 +61,13 @@ export const useLogStore = defineStore("logs", () => {
 		};
 	});
 
+	/** Los eventos de la aplicación activa, sin filtrar: «qué tengo cargado». */
+	const tabEvents = computed(() =>
+		activeTab.value === "ALL"
+			? events.value
+			: events.value.filter((e) => e.appType === activeTab.value),
+	);
+
 	/**
 	 * Todo menos las facetas. Es la base sobre la que se cuentan, para que un
 	 * valor no anuncie resultados que luego no aparecen.
@@ -280,6 +287,7 @@ export const useLogStore = defineStore("logs", () => {
 		outcomeFilter,
 		facetFilters,
 		facetBaseEvents,
+		tabEvents,
 		highlightedSessionId,
 		isProcessing,
 		progress,
