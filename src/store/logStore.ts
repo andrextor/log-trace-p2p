@@ -27,6 +27,10 @@ export const useLogStore = defineStore("logs", () => {
 	const sessionIds = ref<string[]>([]);
 	const sessionFilter = ref<string | null>(null);
 	const metadata = ref<ParseMetadata | null>(null);
+	// Líneas que ninguna estrategia convirtió en evento. Es la señal directa de
+	// «te equivocaste de aplicación» o «este formato no está soportado»: sin
+	// mostrarla, el log simplemente sale vacío y el usuario no sabe por qué.
+	const unrecognized = ref(0);
 
 	const processedHashes = new Set<string>();
 
@@ -196,6 +200,8 @@ export const useLogStore = defineStore("logs", () => {
 				}
 			}
 
+			unrecognized.value += result.stats.unrecognized;
+
 			if (result.errors && result.errors.length > 0) {
 				for (const err of result.errors) {
 					parsingErrors.value.push(
@@ -229,11 +235,13 @@ export const useLogStore = defineStore("logs", () => {
 		}
 
 		parsingErrors.value = [];
+		unrecognized.value = 0;
 	}
 
 	function clearLogs() {
 		events.value = [];
 		parsingErrors.value = [];
+		unrecognized.value = 0;
 		processedHashes.clear();
 		search.value = "";
 		levelFilter.value = "ALL";
@@ -261,6 +269,7 @@ export const useLogStore = defineStore("logs", () => {
 		sessionIds,
 		sessionFilter,
 		metadata,
+		unrecognized,
 		stats,
 		counts,
 		filteredEvents,

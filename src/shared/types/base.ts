@@ -24,5 +24,7 @@ export type {
 	CheckoutSessionMetadata,
 	RestParseMetadata,
 	MicrositesParseMetadata,
+	RestErrorSummary,
+	RestExchangeSummary,
 	StrategyMetadata as SupportedFormat,
 } from "@andrextor_ia11012/p2p-log-parser";

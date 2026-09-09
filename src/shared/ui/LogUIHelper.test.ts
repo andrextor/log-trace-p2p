@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import type { LogEvent } from "../types";
 import { getStatusBadge } from "./LogUIHelper";
 
