@@ -88,24 +88,37 @@ const scrollToGroup = () => {
             </span>
           </button>
 
-          <!-- Ida y vuelta en paralelo. Los badges de cada tarjeta ya dicen cual
-               es cual (`→ POST` frente a `← RES`), asi que no hacen falta
-               rotulos. Se apilan cuando no caben dos columnas. -->
+          <!-- Ida y vuelta en paralelo, cada una rotulada: el badge de la
+               tarjeta dice el metodo, no el papel, y apiladas en movil el orden
+               por si solo no basta. Se apilan cuando no caben dos columnas. -->
           <div class="grid gap-2 items-start lg:grid-cols-2">
-            <LogCard
-              :log="row.pair.request"
-              :expanded="isPairOpen(row.pair.key)"
-              @update:expanded="open => setPairOpen(row.pair!.key, open)"
-              :is-highlighted="isLogHighlighted(row.pair.request)"
-              @highlight-session="id => $emit('highlight-session', id)"
-            />
-            <LogCard
-              :log="row.pair.response"
-              :expanded="isPairOpen(row.pair.key)"
-              @update:expanded="open => setPairOpen(row.pair!.key, open)"
-              :is-highlighted="isLogHighlighted(row.pair.response)"
-              @highlight-session="id => $emit('highlight-session', id)"
-            />
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 px-1 pb-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7-7 7M3 12h18" /></svg>
+                Request
+              </div>
+              <LogCard
+                :log="row.pair.request"
+                :expanded="isPairOpen(row.pair.key)"
+                @update:expanded="open => setPairOpen(row.pair!.key, open)"
+                :is-highlighted="isLogHighlighted(row.pair.request)"
+                @highlight-session="id => $emit('highlight-session', id)"
+              />
+            </div>
+
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 px-1 pb-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7 7-7M21 12H3" /></svg>
+                Response
+              </div>
+              <LogCard
+                :log="row.pair.response"
+                :expanded="isPairOpen(row.pair.key)"
+                @update:expanded="open => setPairOpen(row.pair!.key, open)"
+                :is-highlighted="isLogHighlighted(row.pair.response)"
+                @highlight-session="id => $emit('highlight-session', id)"
+              />
+            </div>
           </div>
         </div>
 
