@@ -75,7 +75,7 @@ Y en `ParseResult`: `stats` `{total, byApp, byCategory, byLevel, errorCount, unr
 - **`sessionType` ya no es solo PAYMENT/COLLECT.** La 2.1.0 distingue
   SUBSCRIPTION y AUTOPAY, que antes caían en PAYMENT. El contador «Payments»
   del embudo cuenta todo lo que no es COLLECT ni UNKNOWN para no perderlos.
-- **`processedHashes`** (`logStore.ts`) sigue deduplicando con
+- ~~**`processedHashes`**~~ *(resuelto)* — deduplicaba con
   `` `${timestamp}_${message.slice(0,60)}` ``. Ahora `event.id` es estable y
   deriva del contenido, así que sirve para lo mismo sin recortar cadenas.
 - **Microsites sigue sin enriquecer.** No hay logs reales contra los que
