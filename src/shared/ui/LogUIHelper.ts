@@ -38,3 +38,41 @@ export function getFilterIdentity(
 
 	return { label: "ID", colorClass: "orange" };
 }
+
+export interface StatusBadge {
+	text: string;
+	classes: string;
+}
+
+const HTTP_BADGE = (code: number) =>
+	code >= 500
+		? "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400"
+		: code >= 400
+			? "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400"
+			: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400";
+
+const STATUS_BADGE: Record<string, string> = {
+	OK: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400",
+	FAILED: "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400",
+	REJECTED:
+		"bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400",
+	PENDING:
+		"bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400",
+};
+
+/**
+ * El badge de la cabecera de una tarjeta. La v2 dejó de inventar `statusCode`:
+ * donde antes había un 200 fabricado ahora no hay nada, así que se cae a
+ * `outcome.status`, que sí es información derivada del log.
+ */
+export function getStatusBadge(event: LogEvent): StatusBadge | null {
+	const code = Number(event.details?.statusCode);
+	if (code && !Number.isNaN(code)) {
+		return { text: String(code), classes: HTTP_BADGE(code) };
+	}
+
+	const status = event.outcome?.status;
+	if (status) return { text: status, classes: STATUS_BADGE[status] };
+
+	return null;
+}

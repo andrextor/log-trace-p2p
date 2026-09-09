@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import OutcomeAlert from "../../../shared/components/OutcomeAlert.vue";
+import type { Outcome } from "../../../shared/types";
 import type { CheckoutDetails } from "../types";
 
 const props = defineProps<{
 	details: CheckoutDetails;
+	outcome?: Outcome;
 }>();
 
 const copiedPayload = ref(false);
@@ -55,6 +58,8 @@ const handleCopyPayload = async () => {
         </div>
       </template>
     </div>
+
+    <OutcomeAlert :outcome="outcome" />
 
     <!-- JSON Payload -->
     <div v-if="details.payload" class="relative">
