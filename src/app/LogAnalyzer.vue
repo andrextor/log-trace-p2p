@@ -14,18 +14,33 @@ import { useLogStore } from "../store/logStore";
 
 import CheckoutTimeline from "../domains/checkout/components/CheckoutTimeline.vue";
 import RestTimeline from "../domains/rest/components/RestTimeline.vue";
+import ConfirmationModal from "../shared/components/ConfirmationModal.vue";
 import LogExporter from "../shared/components/LogExporter.vue";
 import LogUploader from "../shared/components/LogUploader.vue";
 import ThemeSelector from "../shared/components/ThemeSelector.vue";
 import AnalysisProgress from "../shared/components/analyzer/AnalysisProgress.vue";
 import AnalyzerControlBar from "../shared/components/analyzer/AnalyzerControlBar.vue";
+import FacetBar from "../shared/components/analyzer/FacetBar.vue";
 
 const store = useLogStore();
 
 const filtersCache = ref<Record<string, FiltersCacheEntry>>({
-	[APP_TYPES.CHECKOUT]: { search: "", highlighted: null, level: "ALL" },
-	[APP_TYPES.REST]: { search: "", highlighted: null, level: "ALL" },
+	[APP_TYPES.CHECKOUT]: {
+		search: "",
+		highlighted: null,
+		outcome: "ALL",
+		facets: {},
+	},
+	[APP_TYPES.REST]: {
+		search: "",
+		highlighted: null,
+		outcome: "ALL",
+		facets: {},
+	},
 });
+
+const showUploadModal = ref(false);
+const showClearModal = ref(false);
 
 onMounted(() => {
 	store.activeTab = APP_TYPES.CHECKOUT;
@@ -57,26 +72,34 @@ const setTab = (newTab: AnalyzerType) => {
 	filtersCache.value[oldTab] = {
 		search: store.search,
 		highlighted: store.highlightedSessionId,
-		level: store.levelFilter,
+		outcome: store.outcomeFilter,
+		facets: store.facetFilters,
 	};
 	store.activeTab = newTab;
 	store.sessionFilter = null;
 	const cached = filtersCache.value[newTab] || {
 		search: "",
 		highlighted: null,
-		level: "ALL",
+		outcome: "ALL",
+		facets: {},
 	};
 	store.search = cached.search;
 	store.highlightedSessionId = cached.highlighted;
-	store.levelFilter = cached.level;
+	store.outcomeFilter = cached.outcome;
+	store.facetFilters = cached.facets;
+};
+
+const resetFilters = () => {
+	store.outcomeFilter = "ALL";
+	store.search = "";
+	store.highlightedSessionId = null;
+	store.facetFilters = {};
 };
 
 const toggleErrorFilter = () => {
-	if (store.levelFilter === "ERROR") store.levelFilter = "ALL";
-	else {
-		if (store.stats.errors > 0) store.levelFilter = "ERROR";
-		else toast.success("No failures in this application");
-	}
+	if (store.outcomeFilter === "ERRORS") store.outcomeFilter = "ALL";
+	else if (store.stats.errors > 0) store.outcomeFilter = "ERRORS";
+	else toast.success("No failures in this application");
 };
 
 const handleClearContext = () => {
@@ -85,16 +108,20 @@ const handleClearContext = () => {
 	filtersCache.value[currentTab] = {
 		search: "",
 		highlighted: null,
-		level: "ALL",
+		outcome: "ALL",
+		facets: {},
 	};
 	store.search = "";
-	store.levelFilter = "ALL";
+	store.outcomeFilter = "ALL";
+	store.facetFilters = {};
 	store.highlightedSessionId = null;
+	showClearModal.value = false;
 	toast.success(`${ANALYZER_NAMES[currentTab]} data cleared`);
 };
 
 const handleUploadComplete = async () => {
 	await nextTick();
+	showUploadModal.value = false;
 	toast.success("Logs integrated successfully");
 };
 </script>
@@ -114,9 +141,9 @@ const handleUploadComplete = async () => {
       <div class="px-4 sm:px-6 h-14 flex items-center justify-between w-full">
         
         <div class="flex items-center gap-3 w-1/4">
-          <button @click="handleClearContext" class="relative w-8 h-8 md:w-7 md:h-7 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-center justify-center shadow-sm hover:scale-105 transition-transform group">
-            <span class="text-indigo-600 dark:text-indigo-400 font-black text-[11px] md:text-[10px] group-hover:block">P2P</span>
-          </button>
+          <div class="relative w-8 h-8 md:w-7 md:h-7 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-center justify-center shadow-sm select-none">
+            <span class="text-indigo-600 dark:text-indigo-400 font-black text-[11px] md:text-[10px]">P2P</span>
+          </div>
           <div class="hidden md:flex flex-col cursor-default">
             <span class="font-mono font-bold text-slate-900 dark:text-slate-100 text-[13px] tracking-tight leading-none">P2P-log-trace</span>
             <span class="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5">Engine v4</span>
@@ -168,10 +195,11 @@ const handleUploadComplete = async () => {
                  :active-tab="store.activeTab" 
                  :active-filter-theme="activeFilterTheme"
                  :stats="store.stats"
-                 :level-filter="store.levelFilter"
+                 :outcome-filter="store.outcomeFilter"
                  @toggle-errors="toggleErrorFilter"
-                 @reset-filters="() => { store.levelFilter = 'ALL'; store.search = ''; store.highlightedSessionId = null; }"
-                 @clear-data="handleClearContext"
+                 @reset-filters="resetFilters"
+                 @add-logs="showUploadModal = true"
+                 @clear-data="showClearModal = true"
                >
                  <template #filter-chip>
                    <Transition name="scale" mode="out-in">
@@ -183,6 +211,7 @@ const handleUploadComplete = async () => {
                    </Transition>
                  </template>
                </AnalyzerControlBar>
+               <FacetBar />
              </div>
           </div>
 
@@ -227,6 +256,36 @@ const handleUploadComplete = async () => {
       </transition>
     </main>
   </div>
+
+  <!-- El store acumula y deduplica, asi que sumar un fichero no obliga a vaciar
+       el anterior: es el caso normal al cruzar Checkout con REST. -->
+  <Transition name="fade">
+    <div v-if="showUploadModal" class="fixed inset-0 z-60 flex items-center justify-center p-4">
+      <div @click="showUploadModal = false" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+      <div class="relative w-full max-w-4xl max-h-[85vh] overflow-y-auto custom-scrollbar bg-white dark:bg-[#0a0a0b] rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl p-5 animate-in zoom-in-95 duration-200">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">Add logs</h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              Se suman a {{ ANALYZER_NAMES[store.activeTab as keyof typeof ANALYZER_NAMES] }}. Los repetidos se descartan solos.
+            </p>
+          </div>
+          <button @click="showUploadModal = false" aria-label="Close" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <LogUploader :target-type="(store.activeTab as AnalyzerType)" @viewResults="handleUploadComplete" />
+      </div>
+    </div>
+  </Transition>
+
+  <ConfirmationModal
+    :is-open="showClearModal"
+    title="Clear logs"
+    :message="`Se borraran los eventos de ${ANALYZER_NAMES[store.activeTab as keyof typeof ANALYZER_NAMES]}. No se puede deshacer.`"
+    @close="showClearModal = false"
+    @confirm="handleClearContext"
+  />
 </template>
 
 <style scoped>

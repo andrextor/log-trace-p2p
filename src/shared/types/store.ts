@@ -1,4 +1,6 @@
-import type { AnalyzerType, LogEvent, LogLevel } from "./base";
+import type { TimelineRow } from "../ui/LogUIHelper";
+import type { FacetSelection } from "../ui/facets";
+import type { AnalyzerType } from "./base";
 
 export type ViewMode = AnalyzerType | "ALL";
 
@@ -6,7 +8,8 @@ export interface TimeGroup {
 	label: string;
 	timeDisplay: string;
 	timeKey: string;
-	events: LogEvent[];
+	/** Filas ya emparejadas: un intercambio no se puede partir en dos bloques. */
+	rows: TimelineRow[];
 }
 
 export interface StoreStats {
@@ -30,7 +33,8 @@ export interface FilterTheme {
 export interface FiltersCacheEntry {
 	search: string;
 	highlighted: string | number | null;
-	level: LevelFilter;
+	outcome: OutcomeFilter;
+	facets: FacetSelection;
 }
 
 export interface CategoryStyle {
@@ -43,4 +47,8 @@ export interface HighlightTheme {
 	bg: string;
 }
 
-export type LevelFilter = LogLevel | "ALL";
+/**
+ * El filtro de resultado sustituye al de nivel: `level` no describe el
+ * resultado de la operación, solo la severidad con que el emisor la registró.
+ */
+export type OutcomeFilter = "ALL" | "ERRORS";

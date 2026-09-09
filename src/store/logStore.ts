@@ -5,13 +5,19 @@ import { APP_TYPES } from "../shared/types";
 import type { AnalyzerType, LogEvent } from "../shared/types";
 import type {
 	CheckoutParseMetadata,
-	LevelFilter,
+	OutcomeFilter,
 	ParseMetadata,
 	StoreStats,
 	TimeGroup,
 	ViewMode,
 } from "../shared/types";
-import { isMatch } from "../shared/ui/LogUIHelper";
+import {
+	eventMatchesText,
+	isFailure,
+	isMatch,
+	toTimelineRows,
+} from "../shared/ui/LogUIHelper";
+import { type FacetSelection, matchesFacets } from "../shared/ui/facets";
 
 export type { ViewMode } from "../shared/types";
 
@@ -19,7 +25,8 @@ export const useLogStore = defineStore("logs", () => {
 	const events = shallowRef<LogEvent[]>([]);
 	const activeTab = ref<ViewMode>(APP_TYPES.CHECKOUT);
 	const search = ref("");
-	const levelFilter = ref<LevelFilter>("ALL");
+	const outcomeFilter = ref<OutcomeFilter>("ALL");
+	const facetFilters = ref<FacetSelection>({});
 	const highlightedSessionId = ref<string | number | null>(null);
 	const parsingErrors = ref<string[]>([]);
 	const isProcessing = ref(false);
@@ -50,26 +57,27 @@ export const useLogStore = defineStore("logs", () => {
 		return {
 			total: filtered.length,
 			globalTotal: events.value.length,
-			// `outcome.isError` cubre los fallos que el nivel no delata: un rechazo
-			// del proveedor llega como INFO o WARNING.
-			errors: filtered.filter(
-				(e) =>
-					e.outcome?.isError || e.level === "ERROR" || e.level === "CRITICAL",
-			).length,
+			errors: filtered.filter(isFailure).length,
 		};
 	});
 
-	const filteredEvents = computed(() => {
+	/**
+	 * Todo menos las facetas. Es la base sobre la que se cuentan, para que un
+	 * valor no anuncie resultados que luego no aparecen.
+	 */
+	const facetBaseEvents = computed(() => {
 		const allEvents = events.value;
 		if (allEvents.length === 0) return [];
 
 		const searchTerm = search.value.toLowerCase().trim();
-		const activeLevel = levelFilter.value;
+		const onlyFailures = outcomeFilter.value === "ERRORS";
 		const currentTab = activeTab.value;
 
 		return allEvents.filter((event) => {
 			if (currentTab !== "ALL" && event.appType !== currentTab) return false;
-			if (activeLevel !== "ALL" && event.level !== activeLevel) return false;
+			// Mismo predicado que `stats.errors`: el contador y el filtro no pueden
+			// describir conjuntos distintos.
+			if (onlyFailures && !isFailure(event)) return false;
 
 			if (sessionFilter.value) {
 				if (!isMatch(event, sessionFilter.value)) return false;
@@ -80,25 +88,31 @@ export const useLogStore = defineStore("logs", () => {
 				if (!isMatch(event, targetId)) return false;
 			}
 
-			if (!searchTerm) return true;
-			return (
-				event.message.toLowerCase().includes(searchTerm) ||
-				String(event.id).toLowerCase().includes(searchTerm)
-			);
+			return eventMatchesText(event, searchTerm);
 		});
 	});
+
+	const filteredEvents = computed(() =>
+		facetBaseEvents.value.filter((event) =>
+			matchesFacets(event, facetFilters.value),
+		),
+	);
 
 	const groupedEvents = computed(() => {
 		const groups: Record<string, TimeGroup> = {};
 		let blockCounter = 1;
 
-		const sorted = [...filteredEvents.value].sort(
-			(a, b) =>
-				new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-		);
+		const sorted = [...filteredEvents.value].sort((a, b) => a.ts - b.ts);
 
-		for (const event of sorted) {
-			const date = new Date(event.timestamp);
+		// Emparejar va antes de agrupar: los bloques son de un minuto, asi que
+		// una peticion a las 12:04:59 y su respuesta a las 12:05:01 caian en
+		// bloques distintos y no llegaban a juntarse nunca.
+		for (const row of toTimelineRows(sorted)) {
+			// La fila cuelga del minuto en que empieza el intercambio.
+			const anchor = row.single ?? row.pair?.request;
+			if (!anchor) continue;
+
+			const date = new Date(anchor.timestamp);
 			if (Number.isNaN(date.getTime())) continue;
 
 			const timeKey = date.toLocaleString("es-CO", {
@@ -115,10 +129,10 @@ export const useLogStore = defineStore("logs", () => {
 					label: `Block ${blockCounter++}`,
 					timeDisplay: timeKey,
 					timeKey: timeKey,
-					events: [],
+					rows: [],
 				};
 			}
-			groups[timeKey].events.push(event);
+			groups[timeKey].rows.push(row);
 		}
 		return groups;
 	});
@@ -244,7 +258,8 @@ export const useLogStore = defineStore("logs", () => {
 		unrecognized.value = 0;
 		processedHashes.clear();
 		search.value = "";
-		levelFilter.value = "ALL";
+		outcomeFilter.value = "ALL";
+		facetFilters.value = {};
 		highlightedSessionId.value = null;
 		sessionIds.value = [];
 		sessionFilter.value = null;
@@ -262,7 +277,9 @@ export const useLogStore = defineStore("logs", () => {
 		activeTab,
 		parsingErrors,
 		search,
-		levelFilter,
+		outcomeFilter,
+		facetFilters,
+		facetBaseEvents,
 		highlightedSessionId,
 		isProcessing,
 		progress,

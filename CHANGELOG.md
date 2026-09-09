@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-09
+
+Revisión de UI/UX guiada por `docs/plan-ux.md`: se corrigen cuatro fallos de
+experiencia y se pone en pantalla la información que el parser ya resolvía.
+Requiere `p2p-log-parser@2.4.0`.
+
+### Fixed
+- **El contador de fallos y el filtro no describían el mismo conjunto.** El contador usaba `outcome.isError` y el filtro comparaba `level === "ERROR"`; como un rechazo del proveedor llega en `INFO`, el botón decía doce fallos y aparecían tres. Ambos comparten ahora el predicado `isFailure`, y el filtro de nivel pasa a ser de resultado.
+- **El logo borraba los datos.** El cuadro «P2P» de la cabecera llamaba a `clearLogsByApp` sin confirmación. Deja de ser botón, y «Clear Logs» confirma.
+- **No se podía añadir un log sin borrar el anterior.** El uploader solo existía en el estado vacío; ahora hay un botón permanente que lo abre en modal. El store ya acumulaba y deduplicaba.
+- **La búsqueda solo miraba `message` e `id`.** Ahora también el endpoint, la operación, el proveedor y los identificadores de `correlation`: pegar una referencia o un BIN encuentra sus eventos.
+- **Los intercambios no se agrupaban si cruzaban un minuto.** Se emparejaba dentro de cada bloque de la línea de tiempo, y los bloques son de un minuto. Ahora se empareja antes de agrupar.
+
+### Added
+- **Sistema de badges con ranuras fijas** (`getEventBadges`): resultado, transporte y dirección, servicio, origen, y simulador o fase. Presupuesto de cuatro en la tarjeta plegada, posiciones estables y color reservado al resultado. Pone en pantalla `transport`, `simulator`, `phase`, `channel`, `tag`, `operation` y `outcome.kind`, que no se veían en ningún sitio.
+- **Filtros por facetas** construidos sobre el lote: una faceta sin valores no se pinta, y la que se queda con uno solo se retira. Los recuentos se afinan con las demás facetas pero ignoran la propia, para que ningún valor anuncie resultados que luego no aparecen.
+- **Tarjeta única de intercambio** (`ExchangeCard`): petición y respuesta en dos columnas bajo una cabecera compartida, con botón de desplegado visible y clic en cualquier parte de la tarjeta.
+- **Líneas no reconocidas** (`stats.unrecognized`) visibles en la cabecera y en el modal de errores.
+- **Panel de proveedores** en la timeline REST, con peticiones por proveedor, los más lentos y los fallos del lote.
+
+### Changed
+- El embudo de sesión lee `metadata.sessions` en vez de deducir los pasos con `endpoint.includes(...)`.
+- `shared/types` reexporta la librería entera en vez de una lista escrita a mano que se quedaba corta.
+- Fuera `src/logic/types.ts`, un barrel que no importaba nadie.
+
 ## [1.3.0] - 2026-09-09
 
 Esta versión traslada al parser todo lo que la capa visual venía derivando por su

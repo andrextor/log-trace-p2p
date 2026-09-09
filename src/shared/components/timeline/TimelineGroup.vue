@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import type { LogEvent } from "../../../shared/types";
 import type { TimeGroup } from "../../../shared/types";
-import { type Exchange, toTimelineRows } from "../../ui/LogUIHelper";
 import LogCard from "../LogCard.vue";
+import ExchangeCard from "./ExchangeCard.vue";
 
 const props = defineProps<{
 	group: TimeGroup;
@@ -15,21 +15,6 @@ const props = defineProps<{
 defineEmits(["highlight-session"]);
 
 const sectionRef = ref<HTMLElement | null>(null);
-
-const rows = computed(() => toTimelineRows(props.group.events));
-
-const durationOf = (pair: Exchange) => {
-	const ms = pair.response.durationMs ?? pair.request.durationMs;
-	if (ms === undefined) return null;
-	return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${ms} ms`;
-};
-
-const expanded = ref(new Set<string>());
-const toggle = (key: string) => {
-	const next = new Set(expanded.value);
-	next.has(key) ? next.delete(key) : next.add(key);
-	expanded.value = next;
-};
 
 const scrollToGroup = () => {
 	sectionRef.value?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -63,7 +48,7 @@ const scrollToGroup = () => {
     </div>
   
     <div class="w-full space-y-5 relative animate-in slide-in-from-bottom-6">
-      <template v-for="row in rows" :key="row.single?.id ?? row.pair?.key">
+      <template v-for="row in group.rows" :key="row.single?.id ?? row.pair?.key">
         <LogCard
           v-if="row.single"
           :log="row.single"
@@ -71,33 +56,13 @@ const scrollToGroup = () => {
           @highlight-session="id => $emit('highlight-session', id)"
         />
 
-        <div v-else-if="row.pair" class="rounded-2xl border border-slate-200/70 dark:border-white/5 bg-slate-50/40 dark:bg-white/2 p-2 space-y-2">
-          <button
-            @click="toggle(row.pair.key)"
-            class="w-full flex items-center gap-2 px-2 py-1 text-left hover:opacity-80 transition-opacity"
-          >
-            <svg class="w-3 h-3 text-slate-400 transition-transform shrink-0" :class="expanded.has(row.pair.key) && 'rotate-90'" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7" /></svg>
-            <span class="text-[8px] font-black uppercase tracking-widest text-slate-400">Exchange</span>
-            <span v-if="durationOf(row.pair)" class="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-mono font-black">
-              {{ durationOf(row.pair) }}
-            </span>
-            <span class="text-[9px] text-slate-400 ml-auto">
-              {{ expanded.has(row.pair.key) ? 'Hide request' : 'Show request' }}
-            </span>
-          </button>
+        <ExchangeCard
+          v-else-if="row.pair"
+          :pair="row.pair"
+          :is-log-highlighted="isLogHighlighted"
+          @highlight-session="id => $emit('highlight-session', id)"
+        />
 
-          <LogCard
-            v-if="expanded.has(row.pair.key)"
-            :log="row.pair.request"
-            :is-highlighted="isLogHighlighted(row.pair.request)"
-            @highlight-session="id => $emit('highlight-session', id)"
-          />
-          <LogCard
-            :log="row.pair.response"
-            :is-highlighted="isLogHighlighted(row.pair.response)"
-            @highlight-session="id => $emit('highlight-session', id)"
-          />
-        </div>
       </template>
     </div>
   </section>
