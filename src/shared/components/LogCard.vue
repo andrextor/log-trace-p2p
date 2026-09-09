@@ -16,7 +16,6 @@ const emit =
 
 const cardComponents: Record<string, Component> = {
 	[APP_TYPES.CHECKOUT]: CheckoutLogCard,
-	[APP_TYPES.MICROSITIOS]: CheckoutLogCard,
 	[APP_TYPES.REST]: RestLogCard,
 };
 

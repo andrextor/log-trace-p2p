@@ -17,7 +17,6 @@ defineEmits<(e: "filter-id", id: string | number) => void>();
 // sin envolver cada mitad en su propia tarjeta.
 const bodies: Record<string, Component> = {
 	[APP_TYPES.CHECKOUT]: CheckoutBody,
-	[APP_TYPES.MICROSITIOS]: CheckoutBody,
 	[APP_TYPES.REST]: RestBody,
 };
 
