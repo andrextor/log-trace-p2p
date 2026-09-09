@@ -81,3 +81,29 @@ describe("getEventBadges", () => {
 		expect(getEventBadges(ev({ details: {} }))).toEqual([]);
 	});
 });
+
+describe("ranura de origen", () => {
+	it("distingue backend de frontend", () => {
+		expect(textOf(ev({ details: { source: "frontend" } }))).toContain(
+			"FRONTEND",
+		);
+		expect(textOf(ev({ details: { source: "BACKEND" } }))).toContain("BACKEND");
+	});
+
+	it("el filtro por ranura deja pedir solo lo de la cabecera", () => {
+		const event = ev({
+			category: "HTTP_REQ_OUT",
+			details: {
+				statusCode: 200,
+				method: "POST",
+				provider: "CORE_API",
+				source: "BACKEND",
+			},
+		});
+		const slots = getEventBadges(event, ["outcome", "service", "source"]).map(
+			(b) => b.slot,
+		);
+		expect(slots).toEqual(["outcome", "service", "source"]);
+		expect(slots).not.toContain("transport");
+	});
+});

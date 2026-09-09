@@ -7,7 +7,7 @@ import { APP_TYPES, type LogEvent } from "../types";
 export type BadgeTone = "danger" | "warn" | "ok" | "neutral" | "alert";
 
 export interface Badge {
-	slot: "outcome" | "transport" | "service" | "flow";
+	slot: "outcome" | "transport" | "service" | "source" | "flow";
 	text: string;
 	/** Nombre largo, para el tooltip. Un badge corto no puede mentir. */
 	title: string;
@@ -169,6 +169,18 @@ function serviceBadge(event: LogEvent): Badge | null {
 }
 
 /**
+ * De dónde salió el registro: `BACKEND` o `FRONTEND`. La tarjeta suelta ya lo
+ * pintaba por su cuenta; el intercambio lo había perdido al unificar las dos
+ * mitades en una sola cabecera.
+ */
+function sourceBadge(event: LogEvent): Badge | null {
+	const source = (event.details as { source?: string })?.source;
+	if (!source) return null;
+	const text = String(source).toUpperCase();
+	return { slot: "source", text, title: `Origen: ${text}`, tone: "neutral" };
+}
+
+/**
  * Ranura 4a — el simulador. Es la diferencia entre «el proveedor rechazó» y
  * «esto nunca salió de casa», así que gana a la fase del flujo y lleva color
  * propio pese a no ser un resultado.
@@ -237,11 +249,14 @@ export function getEventBadges(
 		outcomeBadge(event),
 		transportBadge(event),
 		serviceBadge(event),
+		sourceBadge(event),
 		simulatorBadge(event) ?? flowBadge(event),
 	].filter((b): b is Badge => b !== null);
 
 	// Un intercambio reparte las ranuras entre su cabecera y cada mitad, para no
-	// repetir el proveedor y la operación una vez por lado.
+	// repetir el proveedor y la operación una vez por lado. El presupuesto se
+	// aplica después de filtrar: sin `only`, `source` compite por sitio como
+	// cualquier otra y el corte deja fuera lo menos decisivo.
 	const wanted = only ? badges.filter((b) => only.includes(b.slot)) : badges;
 	return wanted.slice(0, BADGE_BUDGET);
 }

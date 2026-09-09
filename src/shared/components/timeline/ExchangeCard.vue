@@ -60,7 +60,7 @@ const hasBody = (event: Exchange["request"]) =>
       @click="isExpanded = !isExpanded"
       class="flex flex-wrap items-center gap-2 px-4 sm:px-5 py-3 pl-5 sm:pl-6 border-b border-slate-100 dark:border-white/5 cursor-pointer select-none"
     >
-      <EventBadges :log="pair.response" :only="['outcome', 'service', 'flow']" />
+      <EventBadges :log="pair.response" :only="['outcome', 'service', 'source', 'flow']" />
 
       <span class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-300 dark:text-slate-600">
         Exchange
