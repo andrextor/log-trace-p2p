@@ -131,7 +131,7 @@ lleva `outcome.isError: true`.
 
 Quitar el `@click` del cuadro «P2P». Si se quiere acción, que sea volver al
 uploader sin borrar. «Clear Logs» ya existe y debe pedir confirmación:
-`ConfirmationModal.vue` ya está en el repo y no lo usa nadie.
+`ConfirmationModal.vue` ya está en el repo, usado por `LogUploader`.
 
 ### 1.3 Añadir logs sin vaciar
 
