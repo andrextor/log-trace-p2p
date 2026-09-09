@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import type { ExceptionInfo, RestDetails } from "../types";
+import type { Outcome } from "../../../shared/types";
+import type { RestDetails } from "../types";
 
 const props = defineProps<{
 	details: RestDetails;
+	outcome?: Outcome;
 	isHighlighted: boolean;
 }>();
 
@@ -41,38 +43,28 @@ const contextChips = computed(() => {
 		}));
 });
 
+const ERROR_TITLES: Record<string, string> = {
+	exception: "System / Transport Exception",
+	business: "Provider Rejection",
+	http: "HTTP Failure",
+	validation: "Invalid Request",
+};
+
+// El parser ya resolvió qué falló y por qué. Antes esto volvía a recorrer el
+// payload buscando `dinError`, con las claves en inglés — que es justo lo que
+// los proveedores no emiten.
 const errorDetail = computed(() => {
-	if (props.details.exception) {
-		const exc = props.details.exception;
-		return {
-			title: "System / Guzzle Exception",
-			message: exc.message,
-			code: props.details.statusCode || 500,
-			sub: `File: ${exc.file?.split("/").pop()}:${exc.line || "?"}`,
-		};
-	}
+	const outcome = props.outcome;
+	if (!outcome?.isError) return null;
 
-	const payloadData = props.details.payload as Record<string, unknown>;
-	const ctx = (payloadData?.context as Record<string, unknown>)?.data as
-		| Record<string, unknown>
-		| undefined;
-	const source = ctx || payloadData;
-	const bizError = (source?.dinError || source?.error) as
-		| Record<string, unknown>
-		| undefined;
-
-	if (bizError && bizError.codigo !== "0000" && bizError.codigo !== undefined) {
-		return {
-			title: `Provider Error [${props.details.provider}]`,
-			message: String(
-				bizError.mensaje || bizError.message || "Operation rejected",
-			),
-			code: bizError.codigo,
-			sub: String(bizError.detalle || "Check JSON trace for more details"),
-		};
-	}
-
-	return null;
+	return {
+		title: ERROR_TITLES[outcome.kind ?? ""] ?? "Failure",
+		message: outcome.message ?? "Operation rejected",
+		code: outcome.code ?? outcome.httpStatus ?? "—",
+		sub: outcome.exception
+			? `${outcome.exception.class ?? ""} · ${outcome.exception.file?.split("/").pop()}:${outcome.exception.line ?? "?"}`
+			: null,
+	};
 });
 
 async function copyJSON() {

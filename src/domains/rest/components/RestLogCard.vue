@@ -41,14 +41,19 @@ const essentialIdentifiers = computed(() => {
 	].filter((c) => c.value);
 });
 
-const isErrorState = computed(() => {
-	const code = Number(props.log.details?.statusCode);
-	return (
+// El parser resuelve el resultado; el nivel y la categoría se quedan cortos
+// porque un rechazo del proveedor llega como INFO o WARNING.
+const isErrorState = computed(
+	() =>
+		props.log.outcome?.isError ||
 		props.log.level === "ERROR" ||
-		props.log.level === "CRITICAL" ||
-		props.log.category === "ERROR" ||
-		code >= 400
-	);
+		props.log.level === "CRITICAL",
+);
+
+const duration = computed(() => {
+	const ms = props.log.durationMs;
+	if (ms === undefined) return null;
+	return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${ms} ms`;
 });
 
 const statusCodeStyle = computed(() => {
@@ -191,6 +196,11 @@ const handleIdentifierClick = (idValue: string | number) => {
 
         <div class="flex flex-col items-end shrink-0 gap-1 mt-1 sm:mt-0">
            <div class="flex items-center gap-1.5 text-slate-400 opacity-80">
+              <span v-if="duration"
+                    class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 font-mono text-[9px] font-bold text-slate-500 dark:text-slate-400"
+                    title="Tiempo entre la petición y su respuesta">
+                {{ duration }}
+              </span>
               <span class="font-mono text-[10px] sm:text-[11px] tracking-tight">
                 {{ formattedTime }}
               </span>
@@ -270,6 +280,7 @@ const handleIdentifierClick = (idValue: string | number) => {
           <div class="p-4 sm:p-6 lg:p-8">
             <RestBody
               :details="log.details as RestDetails"
+              :outcome="log.outcome"
               :is-highlighted="isHighlighted"
               @filter-id="handleFilterId"
             />
