@@ -56,7 +56,10 @@ const hasBody = (event: Exchange["request"]) =>
 
     <!-- Cabecera del intercambio: lo que comparten las dos mitades, para no
          repetir proveedor y operación una vez por lado. -->
-    <div class="flex flex-wrap items-center gap-2 px-4 sm:px-5 py-3 pl-5 sm:pl-6 border-b border-slate-100 dark:border-white/5">
+    <div
+      @click="isExpanded = !isExpanded"
+      class="flex flex-wrap items-center gap-2 px-4 sm:px-5 py-3 pl-5 sm:pl-6 border-b border-slate-100 dark:border-white/5 cursor-pointer select-none"
+    >
       <EventBadges :log="pair.response" :only="['outcome', 'service', 'flow']" />
 
       <span class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-300 dark:text-slate-600">
@@ -76,7 +79,7 @@ const hasBody = (event: Exchange["request"]) =>
         </span>
 
         <button
-          @click="isExpanded = !isExpanded"
+          @click.stop="isExpanded = !isExpanded"
           class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-wide transition-all active:scale-95"
           :class="isExpanded
             ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
@@ -105,6 +108,7 @@ const hasBody = (event: Exchange["request"]) =>
         :key="side.key"
         class="min-w-0 p-4 sm:p-5 pl-5 sm:pl-6"
       >
+        <div @click="isExpanded = !isExpanded" class="cursor-pointer select-none">
         <div class="flex items-center gap-2 mb-2 flex-wrap">
           <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-white/10 border border-slate-300/60 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-200">
             <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -126,6 +130,7 @@ const hasBody = (event: Exchange["request"]) =>
         >
           {{ side.event.message }}
         </h3>
+        </div>
 
         <div
           class="grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
