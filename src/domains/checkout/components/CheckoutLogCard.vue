@@ -121,15 +121,15 @@ const handleCopyId = async (idValue: string | number) => {
            
            <div v-if="displaySource" title="Event Source" class="flex items-center gap-1.5 bg-slate-50 dark:bg-black/20 px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 shadow-sm">
               <div class="w-1.5 h-1.5 rounded-full" :class="displaySource === 'FRONTEND' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]'"></div>
-              <span class="text-[9px] font-black tracking-widest text-slate-500 dark:text-slate-400">{{ displaySource }}</span>
+              <span class="text-[9px] font-black tracking-widest text-slate-600 dark:text-slate-400">{{ displaySource }}</span>
            </div>
 
            <div v-if="displaySubType" class="hidden sm:flex items-center gap-1.5 bg-slate-50 dark:bg-white/[0.02] px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 shadow-sm">
-              <span class="text-[9px] font-mono font-bold uppercase text-slate-400">{{ displaySubType }}</span>
+              <span class="text-[9px] font-mono font-bold uppercase text-slate-600 dark:text-slate-400">{{ displaySubType }}</span>
            </div>
 
            <div v-if="stateTransition" title="State Pipeline" class="flex items-center gap-1.5 bg-slate-50 dark:bg-black/20 px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 shadow-sm">
-              <span class="text-[9px] font-mono font-bold text-slate-500 dark:text-slate-400 truncate max-w-[80px] sm:max-w-[100px]">{{ stateTransition.actual }}</span>
+              <span class="text-[9px] font-mono font-bold text-slate-600 dark:text-slate-400 truncate max-w-[80px] sm:max-w-[100px]">{{ stateTransition.actual }}</span>
               <svg class="w-3 h-3 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
               <span class="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[80px] sm:max-w-[100px]">{{ stateTransition.target }}</span>
            </div>
@@ -140,7 +140,7 @@ const handleCopyId = async (idValue: string | number) => {
                    class="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-indigo-500/10 px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 hover:border-indigo-500/30 transition-all shadow-sm group/id"
                    :title="id.label === 'Trace' ? 'Filter & copy Trace ID' : `Copy ${id.label}`">
               <span class="text-[9px] font-black uppercase transition-colors flex items-center gap-1"
-                    :class="{ 'text-emerald-500': copiedId === String(id.value), 'text-slate-400 group-hover/id:text-indigo-500': copiedId !== String(id.value) }">
+                    :class="{ 'text-emerald-500': copiedId === String(id.value), 'text-slate-600 dark:text-slate-400 group-hover/id:text-indigo-500': copiedId !== String(id.value) }">
                 <svg v-if="copiedId === String(id.value)" class="w-3 h-3 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
                 <template v-else>{{ id.label }}</template>
               </span>
@@ -156,7 +156,7 @@ const handleCopyId = async (idValue: string | number) => {
              <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
              Tracing
            </span>
-           <div class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 group-hover:bg-indigo-500 group-hover:border-indigo-500 group-hover:text-white text-slate-400 transition-all duration-300 shadow-sm relative"
+           <div class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 group-hover:bg-indigo-500 group-hover:border-indigo-500 group-hover:text-white text-slate-600 dark:text-slate-400 transition-all duration-300 shadow-sm relative"
                 :class="{ 'ring-2 ring-indigo-500/20': hasBodyContent && !isExpanded }">
               <div v-if="hasBodyContent && !isExpanded" class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_6px_rgba(99,102,241,0.6)]"></div>
               <svg class="w-4 h-4 transform transition-transform duration-300" 

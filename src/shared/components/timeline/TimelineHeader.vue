@@ -49,7 +49,7 @@ const activeSessionInfo = computed(() => {
   <header class="shrink-0 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
     <div class="flex items-center gap-3 w-full md:w-auto flex-1">
       <div class="relative group flex-1 max-w-md">
-        <span class="absolute left-3.5 top-3 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+        <span class="absolute left-3.5 top-3 text-slate-600 dark:text-slate-400 group-focus-within:text-indigo-500 transition-colors">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -61,7 +61,7 @@ const activeSessionInfo = computed(() => {
           aria-label="Search traces"
           class="w-full bg-white dark:bg-[#0a0a0b] border border-slate-200 dark:border-white/10 pl-10 pr-10 py-2.5 rounded-xl text-sm font-medium outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/5 transition-all shadow-sm" 
         />
-        <button v-if="search" @click="emit('clearSearch')" class="absolute right-3 top-3 text-slate-300 hover:text-slate-500" aria-label="Clear search">
+        <button v-if="search" @click="emit('clearSearch')" class="absolute right-3 top-3 text-slate-500 dark:text-slate-300 hover:text-slate-500" aria-label="Clear search">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
@@ -90,7 +90,7 @@ const activeSessionInfo = computed(() => {
 
     <div class="flex items-center gap-6">
       <div class="flex flex-col items-end">
-        <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Results</span>
+        <span class="text-[9px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Results</span>
         <span class="text-sm font-mono font-bold text-slate-700 dark:text-indigo-400">{{ visibleCount.toLocaleString('es-ES') }}</span>
       </div>
       

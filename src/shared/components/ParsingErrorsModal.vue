@@ -46,7 +46,7 @@ const copyAll = async () => {
             </div>
             <div>
               <h3 class="text-lg font-bold text-slate-800 dark:text-white">Errores de Lectura</h3>
-              <p class="text-xs text-slate-500 dark:text-slate-400">
+              <p class="text-xs text-slate-600 dark:text-slate-400">
                 <template v-if="errors.length">Se encontraron {{ errors.length }} líneas con formato desconocido.</template>
                 <template v-else>Ninguna línea falló, pero hay texto que no produjo eventos.</template>
               </p>
@@ -68,7 +68,7 @@ const copyAll = async () => {
             <p class="text-xs font-bold text-amber-700 dark:text-amber-400">
               {{ unrecognized }} {{ unrecognized === 1 ? 'unidad no reconocida' : 'unidades no reconocidas' }}
             </p>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+            <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
               Ninguna estrategia las convirtió en evento. Si el número es alto, suele
               ser que se eligió la aplicación equivocada o que el export trae un
               formato todavía no soportado. La cabecera de un CSV cuenta aquí.

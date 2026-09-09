@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-09
+
+Cierra el plan de UI/UX (`docs/plan-ux.md`): fases 4, 5 y 6.
+
+### Added
+- **Franja de contexto del lote**: ventana temporal, total, fallos, líneas sin reconocer y reparto por categoría, bajo la barra de control. Se calcula sobre los eventos de la pestaña activa y no sobre `ParseStats`, porque este describe una sola llamada al parser mientras el store acumula varias subidas.
+- **El panel de proveedores navega**: pulsar un proveedor —o uno de sus fallos— enciende y apaga su faceta. Acciona el filtro que ya existía en vez de estrenar uno propio.
+
+### Changed
+- **Jerarquía de la tarjeta**: cabecera común (`LogCardHeader`) para los dos dominios, con el mensaje como único elemento con peso tipográfico, la fila de badges deliberadamente tenue y la ruta recortada por el centro, que conserva la cola —que es lo que identifica una llamada—. `durationMs` sube a la cabecera también en Checkout.
+- La hora se formatea igual en las tarjetas y en el intercambio; antes eran dos relojes distintos en la misma pantalla.
+- **Micrositios sale de la interfaz.** La librería solo le ofrece un formato frente a los cinco de Checkout y los tres de REST, así que sus eventos salen sin enriquecer. Se le dará pestaña cuando tenga estrategias propias. Cae también `AnalyzerSelector.vue`, que no importaba nadie.
+
+### Changed
+- **El payload se ve entero al desplegar la tarjeta.** Tenía un tope de 384px con scroll propio dentro del acordeón, así que un JSON de treinta líneas —el tamaño normal de una petición— obligaba a desplazar dentro de algo que ya estabas desplazando. El scroll horizontal se queda: una línea larga no debe romper el ancho.
+
+### Fixed
+- **El modo claro no se leía.** Los grises de texto usaban `slate-400`, que sobre blanco da 2.56:1 —muy por debajo del 4.5:1 que exige WCAG AA—, y los badges tiraban de `emerald-600` (3.77:1) y `orange-600` (3.56:1). Los tonos suben a `slate-600` y a la familia `-700`, y el neutro de los badges gana fondo y borde propios. El modo oscuro se revisó con el mismo método y estaba bien salvo tres sitios: la ruta y el bloque de raw log usaban `slate-500` (3.80:1 sobre la tarjeta oscura) y la etiqueta «Exchange» usaba `slate-600` (2.38:1). Pasan a `slate-400`, que da 7.05:1. El resto de la paleta oscura —incluidos los tonos de color y el JSON en verde sobre negro— ya superaba el mínimo con holgura.
+- **La deduplicación perdía eventos.** `processedHashes` usaba `timestamp + los primeros 60 caracteres del mensaje`, así que dos peticiones seguidas a la misma ruta que solo se diferencian en el identificador del final colisionaban y se descartaba una, en silencio. Ahora la clave es `event.id`, que el parser deriva del contenido completo y de la traza.
+
 ## [1.4.0] - 2026-09-09
 
 Revisión de UI/UX guiada por `docs/plan-ux.md`: se corrigen cuatro fallos de

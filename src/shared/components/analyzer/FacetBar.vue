@@ -36,7 +36,7 @@ const toggleExpand = (key: string) => {
 <template>
   <div v-if="facets.length" class="flex flex-wrap items-start gap-x-5 gap-y-2 pt-2">
     <div v-for="facet in facets" :key="facet.key" class="flex items-center gap-1.5 flex-wrap">
-      <span class="text-[8px] font-black uppercase tracking-[0.15em] text-slate-400 mr-0.5">
+      <span class="text-[8px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-400 mr-0.5">
         {{ facet.label }}
       </span>
 
@@ -48,7 +48,7 @@ const toggleExpand = (key: string) => {
         class="flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide border transition-all"
         :class="isOn(facet.key, v.value)
           ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
-          : 'bg-white dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-indigo-500/30 hover:text-indigo-500'"
+          : 'bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-indigo-500/30 hover:text-indigo-500'"
       >
         <span class="max-w-[140px] truncate">{{ v.label }}</span>
         <span class="font-mono opacity-60">{{ v.count }}</span>
@@ -57,7 +57,7 @@ const toggleExpand = (key: string) => {
       <button
         v-if="facet.values.length > VISIBLE"
         @click="toggleExpand(facet.key)"
-        class="px-1.5 py-0.5 text-[9px] font-black text-slate-400 hover:text-indigo-500 transition-colors"
+        class="px-1.5 py-0.5 text-[9px] font-black text-slate-600 dark:text-slate-400 hover:text-indigo-500 transition-colors"
       >
         {{ expanded.has(facet.key) ? '−' : `+${facet.values.length - VISIBLE}` }}
       </button>
@@ -66,7 +66,7 @@ const toggleExpand = (key: string) => {
     <button
       v-if="selectedCount"
       @click="store.facetFilters = {}"
-      class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wide text-slate-400 hover:text-red-500 transition-colors"
+      class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wide text-slate-600 dark:text-slate-400 hover:text-red-500 transition-colors"
     >
       Clear {{ selectedCount }}
     </button>

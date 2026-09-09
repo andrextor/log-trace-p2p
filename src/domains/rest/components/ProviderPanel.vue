@@ -52,17 +52,17 @@ const filterByProvider = (name: string) => {
           <span class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">
             Providers
           </span>
-          <span class="text-[9px] font-mono font-bold text-slate-400">
+          <span class="text-[9px] font-mono font-bold text-slate-600 dark:text-slate-400">
             {{ meta.totalRequests }} req · {{ providers.length }} prov
             <template v-if="meta.errors.length"> · {{ meta.errors.length }} err</template>
           </span>
         </div>
-        <svg class="w-4 h-4 text-slate-400 transition-transform" :class="isOpen && 'rotate-180'" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" /></svg>
+        <svg class="w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform" :class="isOpen && 'rotate-180'" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" /></svg>
       </button>
 
       <div v-if="isOpen" class="grid gap-5 p-4 pt-1 border-t border-slate-100 dark:border-white/5 md:grid-cols-3">
         <div class="space-y-1.5">
-          <span class="text-[8px] font-black uppercase tracking-widest text-slate-400">Requests</span>
+          <span class="text-[8px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">Requests</span>
           <button
             v-for="p in providers"
             :key="p.name"
@@ -76,7 +76,7 @@ const filterByProvider = (name: string) => {
                 class="font-mono font-bold truncate"
                 :class="isActive(p.name) ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300'"
               >{{ p.name }}</span>
-              <span class="font-mono text-slate-400">{{ p.count }}</span>
+              <span class="font-mono text-slate-600 dark:text-slate-400">{{ p.count }}</span>
             </div>
             <div class="h-1 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
               <div
@@ -89,8 +89,8 @@ const filterByProvider = (name: string) => {
         </div>
 
         <div class="space-y-1.5">
-          <span class="text-[8px] font-black uppercase tracking-widest text-slate-400">Slowest</span>
-          <p v-if="!meta.slowest.length" class="text-[10px] text-slate-400 italic">Sin duraciones emparejadas.</p>
+          <span class="text-[8px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">Slowest</span>
+          <p v-if="!meta.slowest.length" class="text-[10px] text-slate-600 dark:text-slate-400 italic">Sin duraciones emparejadas.</p>
           <div v-for="(x, i) in meta.slowest" :key="`${x.provider}-${x.operation}-${i}`"
                class="flex justify-between gap-2 text-[10px]">
             <span class="font-mono text-slate-600 dark:text-slate-300 truncate">
@@ -101,8 +101,8 @@ const filterByProvider = (name: string) => {
         </div>
 
         <div class="space-y-1.5">
-          <span class="text-[8px] font-black uppercase tracking-widest text-slate-400">Failures</span>
-          <p v-if="!meta.errors.length" class="text-[10px] text-slate-400 italic">Ningún fallo en el lote.</p>
+          <span class="text-[8px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">Failures</span>
+          <p v-if="!meta.errors.length" class="text-[10px] text-slate-600 dark:text-slate-400 italic">Ningún fallo en el lote.</p>
           <button v-for="(e, i) in meta.errors" :key="`${e.provider}-${e.ts}-${i}`"
                @click="filterByProvider(e.provider)"
                :title="`Filtrar por ${e.provider}`"
@@ -111,7 +111,7 @@ const filterByProvider = (name: string) => {
               <span class="font-mono font-bold text-rose-500 shrink-0">{{ e.code ?? '—' }}</span>
               <span class="font-mono text-slate-600 dark:text-slate-300 truncate">{{ e.provider }} · {{ e.operation }}</span>
             </div>
-            <p class="text-slate-400 truncate">{{ e.message }}</p>
+            <p class="text-slate-600 dark:text-slate-400 truncate">{{ e.message }}</p>
           </button>
         </div>
       </div>

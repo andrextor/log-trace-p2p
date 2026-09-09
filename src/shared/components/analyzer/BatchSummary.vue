@@ -37,14 +37,14 @@ const filterByCategory = (key: string) => {
 
 <template>
   <div v-if="summary.total" class="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-2 text-[10px]">
-    <div v-if="window" class="flex items-center gap-1.5 font-mono text-slate-500 dark:text-slate-400">
-      <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+    <div v-if="window" class="flex items-center gap-1.5 font-mono text-slate-600 dark:text-slate-400">
+      <svg class="w-3 h-3 text-slate-600 dark:text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
       {{ window.from }} → {{ window.to }}
-      <span class="text-slate-400">·</span>
+      <span class="text-slate-600 dark:text-slate-400">·</span>
       <span class="font-bold">{{ window.span }}</span>
     </div>
 
-    <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+    <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
       <span><span class="font-mono font-bold">{{ summary.total }}</span> eventos</span>
       <span v-if="summary.failures" class="text-rose-600 dark:text-rose-400">
         <span class="font-mono font-bold">{{ summary.failures }}</span> con fallo
@@ -63,12 +63,12 @@ const filterByCategory = (key: string) => {
         class="flex items-center gap-1 px-1.5 py-0.5 rounded-md border transition-colors"
         :class="isActive(c.key)
           ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
-          : 'bg-white dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-indigo-500/30'"
+          : 'bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-indigo-500/30'"
       >
         <span class="uppercase tracking-wide font-bold">{{ c.label }}</span>
         <span class="font-mono opacity-60">{{ c.count }}</span>
       </button>
-      <span v-if="hidden" class="text-slate-400" :title="summary.byCategory.slice(VISIBLE).map(c => `${c.label} ${c.count}`).join(' · ')">
+      <span v-if="hidden" class="text-slate-600 dark:text-slate-400" :title="summary.byCategory.slice(VISIBLE).map(c => `${c.label} ${c.count}`).join(' · ')">
         +{{ hidden }}
       </span>
     </div>

@@ -17,7 +17,7 @@ const props = defineProps<{
     <div class="flex items-center justify-between mb-2.5 px-1">
       <div class="flex items-center gap-2">
         <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
-        <h4 class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">
+        <h4 class="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">
           Formatos Soportados / {{ ANALYZER_NAMES[targetType] }}
         </h4>
       </div>
@@ -45,7 +45,7 @@ const props = defineProps<{
           <div v-else class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors"></div>
           
           <span class="text-[9px] uppercase tracking-wider transition-colors"
-                :class="detectedFormatName && format.name.includes(detectedFormatName) ? 'font-black text-emerald-600 dark:text-emerald-400 drop-shadow-sm' : 'font-bold text-slate-500 dark:text-slate-400'">
+                :class="detectedFormatName && format.name.includes(detectedFormatName) ? 'font-black text-emerald-600 dark:text-emerald-400 drop-shadow-sm' : 'font-bold text-slate-600 dark:text-slate-400'">
             {{ format.name }}
           </span>
         </div>

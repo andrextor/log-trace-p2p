@@ -39,7 +39,7 @@ const sessions = computed(() => {
           </svg>
           <span class="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-[0.2em]">Session Explorer</span>
         </div>
-        <button @click="emit('update:show', false)" class="p-1 rounded-md hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+        <button @click="emit('update:show', false)" class="p-1 rounded-md hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
         </button>
       </div>
@@ -52,7 +52,7 @@ const sessions = computed(() => {
             placeholder="Search sessions..." 
             class="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-[#1a1b1e] border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 outline-none transition-all placeholder:text-slate-400"
           />
-          <svg class="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
@@ -68,7 +68,7 @@ const sessions = computed(() => {
             : 'bg-white dark:bg-[#131315] text-slate-500 border-slate-200 dark:border-white/5 hover:border-indigo-400/50 hover:bg-slate-50 dark:hover:bg-[#1a1b1e]'"
         >
           <span>All Sessions</span>
-          <span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-black/30 text-[9px] font-bold border border-slate-200 dark:border-white/5" :class="!store.sessionFilter ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'">{{ store.sessionIds.length }}</span>
+          <span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-black/30 text-[9px] font-bold border border-slate-200 dark:border-white/5" :class="!store.sessionFilter ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400'">{{ store.sessionIds.length }}</span>
         </button>
 
         <div v-if="store.sessionIds.length > 1" class="h-px bg-slate-200/50 dark:bg-white/5 my-3 mx-2"></div>
@@ -79,7 +79,7 @@ const sessions = computed(() => {
           class="w-full text-left p-3 rounded-xl transition-all border group/sid relative overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
           :class="store.sessionFilter === session.id 
             ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 border-indigo-400 scale-[1.02] z-10'
-            : 'bg-white dark:bg-[#131315] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/5 hover:border-indigo-400/50 hover:shadow-md shadow-sm'"
+            : 'bg-white dark:bg-[#131315] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/5 hover:border-indigo-400/50 hover:shadow-md shadow-sm'"
         >
           <div class="relative z-10 space-y-2">
             <div class="flex items-center justify-between">
@@ -89,7 +89,7 @@ const sessions = computed(() => {
                     <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
                  </div>
                  <span class="text-[9px] font-black shrink-0 px-1.5 py-0.5 rounded-lg border transition-colors"
-                      :class="store.sessionFilter === session.id ? 'bg-indigo-400/30 text-white border-white/20' : 'bg-slate-100/50 dark:bg-black/30 text-slate-400 border-slate-200/50 dark:border-white/5'">
+                      :class="store.sessionFilter === session.id ? 'bg-indigo-400/30 text-white border-white/20' : 'bg-slate-100/50 dark:bg-black/30 text-slate-600 dark:text-slate-400 border-slate-200/50 dark:border-white/5'">
                   {{ session.eventCount }}
                 </span>
               </div>
@@ -104,7 +104,7 @@ const sessions = computed(() => {
                 </span>
                 <span v-if="session.metadata?.finalState !== 'UNDEFINED'" 
                       class="text-[9px] font-bold uppercase tracking-tighter"
-                      :class="store.sessionFilter === session.id ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'">
+                      :class="store.sessionFilter === session.id ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'">
                   {{ session.metadata?.finalState }}
                 </span>
               </div>
