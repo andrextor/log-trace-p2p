@@ -133,11 +133,32 @@ export function truncateMiddle(text: string, max = 44): string {
 	return `${text.slice(0, head)}…${text.slice(text.length - (keep - head))}`;
 }
 
-/** La hora del evento, sin fecha ni desfase horario. */
-export function formatEventTime(timestamp: string): string {
-	const timePart = String(timestamp).split("T")[1];
-	if (!timePart) return String(timestamp);
-	return timePart.split("-")[0].split("+")[0];
+/**
+ * Zona en la que se emiten los logs de producción de Placetopay.
+ *
+ * Se fija aquí en vez de dejar que cada navegador use la suya: dos personas
+ * mirando la misma traza tienen que leer las mismas horas, y las que aparecen
+ * en el log crudo son estas.
+ */
+export const LOG_TZ = "America/Bogota";
+
+/**
+ * La hora del evento, sin fecha ni desfase horario.
+ *
+ * Se rinde desde `ts` —el epoch, siempre en UTC— y no desde el texto
+ * `timestamp`: ese trae la hora local de cada archivo de log, así que una
+ * marca en `Z` y otra en `-05:00` se mostraban con cinco horas de diferencia
+ * dentro de la misma traza. El texto solo se usa como respaldo cuando el
+ * evento llegó sin fecha reconocible.
+ */
+export function formatEventTime(ts: number, fallback = ""): string {
+	if (!Number.isFinite(ts)) return fallback;
+
+	const time = new Date(ts).toLocaleTimeString("en-GB", {
+		timeZone: LOG_TZ,
+		hour12: false,
+	});
+	return `${time}.${String(((ts % 1000) + 1000) % 1000).padStart(3, "0")}`;
 }
 
 /** `durationMs` en la unidad que se lee de un vistazo. */

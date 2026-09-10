@@ -12,8 +12,7 @@ const window = computed(() => {
 	const { from, to, spanMs } = summary.value;
 	if (from === undefined || to === undefined || spanMs === undefined)
 		return null;
-	const iso = (ms: number) =>
-		formatEventTime(new Date(ms).toISOString()).slice(0, 8);
+	const iso = (ms: number) => formatEventTime(ms).slice(0, 8);
 	return { from: iso(from), to: iso(to), span: formatSpan(spanMs) };
 });
 </script>

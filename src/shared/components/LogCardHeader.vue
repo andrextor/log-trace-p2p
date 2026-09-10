@@ -15,7 +15,7 @@ const props = defineProps<{
 }>();
 
 const isErrorState = computed(() => isFailure(props.log));
-const time = computed(() => formatEventTime(props.log.timestamp));
+const time = computed(() => formatEventTime(props.log.ts, props.log.timestamp));
 const duration = computed(() => formatDuration(props.log.durationMs));
 
 const endpoint = computed(() => {

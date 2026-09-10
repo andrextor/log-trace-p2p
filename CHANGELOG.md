@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-09-10
+
+### Fixed
+- **Las horas de la traza se leían en zonas distintas.** La hora de cada tarjeta
+  salía de recortar el texto `timestamp`, que trae la hora local del archivo de
+  log de origen: las líneas del SDK vienen en `-05:00` y las de `http.log` en
+  UTC, así que un request de las `13:35:41` aparecía respondido a las
+  `18:35:45`. Ahora se rinde desde `ts` —el epoch, siempre en UTC— y se muestra
+  en `America/Bogota`, la zona en que se emiten los logs.
+- **El bloque de un minuto dependía del navegador.** `toLocaleString` sin zona
+  usa la de la máquina, así que la misma traza se repartía en bloques distintos
+  según quién la mirara. Va con la zona fija.
+- **La ventana temporal del resumen del lote salía en UTC**, por convertir el
+  epoch a ISO antes de formatearlo.
+
+### Changed
+- `formatEventTime` recibe el epoch (`ts`) y un texto de respaldo, en vez de la
+  marca de tiempo en texto. La precisión mostrada es de milisegundos: los
+  microsegundos que traían algunas líneas no sobreviven al epoch.
+
 ## [1.6.0] - 2026-09-09
 
 ### Changed
