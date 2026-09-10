@@ -12,6 +12,7 @@ import type {
 	ViewMode,
 } from "../shared/types";
 import {
+	LOG_TZ,
 	eventMatchesText,
 	isFailure,
 	isMatch,
@@ -119,10 +120,14 @@ export const useLogStore = defineStore("logs", () => {
 			const anchor = row.single ?? row.pair?.request;
 			if (!anchor) continue;
 
-			const date = new Date(anchor.timestamp);
+			// Desde `ts` y con la zona fija de los logs: `timestamp` trae la hora
+			// local de cada archivo y `toLocaleString` sin zona usa la del
+			// navegador, así que el bloque cambiaba según quién mirara la traza.
+			const date = new Date(anchor.ts);
 			if (Number.isNaN(date.getTime())) continue;
 
 			const timeKey = date.toLocaleString("es-CO", {
+				timeZone: LOG_TZ,
 				year: "numeric",
 				month: "2-digit",
 				day: "2-digit",

@@ -121,15 +121,25 @@ describe("truncateMiddle", () => {
 });
 
 describe("formatEventTime", () => {
-	it("se queda con la hora, sin fecha ni desfase", () => {
-		expect(formatEventTime("2026-09-09T14:36:49.407136-05:00")).toBe(
-			"14:36:49.407136",
+	it("se queda con la hora, en la zona de los logs", () => {
+		expect(formatEventTime(Date.parse("2026-09-09T14:36:49.407-05:00"))).toBe(
+			"14:36:49.407",
 		);
-		expect(formatEventTime("2026-09-09T14:36:49.000Z")).toBe("14:36:49.000Z");
 	});
 
-	it("devuelve el original si no reconoce la forma", () => {
-		expect(formatEventTime("sin hora")).toBe("sin hora");
+	it("muestra el mismo instante igual venga en Z o con desfase", () => {
+		// El bug: la línea del SDK traía -05:00 y la de http.log Z, así que la
+		// misma traza mostraba un salto de cinco horas entre request y response.
+		const conDesfase = Date.parse("2026-08-28T13:35:45.554-05:00");
+		const enZulu = Date.parse("2026-08-28T18:35:45.554Z");
+		expect(conDesfase).toBe(enZulu);
+		expect(formatEventTime(conDesfase)).toBe(formatEventTime(enZulu));
+		expect(formatEventTime(enZulu)).toBe("13:35:45.554");
+	});
+
+	it("cae al texto original cuando el evento llegó sin fecha", () => {
+		expect(formatEventTime(Number.NaN, "sin hora")).toBe("sin hora");
+		expect(formatEventTime(Number.NaN)).toBe("");
 	});
 });
 

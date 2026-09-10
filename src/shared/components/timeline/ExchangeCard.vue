@@ -38,7 +38,8 @@ const duration = computed(() =>
 
 // El mismo formato que las tarjetas sueltas: dos relojes distintos en la misma
 // pantalla obligan a traducir mentalmente entre uno y otro.
-const timeOf = formatEventTime;
+const timeOf = (event: Exchange["request"]) =>
+	formatEventTime(event.ts, event.timestamp);
 
 const hasBody = (event: Exchange["request"]) =>
 	Boolean((event.details as { payload?: unknown })?.payload);
@@ -80,7 +81,7 @@ const hasBody = (event: Exchange["request"]) =>
           {{ duration }}
         </span>
         <span class="font-mono text-[11px] text-slate-600 dark:text-slate-400 tracking-tight">
-          {{ timeOf(pair.request.timestamp) }}
+          {{ timeOf(pair.request) }}
         </span>
 
         <button
@@ -125,7 +126,7 @@ const hasBody = (event: Exchange["request"]) =>
           <EventBadges :log="side.event" :only="['transport']" />
 
           <span class="font-mono text-[10px] text-slate-600 dark:text-slate-400 ml-auto">
-            {{ timeOf(side.event.timestamp) }}
+            {{ timeOf(side.event) }}
           </span>
         </div>
 
