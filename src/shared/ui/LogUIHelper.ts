@@ -220,6 +220,19 @@ export function isFailure(event: LogEvent): boolean {
 }
 
 /**
+ * Si hay algo que pintar bajo la cabecera: un payload, o un resultado que
+ * `OutcomeAlert` va a explicar. Sin esto, la tarjeta abierta arrastraba un
+ * cuerpo vacío con su borde y su relleno.
+ */
+export function hasBody(event: LogEvent): boolean {
+	return Boolean(
+		(event.details as { payload?: unknown })?.payload ||
+			event.outcome?.isError ||
+			event.outcome?.status === "REJECTED",
+	);
+}
+
+/**
  * Texto sobre el que busca el filtro libre. Antes solo miraba `message` e `id`,
  * así que pegar una referencia o un BIN —que el parser ya tiene resueltos en
  * `correlation`— no encontraba nada.

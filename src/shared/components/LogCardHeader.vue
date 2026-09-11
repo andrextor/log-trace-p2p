@@ -11,7 +11,6 @@ import EventBadges from "./EventBadges.vue";
 
 const props = defineProps<{
 	log: LogEvent;
-	isExpanded: boolean;
 }>();
 
 const isErrorState = computed(() => isFailure(props.log));
