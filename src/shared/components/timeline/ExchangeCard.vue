@@ -111,7 +111,7 @@ const payloadOf = (event: Exchange["request"]) =>
         </div>
 
         <h3
-          class="font-bold text-[14px] sm:text-[15px] leading-tight text-slate-800 dark:text-slate-100"
+          class="font-bold text-[14px] sm:text-[15px] leading-tight wrap-anywhere text-slate-800 dark:text-slate-100"
           :class="{ 'text-rose-600 dark:text-rose-400': isFailure(side.event) }"
         >
           {{ side.event.message }}
