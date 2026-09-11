@@ -184,7 +184,7 @@ const ids = computed(() =>
           {{ row.detail }}
         </span>
 
-        <PayloadPeek :id="row.event.id" :payload="payloadOf(row.event)" />
+        <PayloadPeek :id="row.event.id" :payload="payloadOf(row.event)" :title="labelOf(row.event)" :time="timeOf(row.event)" />
       </li>
     </ul>
   </div>

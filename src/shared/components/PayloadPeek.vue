@@ -4,7 +4,13 @@ import PayloadView from "./PayloadView.vue";
 // Para las filas de una tarjeta agrupada: el JSON no cabe en la línea, así
 // que se abre en un popover nativo —capa superior, se cierra con Esc o
 // clicando fuera— sin un modal propio ni estado en Vue.
-defineProps<{ id: string | number; payload?: object | null }>();
+defineProps<{
+	id: string | number;
+	payload?: object | null;
+	/** Lo que se abrió: la línea de la que sale el JSON, para no perderse. */
+	title: string;
+	time?: string;
+}>();
 </script>
 
 <template>
@@ -26,6 +32,10 @@ defineProps<{ id: string | number; payload?: object | null }>();
       popover="auto"
       class="fixed inset-0 m-auto w-[min(90vw,64rem)] max-h-[85vh] overflow-auto p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#161618] text-slate-800 dark:text-slate-100 shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm"
     >
+      <div class="flex items-baseline gap-3 mb-4">
+        <h3 class="font-bold text-[15px] leading-snug wrap-anywhere min-w-0">{{ title }}</h3>
+        <span v-if="time" class="font-mono text-[11px] text-slate-600 dark:text-slate-400 shrink-0 ml-auto">{{ time }}</span>
+      </div>
       <PayloadView :payload="payload" />
     </div>
   </template>

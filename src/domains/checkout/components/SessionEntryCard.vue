@@ -130,7 +130,7 @@ const sourceOf = (event: LogEvent) =>
           {{ truncateMiddle(detailOf(event) ?? '') }}
         </span>
 
-        <PayloadPeek :id="event.id" :payload="payloadOf(event)" />
+        <PayloadPeek :id="event.id" :payload="payloadOf(event)" :title="event.message" :time="timeOf(event)" />
       </li>
     </ul>
   </div>
