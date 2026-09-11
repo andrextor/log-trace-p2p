@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-09-11
+
+### Added
+- **El embudo dice cómo acabó cada sesión.** Columna *Result* con el `outcome`
+  que ya deriva la librería (2.5.0): `APPROVED`, `REJECTED`, `PENDING`,
+  `FAILED`, `EXPIRED`, `ABANDONED @ paso` o `UNKNOWN` cuando se procesó pero el
+  log no trae la resolución. Hasta ahora el punto verde en *Process* solo
+  decía que se llegó a `/process`; un rechazo se veía igual que un pago.
+- Columnas *Process* (created → process) y *Total* (primer → último evento),
+  también en el CSV.
+- Orden de la tabla por tiempo, por resultado (fallos primero) o por duración,
+  y «showing 15 of N» con botón para verlas todas en vez de un recorte mudo.
+- Tarjetas *Processed* y *Approved*; el embudo gana un último escalón
+  *Approved*.
+
+### Fixed
+- **La conversión contaba rechazos.** Era «llegó a `/process` / total»; ahora
+  es aprobadas / total.
+- **Las barras del embudo mezclaban COLLECT con pagos.** Un cobro por API nunca
+  hace entry ni show, así que en un lote con cobros el embudo dibujaba una caída
+  en *Entry* que no era abandono. Se calcula solo sobre sesiones con SPA y se
+  indica cuántos cobros quedan fuera.
+- Tipo de sesión: SUBSCRIPTION, AUTOPAY y UNKNOWN se pintaban como «Collect».
+- El CSV recalculaba resultado y paso de abandono con su propia regla; ahora
+  usa la del parser.
+
 ## [1.7.0] - 2026-09-11
 
 ### Added

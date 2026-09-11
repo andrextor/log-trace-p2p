@@ -26,22 +26,35 @@ export interface MicrositiosDetails extends BaseDetails {
 export type SessionFunnelSteps = CheckoutFunnelSteps;
 export type SessionType = CheckoutSessionMetadata["sessionType"];
 
+export type SessionOutcome = CheckoutSessionMetadata["outcome"];
+
 export interface SessionFunnelRow {
 	sessionId: string;
 	sessionType: SessionType;
 	finalState: string;
+	outcome: SessionOutcome;
+	/** Hito más lejano alcanzado; dice en qué paso se abandonó. */
+	lastStep: CheckoutSessionMetadata["lastStep"];
 	steps: SessionFunnelSteps;
 	/** Ya formateadas para pintar; `null` cuando el parser no pudo medirlas. */
 	durations: {
 		timeToEntry: string | null;
 		timeToShow: string | null;
+		timeToProcess: string | null;
+		total: string | null;
 	};
+	/** En ms, para ordenar sin volver a parsear el texto. */
+	totalMs: number;
 }
 
 export interface FunnelStats {
 	total: number;
 	payments: number;
 	collects: number;
+	/** Sesiones que llegaron a `/process`, acabaran como acabaran. */
+	processed: number;
+	approved: number;
+	/** Aprobadas sobre el total. Antes era «procesadas», y un rechazo contaba. */
 	conversionRate: string;
 }
 

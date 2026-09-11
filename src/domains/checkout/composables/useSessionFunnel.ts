@@ -24,24 +24,27 @@ export function useSessionFunnel() {
 	): SessionFunnelRow[] =>
 		sessions
 			.filter((s) => !visibleSessionIds || visibleSessionIds.has(s.sessionId))
-			.map((s) => ({
-				sessionId: s.sessionId,
-				sessionType: s.sessionType,
-				finalState: s.finalState,
-				steps: s.steps,
-				durations: {
-					// Un hito que no ocurrió no tiene duración. Antes se pintaba un 0
-					// que no distinguía «instantáneo» de «no pasó».
-					timeToEntry:
-						s.durations.timeToEntry === undefined
-							? null
-							: formatDuration(s.durations.timeToEntry),
-					timeToShow:
-						s.durations.timeToShow === undefined
-							? null
-							: formatDuration(s.durations.timeToShow),
-				},
-			}));
+			.map((s) => {
+				// Un hito que no ocurrió no tiene duración. Antes se pintaba un 0
+				// que no distinguía «instantáneo» de «no pasó».
+				const fmt = (ms: number | undefined) =>
+					ms === undefined ? null : formatDuration(ms);
+				return {
+					sessionId: s.sessionId,
+					sessionType: s.sessionType,
+					finalState: s.finalState,
+					outcome: s.outcome,
+					lastStep: s.lastStep,
+					steps: s.steps,
+					durations: {
+						timeToEntry: fmt(s.durations.timeToEntry),
+						timeToShow: fmt(s.durations.timeToShow),
+						timeToProcess: fmt(s.durations.timeToProcess),
+						total: fmt(s.durations.total),
+					},
+					totalMs: s.durations.total ?? 0,
+				};
+			});
 
 	return { generateReport, formatDuration };
 }

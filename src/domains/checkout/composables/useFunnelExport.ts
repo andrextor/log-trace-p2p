@@ -7,7 +7,7 @@ import type {
 } from "../types";
 
 export function useFunnelExport() {
-	const TOTAL_COLUMNS = 12;
+	const TOTAL_COLUMNS = 16;
 
 	const formatRow = (cells: Array<string | number>) => {
 		const row = [...cells];
@@ -27,11 +27,13 @@ export function useFunnelExport() {
 			const headers = [
 				"SESSION ID",
 				"TYPE",
-				"FINAL STATE",
+				"RESULT",
 				"ABANDON STEP",
 				...stepConfig.map((s) => s.label.toUpperCase()),
 				"ENTRY DURATION",
 				"SHOW DURATION",
+				"PROCESS DURATION",
+				"TOTAL DURATION",
 			];
 
 			const lines = [
@@ -39,7 +41,12 @@ export function useFunnelExport() {
 				formatRow(["P2P CONVERSION REPORT"]),
 				formatRow(["Generated", new Date().toLocaleString()]),
 				formatRow(["Total Analyzed Sessions", stats.total]),
-				formatRow(["Successful Conversion", `${stats.conversionRate}%`]),
+				formatRow(["Processed Sessions", stats.processed]),
+				formatRow(["Approved Sessions", stats.approved]),
+				formatRow([
+					"Conversion (approved / total)",
+					`${stats.conversionRate}%`,
+				]),
 				formatRow([]),
 				formatRow(["RETENTION BY STEP"]),
 				...funnelSteps.map((st) =>
@@ -51,26 +58,27 @@ export function useFunnelExport() {
 			];
 
 			for (const row of data) {
-				let lastStepLabel = "None";
-				for (const step of stepConfig) {
-					if (row.steps[step.key as keyof typeof row.steps]) {
-						lastStepLabel = step.label;
-					}
-				}
-
-				const isFinished = row.steps.process;
+				// El resultado y el paso de abandono los trae el parser; recalcularlos
+				// aquí era la segunda copia de la misma regla.
+				const abandonedAt =
+					row.steps.process || !row.lastStep
+						? "--"
+						: (stepConfig.find((s) => s.key === row.lastStep)?.label ??
+							row.lastStep);
 
 				lines.push(
 					formatRow([
 						row.sessionId,
 						row.sessionType,
-						isFinished ? "COMPLETED" : "ABANDONED",
-						isFinished ? "--" : lastStepLabel,
+						row.outcome,
+						abandonedAt,
 						...stepConfig.map((sc) =>
 							row.steps[sc.key as keyof typeof row.steps] ? "OK" : "",
 						),
 						row.durations.timeToEntry || "",
 						row.durations.timeToShow || "",
+						row.durations.timeToProcess || "",
+						row.durations.total || "",
 					]),
 				);
 			}
