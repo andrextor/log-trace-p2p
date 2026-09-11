@@ -16,12 +16,18 @@ const ERROR_TITLES: Record<string, string> = {
 // El parser ya resolvió qué falló y por qué. Antes cada dominio volvía a
 // recorrer el payload buscando `dinError`, con las claves en inglés — que es
 // justo lo que los proveedores no emiten.
+// Un rechazo del gateway no es un error, pero sí es lo que se viene a leer:
+// se muestra con el mismo bloque.
 const detail = computed(() => {
 	const outcome = props.outcome;
-	if (!outcome?.isError) return null;
+	if (!outcome) return null;
+	const rejected = !outcome.isError && outcome.status === "REJECTED";
+	if (!outcome.isError && !rejected) return null;
 
 	return {
-		title: ERROR_TITLES[outcome.kind ?? ""] ?? "Failure",
+		title: rejected
+			? "Provider Rejection"
+			: (ERROR_TITLES[outcome.kind ?? ""] ?? "Failure"),
 		message: outcome.message ?? "Operation rejected",
 		code: outcome.code ?? outcome.httpStatus ?? "—",
 		sub: outcome.exception

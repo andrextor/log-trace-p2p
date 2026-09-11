@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-09-11
+
+### Added
+- **El embudo dice cómo acabó cada sesión.** Columna *Result* con el `outcome`
+  que ya deriva la librería (2.5.0): `APPROVED`, `REJECTED`, `PENDING`,
+  `FAILED`, `EXPIRED`, `ABANDONED @ paso` o `UNKNOWN` cuando se procesó pero el
+  log no trae la resolución. Hasta ahora el punto verde en *Process* solo
+  decía que se llegó a `/process`; un rechazo se veía igual que un pago.
+- Columnas *Process* (created → process) y *Total* (primer → último evento),
+  también en el CSV.
+- Orden de la tabla por tiempo, por resultado (fallos primero) o por duración,
+  y «showing 15 of N» con botón para verlas todas en vez de un recorte mudo.
+- Tarjetas *Processed* y *Approved*; el embudo gana un último escalón
+  *Approved*.
+
+### Changed
+- **El color dice el resultado, no el código HTTP.** Un rechazo del gateway
+  viaja en un 200 y el badge lo pintaba «200» en verde; ahora, cuando el
+  resultado no es OK, manda él: `PENDING` en naranja, `REJECTED` y `FAILED` en
+  rojo. El aviso de la tarjeta explica también los rechazos.
+- Un rechazo no es un error: no cuenta en el contador ni en el filtro de
+  fallos ni pone el borde rojo (eso queda para `FAILED`). Viene de la librería
+  2.5.1, que traduce el estado del gateway a resultado.
+- En el embudo, `EXPIRED` pasa a rojo junto a `REJECTED` y `FAILED`.
+- **La tarjeta de checkout enseña `TX` y `P2P ID`** junto a SID y Trace, con
+  clic para copiar y filtrar. El id de transacción venía en la mitad de las
+  líneas y el `placetopay_id` en las que cierran el pago, y solo se veían
+  abriendo el JSON. Ojo: en «Calling updateSessionStateAction» y en los
+  «Update session state trace» la app de checkout escribe `placetopay_id:
+  null`; ahí no hay nada que mostrar.
+- El pipeline de estado lee también `new_status`, que es la clave que usa
+  «Calling updateSessionStateAction» para el `pending → finished`.
+
+### Fixed
+- **La conversión contaba rechazos.** Era «llegó a `/process` / total»; ahora
+  es aprobadas / total.
+- **Las barras del embudo mezclaban COLLECT con pagos.** Un cobro por API nunca
+  hace entry ni show, así que en un lote con cobros el embudo dibujaba una caída
+  en *Entry* que no era abandono. Se calcula solo sobre sesiones con SPA y se
+  indica cuántos cobros quedan fuera.
+- Tipo de sesión: SUBSCRIPTION, AUTOPAY y UNKNOWN se pintaban como «Collect».
+- El CSV recalculaba resultado y paso de abandono con su propia regla; ahora
+  usa la del parser.
+
 ## [1.7.0] - 2026-09-11
 
 ### Added

@@ -12,3 +12,9 @@ declare module "*.vue" {
 	>;
 	export default component;
 }
+
+/** Fixtures de texto para los tests, via `?raw` de Vite. */
+declare module "*.csv?raw" {
+	const content: string;
+	export default content;
+}

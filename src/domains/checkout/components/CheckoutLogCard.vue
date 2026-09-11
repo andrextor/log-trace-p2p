@@ -34,15 +34,23 @@ const stateTransition = computed(() => {
 	const actual = (p.actual_session_state || p.session_state) as
 		| string
 		| undefined;
-	const target = (p.state_to_update || p.new_state) as string | undefined;
+	const target = (p.state_to_update || p.new_state || p.new_status) as
+		| string
+		| undefined;
 	if (!actual && !target) return null;
 	return { actual: actual || "START", target: target || actual };
 });
 
+// Los ids que el parser ya resolvió en `correlation`. La transacción y el
+// placetopay_id estaban en la mitad de las líneas y solo se veían abriendo el
+// JSON.
 const essentialIdentifiers = computed(() => {
 	const d = props.log.details as Record<string, unknown>;
+	const c = props.log.correlation;
 	return [
 		{ label: "SID", value: d.sessionId },
+		{ label: "TX", value: c.transactionId },
+		{ label: "P2P ID", value: c.placetopayId },
 		{ label: "Trace", value: d.awsRequestId || d.aws_request_id },
 	].filter((c) => c.value);
 });
@@ -136,9 +144,9 @@ const handleCopyId = async (idValue: string | number) => {
 
 
            <button v-for="id in essentialIdentifiers" :key="id.label" 
-                   @click.stop="id.label === 'Trace' ? (handleCopyId(id.value as string), emit('highlight-session', id.value as string)) : handleCopyId(id.value as string)"
+                   @click.stop="id.label === 'SID' ? handleCopyId(id.value as string) : (handleCopyId(id.value as string), emit('highlight-session', id.value as string))"
                    class="flex items-center gap-1.5 bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-indigo-500/10 px-2 py-1 rounded-md border border-slate-100 dark:border-white/5 hover:border-indigo-500/30 transition-all shadow-sm group/id"
-                   :title="id.label === 'Trace' ? 'Filter & copy Trace ID' : `Copy ${id.label}`">
+                   :title="id.label === 'SID' ? 'Copy SID' : `Filter & copy ${id.label}`">
               <span class="text-[9px] font-black uppercase transition-colors flex items-center gap-1"
                     :class="{ 'text-emerald-500': copiedId === String(id.value), 'text-slate-600 dark:text-slate-400 group-hover/id:text-indigo-500': copiedId !== String(id.value) }">
                 <svg v-if="copiedId === String(id.value)" class="w-3 h-3 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
@@ -147,7 +155,7 @@ const handleCopyId = async (idValue: string | number) => {
               <span class="text-[9px] sm:text-[10px] font-mono font-bold truncate max-w-[100px] sm:max-w-[180px] transition-colors" 
                     :class="{ 'text-emerald-600 dark:text-emerald-400': copiedId === String(id.value), 'text-slate-600 dark:text-slate-300': copiedId !== String(id.value) }"
                     :title="String(id.value)">{{ id.value }}</span>
-              <svg v-if="id.label === 'Trace'" class="w-3 h-3 text-slate-300 dark:text-white/10 opacity-0 group-hover/id:opacity-100 transition-all group-hover/id:text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <svg v-if="id.label !== 'SID'" class="w-3 h-3 text-slate-300 dark:text-white/10 opacity-0 group-hover/id:opacity-100 transition-all group-hover/id:text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
            </button>
         </div>
 

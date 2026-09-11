@@ -2,5 +2,7 @@ allowBuilds:
   '@biomejs/biome': true
   esbuild: true
   sharp: true
+# pnpm no instala versiones con menos de 24 h en npm; la librería propia
+# se consume recién publicada, así que queda fuera de esa espera.
 minimumReleaseAgeExclude:
-  - '@andrextor_ia11012/p2p-log-parser@2.1.0 || 2.2.0 || 2.3.0 || 2.4.0'
+  - '@andrextor_ia11012/p2p-log-parser'
