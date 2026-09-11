@@ -31,6 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fallos ni pone el borde rojo (eso queda para `FAILED`). Viene de la librería
   2.5.1, que traduce el estado del gateway a resultado.
 - En el embudo, `EXPIRED` pasa a rojo junto a `REJECTED` y `FAILED`.
+- **La tarjeta de checkout enseña `TX` y `P2P ID`** junto a SID y Trace, con
+  clic para copiar y filtrar. El id de transacción venía en la mitad de las
+  líneas y el `placetopay_id` en las que cierran el pago, y solo se veían
+  abriendo el JSON. Ojo: en «Calling updateSessionStateAction» y en los
+  «Update session state trace» la app de checkout escribe `placetopay_id:
+  null`; ahí no hay nada que mostrar.
+- El pipeline de estado lee también `new_status`, que es la clave que usa
+  «Calling updateSessionStateAction» para el `pending → finished`.
 
 ### Fixed
 - **La conversión contaba rechazos.** Era «llegó a `/process` / total»; ahora

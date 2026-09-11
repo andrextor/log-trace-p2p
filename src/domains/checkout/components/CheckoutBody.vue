@@ -50,7 +50,7 @@ const handleCopyPayload = async () => {
     <!-- State Pipeline (from payload) -->
     <div v-if="details.payload" class="flex flex-wrap items-center gap-2 px-1">
       <template v-for="(val, key) in (details.payload as Record<string, unknown>)" :key="key">
-        <div v-if="['session_type', 'session_state', 'actual_session_state', 'state_to_update', 'new_state', 'payment_type', 'collect_type'].includes(String(key)) && val"
+        <div v-if="['session_type', 'session_state', 'actual_session_state', 'state_to_update', 'new_state', 'new_status', 'payment_type', 'collect_type'].includes(String(key)) && val"
              class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-50 dark:bg-black/20 border border-slate-100 dark:border-white/5 shadow-sm text-[9px]">
           <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">{{ String(key).replace(/_/g, " ") }}</span>
           <span class="w-px h-3 bg-slate-200 dark:bg-white/10"></span>
