@@ -1,5 +1,5 @@
 import { matchEvent } from "@andrextor_ia11012/p2p-log-parser";
-import { APP_TYPES, type LogEvent } from "../types";
+import { APP_TYPES, type CheckoutDetails, type LogEvent } from "../types";
 
 export interface FilterIdentity {
 	label: string;
@@ -45,7 +45,80 @@ export interface Exchange {
 	response: LogEvent;
 }
 
-export type TimelineRow = { single?: LogEvent; pair?: Exchange };
+export type TimelineRow = {
+	single?: LogEvent;
+	pair?: Exchange;
+	/** Racha de registros de entrada al checkout, ya colapsada. */
+	entry?: LogEvent[];
+};
+
+/** `GET /api/v4/session/{id}/{token}` a secas: el SPA cargando la sesión. */
+const SESSION_SHOW = /^\/api\/v4\/session\/[^/]+\/[^/]+$/;
+
+/**
+ * Lo que queda en el log cuando alguien abre el checkout: la creación de la
+ * sesión, el GET del SPA, el evento `checkout.session.entry`, el HTML que se
+ * le sirve y la carga de la sesión desde el SPA. Son siempre los mismos y por
+ * separado no cuentan nada; en una sola tarjeta se lee quién entró, cuándo y
+ * desde qué lado. Un fallo nunca se colapsa: dentro de la tarjeta compacta
+ * perdería el borde rojo, que es justo lo que se busca al recorrer la traza.
+ */
+export function isSessionEntry(event: LogEvent): boolean {
+	if (isFailure(event)) return false;
+	const d = event.details as CheckoutDetails | undefined;
+	const endpoint = d?.endpoint ?? "";
+	return (
+		d?.subType === "checkout.session.created" ||
+		d?.subType === "checkout.session.entry" ||
+		endpoint.startsWith("/spa/session/") ||
+		(d?.method === "GET" && SESSION_SHOW.test(endpoint)) ||
+		d?.rawTitle === "Fetching SPA index.html"
+	);
+}
+
+/**
+ * El registro con el que arranca cada carga de la página: el GET del SPA o,
+ * si el export no lo trae, el propio evento `entry`.
+ */
+function startsEntry(event: LogEvent): boolean {
+	const d = event.details as CheckoutDetails | undefined;
+	return (
+		Boolean(d?.endpoint?.startsWith("/spa/session/")) ||
+		d?.subType === "checkout.session.entry"
+	);
+}
+
+/**
+ * Una fila por entrada: los registros consecutivos de la misma sesión, hasta
+ * que arranca otra carga con distinta traza. Así una recarga del navegador
+ * sale como segunda entrada y no se confunde con la primera. `created` se
+ * pega a la entrada que le sigue; `show` se queda con la que lo provocó.
+ */
+function collapseSessionEntries(rows: TimelineRow[]): TimelineRow[] {
+	const out: TimelineRow[] = [];
+	for (const row of rows) {
+		const event = row.single;
+		if (!event || !isSessionEntry(event)) {
+			out.push(row);
+			continue;
+		}
+		const last = out[out.length - 1]?.entry;
+		const sameSession =
+			last?.[0]?.correlation.sessionId === event.correlation.sessionId;
+		const newVisit =
+			startsEntry(event) &&
+			last?.some(
+				(e) =>
+					startsEntry(e) && e.correlation.traceId !== event.correlation.traceId,
+			);
+		if (last && sameSession && !newVisit) {
+			last.push(event);
+		} else {
+			out.push({ entry: [event] });
+		}
+	}
+	return out;
+}
 
 /**
  * `pairKey` une la ida y la vuelta del mismo intercambio. Pintarlos como dos
@@ -77,7 +150,7 @@ export function toTimelineRows(events: LogEvent[]): TimelineRow[] {
 		if (event.pairRole !== "response") open.set(key, rows.length - 1);
 	}
 
-	return rows;
+	return collapseSessionEntries(rows);
 }
 
 /**

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-09-11
+
+### Added
+- **Una tarjeta por entrada al checkout.** Los registros que deja cada carga de
+  la página —`checkout.session.created`, `GET /spa/session/…`,
+  `checkout.session.entry`, `Fetching SPA index.html` y el `GET
+  /api/v4/session/{id}/{token}` con que el SPA carga la sesión— son siempre los
+  mismos y por separado no cuentan nada, así que iban en cinco tarjetas
+  plegables con un HTML entero de payload. Ahora se colapsan en una sola
+  tarjeta abierta (`SessionEntryCard`) con una línea por registro: hora, lado
+  (FRONTEND/BACKEND), evento y tipo o ruta.
+- El grupo se corta al cambiar de sesión y cuando arranca otra carga con
+  distinta traza, así una recarga o la vuelta de 3DS salen como una segunda
+  entrada y no se confunden con la primera. Un registro con fallo nunca se
+  colapsa: conserva su tarjeta y su borde rojo.
+
 ## [1.6.1] - 2026-09-10
 
 ### Fixed
