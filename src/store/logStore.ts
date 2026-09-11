@@ -117,7 +117,7 @@ export const useLogStore = defineStore("logs", () => {
 		// bloques distintos y no llegaban a juntarse nunca.
 		for (const row of toTimelineRows(sorted)) {
 			// La fila cuelga del minuto en que empieza el intercambio.
-			const anchor = row.single ?? row.pair?.request;
+			const anchor = row.single ?? row.pair?.request ?? row.entry?.[0];
 			if (!anchor) continue;
 
 			// Desde `ts` y con la zona fija de los logs: `timestamp` trae la hora

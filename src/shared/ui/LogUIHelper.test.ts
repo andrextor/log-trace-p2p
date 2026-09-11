@@ -51,6 +51,75 @@ describe("toTimelineRows", () => {
 		const rows = toTimelineRows([ev("a"), ev("b")]);
 		expect(rows.map((r) => r.single?.id)).toEqual(["a", "b"]);
 	});
+
+	describe("entrada al checkout", () => {
+		const entry = (
+			id: string,
+			sessionId: string,
+			details: object,
+			traceId = "t1",
+		) => ({ id, correlation: { sessionId, traceId }, details }) as LogEvent;
+
+		it("una fila por carga de la pagina: la recarga es otra entrada", () => {
+			const rows = toTimelineRows([
+				entry("created", "1", { subType: "checkout.session.created" }, "t0"),
+				entry("spa", "1", { endpoint: "/spa/session/1/abc" }),
+				entry("entry", "1", { subType: "checkout.session.entry" }),
+				entry("html", "1", { rawTitle: "Fetching SPA index.html" }),
+				entry("spa2", "1", { endpoint: "/spa/session/1/abc" }, "t2"),
+				entry("entry2", "1", { subType: "checkout.session.entry" }, "t2"),
+				entry(
+					"show",
+					"1",
+					{ method: "GET", endpoint: "/api/v4/session/1/abc" },
+					"t3",
+				),
+				entry("info", "1", {
+					method: "POST",
+					endpoint: "/api/v4/session/1/abc/information",
+				}),
+			]);
+			expect(
+				rows.map((r) => r.entry?.map((e) => e.id) ?? r.single?.id),
+			).toEqual([
+				["created", "spa", "entry", "html"],
+				["spa2", "entry2", "show"],
+				"info",
+			]);
+		});
+
+		it("sin el GET del SPA, el evento entry basta para separar cargas", () => {
+			const rows = toTimelineRows([
+				entry("a", "1", { subType: "checkout.session.entry" }, "t1"),
+				entry("b", "1", { subType: "checkout.session.entry" }, "t2"),
+			]);
+			expect(rows.map((r) => r.entry?.length)).toEqual([1, 1]);
+		});
+
+		it("un fallo nunca se colapsa", () => {
+			const failed = {
+				...entry("show", "1", {
+					method: "GET",
+					endpoint: "/api/v4/session/1/abc",
+				}),
+				level: "ERROR",
+			} as LogEvent;
+			const rows = toTimelineRows([
+				entry("entry", "1", { subType: "checkout.session.entry" }),
+				failed,
+			]);
+			expect(rows[0].entry?.length).toBe(1);
+			expect(rows[1].single?.id).toBe("show");
+		});
+
+		it("corta la racha al cambiar de sesion", () => {
+			const rows = toTimelineRows([
+				entry("a", "1", { subType: "checkout.session.entry" }),
+				entry("b", "2", { subType: "checkout.session.entry" }),
+			]);
+			expect(rows.map((r) => r.entry?.length)).toEqual([1, 1]);
+		});
+	});
 });
 
 describe("isFailure", () => {
