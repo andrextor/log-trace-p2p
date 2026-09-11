@@ -177,7 +177,7 @@ const ids = computed(() =>
         :class="{ 'text-orange-700 dark:text-orange-400': row.warning }"
       >
         <span class="font-mono text-[10px] text-slate-600 dark:text-slate-400 shrink-0 w-[88px]">{{ timeOf(row.event) }}</span>
-        <span class="text-[11px] font-bold min-w-0 truncate" :class="row.warning ? '' : 'text-slate-800 dark:text-slate-100'">
+        <span class="flex-1 text-[11px] font-bold min-w-0 truncate" :class="row.warning ? '' : 'text-slate-800 dark:text-slate-100'">
           {{ labelOf(row.event) }}
         </span>
         <span v-if="row.detail" class="font-mono text-[10px] text-slate-600 dark:text-slate-400 sm:ml-auto shrink-0 basis-full sm:basis-auto">

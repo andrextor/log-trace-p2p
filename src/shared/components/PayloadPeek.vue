@@ -19,10 +19,12 @@ defineProps<{ id: string | number; payload?: object | null }>();
       Payload
     </button>
 
+    <!-- `m-auto`: el preflight de Tailwind pone `margin: 0` a todo y se lleva
+         el centrado con el que el navegador coloca un popover. -->
     <div
       :id="`payload-${id}`"
       popover="auto"
-      class="w-[min(90vw,64rem)] max-h-[85vh] overflow-auto p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#161618] text-slate-800 dark:text-slate-100 shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm"
+      class="fixed inset-0 m-auto w-[min(90vw,64rem)] max-h-[85vh] overflow-auto p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#161618] text-slate-800 dark:text-slate-100 shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm"
     >
       <PayloadView :payload="payload" />
     </div>

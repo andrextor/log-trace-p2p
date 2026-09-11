@@ -118,7 +118,7 @@ const sourceOf = (event: LogEvent) =>
           </span>
         </span>
 
-        <span class="text-[12px] font-bold text-slate-800 dark:text-slate-100 min-w-0 truncate">
+        <span class="flex-1 text-[12px] font-bold text-slate-800 dark:text-slate-100 min-w-0 truncate">
           {{ event.message }}
         </span>
 
