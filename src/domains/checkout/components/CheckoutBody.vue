@@ -93,9 +93,7 @@ const handleCopyPayload = async () => {
         </button>
       </div>
 
-      <!-- ponytail: tope de alto con scroll propio; un payload de 200 líneas
-           no puede convertir la línea de tiempo en una sola tarjeta. -->
-      <pre class="p-4 max-h-96 overflow-auto bg-[#0d0d0e] rounded-2xl text-[10px] text-emerald-400/90 border border-white/5 shadow-2xl custom-scrollbar font-mono leading-relaxed ring-1 ring-white/5">{{ JSON.stringify(payload, null, 2) }}</pre>
+      <pre class="p-4 overflow-x-auto bg-[#0d0d0e] rounded-2xl text-[10px] text-emerald-400/90 border border-white/5 shadow-2xl custom-scrollbar font-mono leading-relaxed ring-1 ring-white/5">{{ JSON.stringify(payload, null, 2) }}</pre>
     </div>
   </div>
 </template>
