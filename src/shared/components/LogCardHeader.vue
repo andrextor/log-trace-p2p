@@ -11,7 +11,6 @@ import EventBadges from "./EventBadges.vue";
 
 const props = defineProps<{
 	log: LogEvent;
-	isExpanded: boolean;
 }>();
 
 const isErrorState = computed(() => isFailure(props.log));
@@ -61,7 +60,7 @@ const copyRawLog = async () => {
 
   <!-- El mensaje manda: es lo que se lee al recorrer la linea de tiempo. -->
   <h3
-    class="font-bold text-[16px] sm:text-[18px] leading-snug text-slate-800 dark:text-slate-100 transition-colors"
+    class="font-bold text-[16px] sm:text-[18px] leading-snug wrap-anywhere text-slate-800 dark:text-slate-100 transition-colors"
     :class="isErrorState
       ? 'text-rose-600 dark:text-rose-400'
       : 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400'"

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-09-11
+
+### Changed
+- **Las tarjetas van abiertas.** Ningún acordeón en la línea de tiempo: la
+  suelta, el intercambio y el cierre de transacción enseñan todo sin clic.
+  La tarjeta suelta reparte `información | payload` en dos columnas desde
+  `lg`; el intercambio mantiene request | response y pone el payload bajo
+  cada mitad. El JSON crece lo que necesita, sin scroll propio.
+- **Fuera lo que ya decían los badges.** El chip `FRONTEND/BACKEND`, la barra
+  provider / subType / endpoint, la transición de estado duplicada en
+  Checkout, la fila de ids de REST (los chips del cuerpo copian y filtran al
+  clic), la etiqueta «Tracing» y el botón Expand/Collapse.
+- El cierre de transacción lleva título, «Transaction update» o «Session
+  update», como el mensaje de las tarjetas sueltas.
+- `PayloadView.vue` unifica el bloque de JSON que ambos cuerpos duplicaban.
+
 ## [1.9.0] - 2026-09-11
 
 ### Added

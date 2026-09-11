@@ -17,7 +17,9 @@ describe("RestBody", () => {
 		});
 
 	it("dibuja la tarjeta aunque el evento no traiga accion", () => {
-		expect(render({ action: null }).text()).toContain("N/A");
+		expect(render({ action: null, payload: { id: "abc" } }).text()).toContain(
+			"abc",
+		);
 	});
 
 	it("enseña la accion cuando la hay", () => {
