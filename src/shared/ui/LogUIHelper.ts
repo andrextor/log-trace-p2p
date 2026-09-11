@@ -50,6 +50,8 @@ export type TimelineRow = {
 	pair?: Exchange;
 	/** Racha de registros de entrada al checkout, ya colapsada. */
 	entry?: LogEvent[];
+	/** Racha de actualizaciones de estado tras procesar una transacción. */
+	stateUpdates?: LogEvent[];
 };
 
 /** `GET /api/v4/session/{id}/{token}` a secas: el SPA cargando la sesión. */
@@ -89,35 +91,85 @@ function startsEntry(event: LogEvent): boolean {
 }
 
 /**
+ * Fases con que `redirection` etiqueta el cierre de una transacción
+ * (`UpdateTransactionStateAction`, `DefineSessionStateAction`,
+ * `UpdateSessionStateAction`). Once líneas para decir «tx PENDING → APPROVED,
+ * sesión pending → finished»; en una tarjeta se lee de un vistazo.
+ */
+const STATE_UPDATE_PHASES = new Set([
+	"Session state update",
+	"Transaction update",
+	"Session definition",
+]);
+
+export function isStateUpdate(event: LogEvent): boolean {
+	if (isFailure(event)) return false;
+	const d = event.details as CheckoutDetails | undefined;
+	const title = d?.rawTitle ?? "";
+	return (
+		(d?.phase !== undefined && STATE_UPDATE_PHASES.has(d.phase)) ||
+		title.startsWith("Calling updateSessionStateAction") ||
+		title.startsWith("Transaction updating `last_resolve_data`")
+	);
+}
+
+type RunKey = "entry" | "stateUpdates";
+
+/**
+ * Junta en una fila las rachas consecutivas de eventos que cumplen `matches`,
+ * mientras `together` diga que el siguiente pertenece a la misma racha.
+ */
+function collapseRuns(
+	rows: TimelineRow[],
+	key: RunKey,
+	matches: (event: LogEvent) => boolean,
+	together: (run: LogEvent[], event: LogEvent) => boolean,
+): TimelineRow[] {
+	const out: TimelineRow[] = [];
+	for (const row of rows) {
+		const event = row.single;
+		if (!event || !matches(event)) {
+			out.push(row);
+			continue;
+		}
+		const last = out[out.length - 1]?.[key];
+		if (last && together(last, event)) {
+			last.push(event);
+		} else {
+			out.push({ [key]: [event] });
+		}
+	}
+	return out;
+}
+
+/**
  * Una fila por entrada: los registros consecutivos de la misma sesión, hasta
  * que arranca otra carga con distinta traza. Así una recarga del navegador
  * sale como segunda entrada y no se confunde con la primera. `created` se
  * pega a la entrada que le sigue; `show` se queda con la que lo provocó.
  */
 function collapseSessionEntries(rows: TimelineRow[]): TimelineRow[] {
-	const out: TimelineRow[] = [];
-	for (const row of rows) {
-		const event = row.single;
-		if (!event || !isSessionEntry(event)) {
-			out.push(row);
-			continue;
-		}
-		const last = out[out.length - 1]?.entry;
+	return collapseRuns(rows, "entry", isSessionEntry, (run, event) => {
 		const sameSession =
-			last?.[0]?.correlation.sessionId === event.correlation.sessionId;
+			run[0]?.correlation.sessionId === event.correlation.sessionId;
 		const newVisit =
 			startsEntry(event) &&
-			last?.some(
+			run.some(
 				(e) =>
 					startsEntry(e) && e.correlation.traceId !== event.correlation.traceId,
 			);
-		if (last && sameSession && !newVisit) {
-			last.push(event);
-		} else {
-			out.push({ entry: [event] });
-		}
-	}
-	return out;
+		return sameSession && !newVisit;
+	});
+}
+
+/** Una fila por petición: el cierre de una transacción va en una sola traza. */
+function collapseStateUpdates(rows: TimelineRow[]): TimelineRow[] {
+	return collapseRuns(
+		rows,
+		"stateUpdates",
+		isStateUpdate,
+		(run, event) => run[0]?.correlation.traceId === event.correlation.traceId,
+	);
 }
 
 /**
@@ -150,7 +202,7 @@ export function toTimelineRows(events: LogEvent[]): TimelineRow[] {
 		if (event.pairRole !== "response") open.set(key, rows.length - 1);
 	}
 
-	return collapseSessionEntries(rows);
+	return collapseStateUpdates(collapseSessionEntries(rows));
 }
 
 /**
