@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@andrextor_ia11012/p2p-log-parser':
-        specifier: ^2.5.0
-        version: 2.5.0
+        specifier: ^2.5.1
+        version: 2.5.1
       '@astrojs/check':
         specifier: ^0.9.9
         version: 0.9.9(prettier@3.8.3)(typescript@5.9.3)
@@ -63,8 +63,8 @@ packages:
   '@acemir/cssom@0.9.31':
     resolution: {integrity: sha512-ZnR3GSaH+/vJ0YlHau21FjfLYjMpYVIzTD8M8vIEQvIGxeOXyXdzCI140rrCY862p/C/BbzWsjc1dgnM9mkoTA==}
 
-  '@andrextor_ia11012/p2p-log-parser@2.5.0':
-    resolution: {integrity: sha512-l/7hUMEgYQvcCvH1/FjW13raVZTkFrHgg2uEOWPm2qeTRtFnimTH0QrWh9T4Rf7rbvyRmnaTKXTzI/Y0sK0Y5Q==}
+  '@andrextor_ia11012/p2p-log-parser@2.5.1':
+    resolution: {integrity: sha512-RoBJ4T3X9Yxltfu00PD6BpOrbFxFeBea5AXMZM8EUdBxlJ5/LLmPRNic+5VP1lNAzmupT8THcni/8DID7xIYSQ==}
 
   '@asamuzakjp/css-color@4.1.2':
     resolution: {integrity: sha512-NfBUvBaYgKIuq6E/RBLY1m0IohzNHAYyaJGuTK79Z23uNwmz2jl1mPsC5ZxCCxylinKhT1Amn5oNTlx1wN8cQg==}
@@ -2975,7 +2975,7 @@ snapshots:
 
   '@acemir/cssom@0.9.31': {}
 
-  '@andrextor_ia11012/p2p-log-parser@2.5.0': {}
+  '@andrextor_ia11012/p2p-log-parser@2.5.1': {}
 
   '@asamuzakjp/css-color@4.1.2':
     dependencies:
