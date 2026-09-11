@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import LogCardHeader from "../../../shared/components/LogCardHeader.vue";
+import PayloadView from "../../../shared/components/PayloadView.vue";
 import type { HighlightTheme, LogEvent } from "../../../shared/types";
-import { hasBody, isFailure } from "../../../shared/ui/LogUIHelper";
+import { isFailure } from "../../../shared/ui/LogUIHelper";
 import { useLogStore } from "../../../store/logStore";
 import CheckoutBody from "./CheckoutBody.vue";
 
@@ -36,7 +37,9 @@ const essentialIdentifiers = computed(() => {
 });
 
 const isErrorState = computed(() => isFailure(props.log));
-const showBody = computed(() => hasBody(props.log));
+const payload = computed(
+	() => (props.log.details as { payload?: object }).payload ?? null,
+);
 
 const activeTheme = computed<HighlightTheme | null>(() => {
 	if (!props.isHighlighted) return null;
@@ -87,7 +90,10 @@ const handleCopyId = async (idValue: string | number) => {
          :class="isErrorState ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)]' : (isHighlighted ? activeTheme?.bg : 'bg-transparent group-hover:bg-indigo-500/20')">
     </div>
 
-    <div class="flex flex-col p-4 sm:p-5 pl-5 sm:pl-6">
+    <!-- Información a la izquierda, payload a la derecha: la tarjeta suelta
+         no tiene ida y vuelta que apilar. -->
+    <div class="grid" :class="{ 'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]': payload }">
+    <div class="flex flex-col p-4 sm:p-5 pl-5 sm:pl-6 min-w-0">
 
       <LogCardHeader :log="log" />
 
@@ -114,15 +120,13 @@ const handleCopyId = async (idValue: string | number) => {
               <svg v-if="id.label !== 'SID'" class="w-3 h-3 text-slate-300 dark:text-white/10 opacity-0 group-hover/id:opacity-100 transition-all group-hover/id:text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
            </button>
       </div>
+
+      <CheckoutBody class="mt-4" :details="log.details" :outcome="log.outcome" />
     </div>
 
-    <!-- El cuerpo va siempre a la vista: abrir cada tarjeta era el clic que
-         sobraba. -->
-    <div v-if="showBody" class="border-t border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-black/20 p-4 sm:p-5 pl-5 sm:pl-6">
-      <CheckoutBody
-        :details="log.details"
-        :outcome="log.outcome"
-      />
+    <div v-if="payload" class="border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-black/20 p-4 sm:p-5 min-w-0">
+      <PayloadView :payload="payload" />
+    </div>
     </div>
   </div>
 </template>

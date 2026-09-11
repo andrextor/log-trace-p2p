@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import LogCardHeader from "../../../shared/components/LogCardHeader.vue";
+import PayloadView from "../../../shared/components/PayloadView.vue";
 import type { HighlightTheme, LogEvent } from "../../../shared/types";
-import { hasBody, isFailure } from "../../../shared/ui/LogUIHelper";
+import { isFailure } from "../../../shared/ui/LogUIHelper";
 import { useLogStore } from "../../../store/logStore";
 import type { RestDetails } from "../types";
 import RestBody from "./RestBody.vue";
@@ -18,7 +19,9 @@ const emit =
 	defineEmits<(e: "highlight-session", id: string | number) => void>();
 
 const isErrorState = computed(() => isFailure(props.log));
-const showBody = computed(() => hasBody(props.log));
+const payload = computed(
+	() => (props.log.details as { payload?: object }).payload ?? null,
+);
 
 const activeTheme = computed<HighlightTheme | null>(() => {
 	if (!props.isHighlighted) return null;
@@ -58,19 +61,24 @@ const activeTheme = computed<HighlightTheme | null>(() => {
          :class="isErrorState ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)]' : (isHighlighted ? activeTheme?.bg : 'bg-transparent group-hover:bg-indigo-500/20')">
     </div>
 
-    <div class="p-4 sm:p-5 pl-5 sm:pl-6">
+    <!-- Información a la izquierda, payload a la derecha: la tarjeta suelta
+         no tiene ida y vuelta que apilar. -->
+    <div class="grid" :class="{ 'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]': payload }">
+    <div class="p-4 sm:p-5 pl-5 sm:pl-6 min-w-0">
       <LogCardHeader :log="log" />
-    </div>
 
-    <!-- Los ids viven en el cuerpo, que ahora va siempre a la vista: la fila
-         de ids de la cabecera repetía los mismos tres. -->
-    <div v-if="showBody" class="border-t border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-black/20 p-4 sm:p-5 pl-5 sm:pl-6">
       <RestBody
+        class="mt-4"
         :details="log.details as RestDetails"
         :outcome="log.outcome"
         :is-highlighted="isHighlighted"
         @filter-id="id => emit('highlight-session', id)"
       />
+    </div>
+
+    <div v-if="payload" class="border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-black/20 p-4 sm:p-5 min-w-0">
+      <PayloadView :payload="payload" />
+    </div>
     </div>
   </div>
 </template>

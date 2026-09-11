@@ -47,6 +47,14 @@ const txTone = computed(
 	() => TX_TONE[summary.value.transactionState ?? ""] ?? NEUTRAL,
 );
 
+// El título que la tarjeta suelta saca del mensaje; aquí hay ocho mensajes y
+// ninguno vale por todos.
+const title = computed(() =>
+	summary.value.transaction.length || summary.value.transactionState
+		? "Transaction update"
+		: "Session update",
+);
+
 const timeOf = (event: LogEvent) => formatEventTime(event.ts, event.timestamp);
 const labelOf = (event: LogEvent) => {
 	const d = event.details as CheckoutDetails;
@@ -120,6 +128,10 @@ const ids = computed(() =>
         </span>
       </div>
     </div>
+
+    <h3 class="px-4 sm:px-5 pl-5 sm:pl-6 pb-2 font-bold text-[16px] sm:text-[18px] leading-snug text-slate-800 dark:text-slate-100">
+      {{ title }}
+    </h3>
 
     <!-- Las transiciones: lo único que estas líneas cuentan. -->
     <div class="flex flex-wrap items-center gap-2 px-4 sm:px-5 pb-3 pl-5 sm:pl-6">

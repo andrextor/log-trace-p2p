@@ -5,11 +5,11 @@ import type { Exchange } from "../../ui/LogUIHelper";
 import {
 	formatDuration,
 	formatEventTime,
-	hasBody,
 	isFailure,
 } from "../../ui/LogUIHelper";
 import EventBadges from "../EventBadges.vue";
 import LogBody from "../LogBody.vue";
+import PayloadView from "../PayloadView.vue";
 
 const props = defineProps<{
 	pair: Exchange;
@@ -40,6 +40,9 @@ const duration = computed(() =>
 // pantalla obligan a traducir mentalmente entre uno y otro.
 const timeOf = (event: Exchange["request"]) =>
 	formatEventTime(event.ts, event.timestamp);
+
+const payloadOf = (event: Exchange["request"]) =>
+	(event.details as { payload?: object }).payload ?? null;
 </script>
 
 <template>
@@ -114,14 +117,15 @@ const timeOf = (event: Exchange["request"]) =>
           {{ side.event.message }}
         </h3>
 
-        <!-- Sin plegar: abrir cada intercambio era el clic que sobraba. -->
-        <div v-if="hasBody(side.event)" class="pt-4">
-          <LogBody
-            :log="side.event"
-            :is-highlighted="isHighlighted"
-            @filter-id="id => emit('highlight-session', id)"
-          />
-        </div>
+        <!-- Sin plegar: abrir cada intercambio era el clic que sobraba. Aquí
+             el payload va debajo: la mitad de una tarjeta no da para dos columnas. -->
+        <LogBody
+          class="mt-4"
+          :log="side.event"
+          :is-highlighted="isHighlighted"
+          @filter-id="id => emit('highlight-session', id)"
+        />
+        <PayloadView class="mt-4" :payload="payloadOf(side.event)" />
       </section>
     </div>
   </div>
