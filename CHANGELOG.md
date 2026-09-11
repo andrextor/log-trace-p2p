@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-09-11
+
 ### Added
 - Botón **Payload** en las filas de las tarjetas agrupadas (entrada de sesión
   y cierre de transacción) que traen JSON: se abre en un popover nativo,
-  centrado y con fondo atenuado, y se cierra con Esc o clicando fuera. La
-  línea sigue siendo una línea.
+  centrado y con fondo atenuado, con la línea y la hora de la que sale como
+  cabecera, y se cierra con Esc o clicando fuera. La línea sigue siendo una
+  línea.
 
 ## [1.10.0] - 2026-09-11
 
