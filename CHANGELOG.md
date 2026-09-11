@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rojo, como cualquier fallo.
 - El fixture `checkout-approved-session.csv` pasa a ser el export completo de
   la sesión, con la respuesta del gateway y las once líneas del cierre.
+- **La cabecera enseña la versión** de la app y la del parser instalado
+  (`v1.9.0 · parser 2.5.1`), inyectadas en el build desde los `package.json`.
+  Sustituye al «Engine v4» fijo, que no correspondía a nada.
 
 ## [1.8.0] - 2026-09-11
 

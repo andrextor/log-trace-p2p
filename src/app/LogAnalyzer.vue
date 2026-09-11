@@ -23,6 +23,8 @@ import AnalyzerControlBar from "../shared/components/analyzer/AnalyzerControlBar
 import BatchSummary from "../shared/components/analyzer/BatchSummary.vue";
 
 const store = useLogStore();
+const APP_VERSION = __APP_VERSION__;
+const PARSER_VERSION = __PARSER_VERSION__;
 
 const filtersCache = ref<Record<string, FiltersCacheEntry>>({
 	[APP_TYPES.CHECKOUT]: {
@@ -146,7 +148,10 @@ const handleUploadComplete = async () => {
           </div>
           <div class="hidden md:flex flex-col cursor-default">
             <span class="font-mono font-bold text-slate-900 dark:text-slate-100 text-[13px] tracking-tight leading-none">P2P-log-trace</span>
-            <span class="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5">Engine v4</span>
+            <span
+              class="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5"
+              :title="`p2p-log-parser ${PARSER_VERSION}`"
+            >v{{ APP_VERSION }} · parser {{ PARSER_VERSION }}</span>
           </div>
         </div>
 

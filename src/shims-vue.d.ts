@@ -18,3 +18,7 @@ declare module "*.csv?raw" {
 	const content: string;
 	export default content;
 }
+
+/** Inyectadas por Vite en `astro.config.mjs` desde los package.json. */
+declare const __APP_VERSION__: string;
+declare const __PARSER_VERSION__: string;
