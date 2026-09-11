@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import PayloadPeek from "../../../shared/components/PayloadPeek.vue";
 import type { CheckoutDetails, LogEvent } from "../../../shared/types";
 import {
 	formatDuration,
@@ -56,6 +57,8 @@ const title = computed(() =>
 );
 
 const timeOf = (event: LogEvent) => formatEventTime(event.ts, event.timestamp);
+const payloadOf = (event: LogEvent) =>
+	(event.details as { payload?: object }).payload ?? null;
 const labelOf = (event: LogEvent) => {
 	const d = event.details as CheckoutDetails;
 	return d.step ? `${d.phase}: ${d.step}` : (d.rawTitle ?? event.message);
@@ -180,6 +183,8 @@ const ids = computed(() =>
         <span v-if="row.detail" class="font-mono text-[10px] text-slate-600 dark:text-slate-400 sm:ml-auto shrink-0 basis-full sm:basis-auto">
           {{ row.detail }}
         </span>
+
+        <PayloadPeek :id="row.event.id" :payload="payloadOf(row.event)" />
       </li>
     </ul>
   </div>
