@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import type { CheckoutDetails, LogEvent } from "../../../shared/types";
 import {
 	formatDuration,
@@ -15,7 +15,6 @@ const props = defineProps<{
 const emit =
 	defineEmits<(e: "highlight-session", id: string | number) => void>();
 
-const expanded = ref(false);
 const summary = computed(() => summarizeStateUpdates(props.events));
 const first = computed(() => props.events[0]);
 const last = computed(() => props.events[props.events.length - 1]);
@@ -77,10 +76,7 @@ const ids = computed(() =>
       :class="summary.hasWarning ? 'bg-orange-500' : isHighlighted ? 'bg-indigo-500' : 'bg-amber-500/30'"
     ></div>
 
-    <div
-      @click="expanded = !expanded"
-      class="flex flex-wrap items-center gap-2 px-4 sm:px-5 py-3 pl-5 sm:pl-6 cursor-pointer select-none"
-    >
+    <div class="flex flex-wrap items-center gap-2 px-4 sm:px-5 py-3 pl-5 sm:pl-6">
       <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border shadow-sm bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-500 dark:border-amber-500/20">
         State update
       </span>
@@ -119,18 +115,9 @@ const ids = computed(() =>
         <span v-if="first" class="font-mono text-[11px] text-slate-600 dark:text-slate-400 tracking-tight">
           {{ timeOf(first) }}
         </span>
-        <button
-          @click.stop="expanded = !expanded"
-          class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-wide transition-all active:scale-95"
-          :class="expanded
-            ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
-            : 'bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-indigo-500/40 hover:text-indigo-500'"
-        >
-          <svg class="w-3 h-3 transition-transform duration-300" :class="{ 'rotate-180': expanded }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-          </svg>
+        <span class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
           {{ events.length }} {{ events.length === 1 ? 'record' : 'records' }}
-        </button>
+        </span>
       </div>
     </div>
 
@@ -166,28 +153,22 @@ const ids = computed(() =>
       </div>
     </div>
 
-    <div
-      class="grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
-      :style="{ gridTemplateRows: expanded ? '1fr' : '0fr' }"
-    >
-      <div class="overflow-hidden">
-        <ul class="divide-y divide-slate-100 dark:divide-white/5 border-t border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-black/20">
-          <li
-            v-for="row in summary.rows"
-            :key="row.event.id"
-            class="flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-1 px-4 sm:px-5 py-2 pl-5 sm:pl-6"
-            :class="{ 'text-orange-700 dark:text-orange-400': row.warning }"
-          >
-            <span class="font-mono text-[10px] text-slate-600 dark:text-slate-400 shrink-0 w-[88px]">{{ timeOf(row.event) }}</span>
-            <span class="text-[11px] font-bold min-w-0 truncate" :class="row.warning ? '' : 'text-slate-800 dark:text-slate-100'">
-              {{ labelOf(row.event) }}
-            </span>
-            <span v-if="row.detail" class="font-mono text-[10px] text-slate-600 dark:text-slate-400 sm:ml-auto shrink-0 basis-full sm:basis-auto">
-              {{ row.detail }}
-            </span>
-          </li>
-        </ul>
-      </div>
-    </div>
+    <!-- Una línea por registro, sin plegar, como la tarjeta de entrada. -->
+    <ul class="divide-y divide-slate-100 dark:divide-white/5 border-t border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-black/20">
+      <li
+        v-for="row in summary.rows"
+        :key="row.event.id"
+        class="flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-1 px-4 sm:px-5 py-2 pl-5 sm:pl-6"
+        :class="{ 'text-orange-700 dark:text-orange-400': row.warning }"
+      >
+        <span class="font-mono text-[10px] text-slate-600 dark:text-slate-400 shrink-0 w-[88px]">{{ timeOf(row.event) }}</span>
+        <span class="text-[11px] font-bold min-w-0 truncate" :class="row.warning ? '' : 'text-slate-800 dark:text-slate-100'">
+          {{ labelOf(row.event) }}
+        </span>
+        <span v-if="row.detail" class="font-mono text-[10px] text-slate-600 dark:text-slate-400 sm:ml-auto shrink-0 basis-full sm:basis-auto">
+          {{ row.detail }}
+        </span>
+      </li>
+    </ul>
   </div>
 </template>
