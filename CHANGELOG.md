@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-09-11
+
+### Added
+- **Una tarjeta por cierre de transacción.** Tras el `POST /process`,
+  `redirection` escribe once líneas (`UpdateSessionStateAction`,
+  `UpdateTransactionStateAction`, `DefineSessionStateAction`) para decir «tx
+  PENDING → APPROVED, sesión pending → finished», tres de ellas con la
+  respuesta del gateway repetida entera. `StateUpdateCard` las colapsa por
+  traza en una tarjeta con el estado final de la transacción, las cadenas de
+  estado de sesión y transacción, el saldo pendiente antes y después, TX,
+  P2P ID y gateway; las líneas quedan plegadas debajo, cada una con solo lo
+  que cambia. El intercambio con el gateway se queda fuera, entre el
+  `created → pending` previo y el cierre.
+- Una línea `WARNING` (p. ej. «No information found») no rompe la tarjeta
+  pero la marca en naranja; una `ALERT`/`CRITICAL` sigue saliendo suelta y en
+  rojo, como cualquier fallo.
+- El fixture `checkout-approved-session.csv` pasa a ser el export completo de
+  la sesión, con la respuesta del gateway y las once líneas del cierre.
+- **La cabecera enseña la versión** de la app y la del parser instalado
+  (`v1.9.0 · parser 2.5.1`), inyectadas en el build desde los `package.json`.
+  Sustituye al «Engine v4» fijo, que no correspondía a nada.
+
 ## [1.8.0] - 2026-09-11
 
 ### Added

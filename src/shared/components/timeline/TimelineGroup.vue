@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import SessionEntryCard from "../../../domains/checkout/components/SessionEntryCard.vue";
+import StateUpdateCard from "../../../domains/checkout/components/StateUpdateCard.vue";
 import type { LogEvent } from "../../../shared/types";
 import type { TimeGroup } from "../../../shared/types";
 import LogCard from "../LogCard.vue";
@@ -49,7 +50,7 @@ const scrollToGroup = () => {
     </div>
   
     <div class="w-full space-y-5 relative animate-in slide-in-from-bottom-6">
-      <template v-for="row in group.rows" :key="row.single?.id ?? row.pair?.key ?? row.entry?.[0]?.id">
+      <template v-for="row in group.rows" :key="row.single?.id ?? row.pair?.key ?? row.entry?.[0]?.id ?? row.stateUpdates?.[0]?.id">
         <LogCard
           v-if="row.single"
           :log="row.single"
@@ -67,6 +68,13 @@ const scrollToGroup = () => {
         <SessionEntryCard
           v-else-if="row.entry"
           :events="row.entry"
+          :is-log-highlighted="isLogHighlighted"
+          @highlight-session="id => $emit('highlight-session', id)"
+        />
+
+        <StateUpdateCard
+          v-else-if="row.stateUpdates"
+          :events="row.stateUpdates"
           :is-log-highlighted="isLogHighlighted"
           @highlight-session="id => $emit('highlight-session', id)"
         />
