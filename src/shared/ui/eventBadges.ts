@@ -23,11 +23,13 @@ export const BADGE_BUDGET = 4;
 
 const GENERIC_PROVIDERS = new Set(["API_REST", "N/A", ""]);
 
+// Pendiente en naranja, rechazado y fallido en rojo. El rechazo no es un
+// error —no entra en el contador ni en el filtro—, pero se ve igual de lejos.
 const STATUS_TONE: Record<string, BadgeTone> = {
 	OK: "ok",
 	FAILED: "danger",
-	REJECTED: "warn",
-	PENDING: "neutral",
+	REJECTED: "danger",
+	PENDING: "warn",
 };
 
 const KIND_LABEL: Record<string, string> = {
@@ -58,6 +60,18 @@ function outcomeBadge(event: LogEvent): Badge | null {
 	const kind = outcome?.kind ? KIND_LABEL[outcome.kind] : null;
 	const title = [kind, outcome?.message].filter(Boolean).join(": ");
 
+	// Un resultado que no es OK manda sobre el código HTTP: un rechazo del
+	// gateway viaja en un 200, y el «200» en verde escondía justo el rechazo.
+	const status = outcome?.status;
+	if (status && status !== "OK") {
+		return {
+			slot: "outcome",
+			text: status,
+			title: title || `Resultado: ${status}`,
+			tone: STATUS_TONE[status] ?? "neutral",
+		};
+	}
+
 	const code = Number(event.details?.statusCode);
 	if (code && !Number.isNaN(code)) {
 		return {
@@ -71,7 +85,6 @@ function outcomeBadge(event: LogEvent): Badge | null {
 
 	// La v2 dejó de inventar el código: donde no lo hay, `outcome.status` es el
 	// dato real. Antes el badge simplemente desaparecía.
-	const status = outcome?.status;
 	if (!status) return null;
 	return {
 		slot: "outcome",

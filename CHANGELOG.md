@@ -22,6 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tarjetas *Processed* y *Approved*; el embudo gana un último escalón
   *Approved*.
 
+### Changed
+- **El color dice el resultado, no el código HTTP.** Un rechazo del gateway
+  viaja en un 200 y el badge lo pintaba «200» en verde; ahora, cuando el
+  resultado no es OK, manda él: `PENDING` en naranja, `REJECTED` y `FAILED` en
+  rojo. El aviso de la tarjeta explica también los rechazos.
+- Un rechazo no es un error: no cuenta en el contador ni en el filtro de
+  fallos ni pone el borde rojo (eso queda para `FAILED`). Viene de la librería
+  2.5.1, que traduce el estado del gateway a resultado.
+- En el embudo, `EXPIRED` pasa a rojo junto a `REJECTED` y `FAILED`.
+
 ### Fixed
 - **La conversión contaba rechazos.** Era «llegó a `/process` / total»; ahora
   es aprobadas / total.

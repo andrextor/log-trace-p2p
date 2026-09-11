@@ -20,6 +20,25 @@ describe("getEventBadges", () => {
 		).toMatchObject({ text: "OK", tone: "ok" });
 	});
 
+	it("un rechazo del gateway manda sobre el 200 que lo envuelve", () => {
+		expect(
+			getEventBadges(
+				ev({
+					details: { statusCode: 200 },
+					outcome: { isError: false, status: "REJECTED", kind: "business" },
+				}),
+			)[0],
+		).toMatchObject({ text: "REJECTED", tone: "danger" });
+		expect(
+			getEventBadges(
+				ev({
+					details: { statusCode: 200 },
+					outcome: { isError: false, status: "PENDING" },
+				}),
+			)[0],
+		).toMatchObject({ text: "PENDING", tone: "warn" });
+	});
+
 	it("resume direccion y metodo en un solo badge", () => {
 		expect(
 			textOf(ev({ category: "HTTP_REQ_OUT", details: { method: "post" } })),

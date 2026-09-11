@@ -39,8 +39,7 @@ const OUTCOME_STYLE: Record<SessionOutcome, string> = {
 	FAILED: "bg-rose-500/10 text-rose-700 border-rose-500/30 dark:text-rose-400",
 	PENDING:
 		"bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-400",
-	EXPIRED:
-		"bg-slate-100 text-slate-600 border-slate-300 dark:bg-white/5 dark:text-slate-400 dark:border-white/10",
+	EXPIRED: "bg-rose-500/10 text-rose-700 border-rose-500/30 dark:text-rose-400",
 	ABANDONED:
 		"bg-slate-100 text-slate-600 border-slate-300 dark:bg-white/5 dark:text-slate-400 dark:border-white/10",
 	UNKNOWN:
