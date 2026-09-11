@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import PayloadPeek from "../../../shared/components/PayloadPeek.vue";
 import type { LogEvent } from "../../../shared/types";
 import {
 	formatDuration,
@@ -38,6 +39,9 @@ const detailOf = (event: LogEvent) => {
 	const d = event.details as CheckoutDetails;
 	return d.subType ?? (d.endpoint && d.endpoint !== "N/A" ? d.endpoint : null);
 };
+
+const payloadOf = (event: LogEvent) =>
+	(event.details as { payload?: object }).payload ?? null;
 
 const sourceOf = (event: LogEvent) =>
 	String(event.details.source ?? "").toUpperCase();
@@ -114,7 +118,7 @@ const sourceOf = (event: LogEvent) =>
           </span>
         </span>
 
-        <span class="text-[12px] font-bold text-slate-800 dark:text-slate-100 min-w-0 truncate">
+        <span class="flex-1 text-[12px] font-bold text-slate-800 dark:text-slate-100 min-w-0 truncate">
           {{ event.message }}
         </span>
 
@@ -125,6 +129,8 @@ const sourceOf = (event: LogEvent) =>
         >
           {{ truncateMiddle(detailOf(event) ?? '') }}
         </span>
+
+        <PayloadPeek :id="event.id" :payload="payloadOf(event)" :title="event.message" :time="timeOf(event)" />
       </li>
     </ul>
   </div>
