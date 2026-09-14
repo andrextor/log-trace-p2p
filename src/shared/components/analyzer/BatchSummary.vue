@@ -31,8 +31,8 @@ const window = computed(() => {
       <span v-if="summary.failures" class="text-rose-600 dark:text-rose-400">
         <span class="font-mono font-bold">{{ summary.failures }}</span> con fallo
       </span>
-      <span v-if="store.unrecognized" class="text-amber-600 dark:text-amber-400">
-        <span class="font-mono font-bold">{{ store.unrecognized }}</span> sin reconocer
+      <span v-if="store.unrecognized.length" class="text-amber-600 dark:text-amber-400">
+        <span class="font-mono font-bold">{{ store.unrecognized.length }}</span> sin reconocer
       </span>
     </div>
   </div>

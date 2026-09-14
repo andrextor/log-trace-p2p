@@ -5,7 +5,7 @@ const props = defineProps<{
 	isOpen: boolean;
 	errors: string[];
 	/** Unidades de texto que ninguna estrategia convirtió en evento. */
-	unrecognized?: number;
+	unrecognized?: string[];
 }>();
 
 const emit = defineEmits(["close"]);
@@ -14,7 +14,9 @@ const isCopied = ref(false);
 
 const copyAll = async () => {
 	try {
-		await navigator.clipboard.writeText(props.errors.join("\n"));
+		await navigator.clipboard.writeText(
+			[...props.errors, ...(props.unrecognized ?? [])].join("\n"),
+		);
 
 		isCopied.value = true;
 		setTimeout(() => {
@@ -64,9 +66,9 @@ const copyAll = async () => {
         </div>
 
         <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-100 dark:bg-black/20">
-          <div v-if="unrecognized" class="mb-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+          <div v-if="unrecognized?.length" class="mb-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
             <p class="text-xs font-bold text-amber-700 dark:text-amber-400">
-              {{ unrecognized }} {{ unrecognized === 1 ? 'unidad no reconocida' : 'unidades no reconocidas' }}
+              {{ unrecognized.length }} {{ unrecognized.length === 1 ? 'unidad no reconocida' : 'unidades no reconocidas' }}
             </p>
             <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
               Ninguna estrategia las convirtió en evento. Si el número es alto, suele
@@ -83,6 +85,17 @@ const copyAll = async () => {
             >
               <div class="flex gap-3">
                 <span class="text-red-400 select-none opacity-50">{{ idx + 1 }}.</span>
+                <span>{{ line }}</span>
+              </div>
+            </div>
+
+            <div
+              v-for="(line, idx) in unrecognized"
+              :key="`u-${idx}`"
+              class="p-3 bg-white dark:bg-[#161618] rounded-lg border border-amber-200 dark:border-amber-500/20 text-xs font-mono text-slate-600 dark:text-amber-100/70 break-all"
+            >
+              <div class="flex gap-3">
+                <span class="text-amber-400 select-none opacity-50">{{ idx + 1 }}.</span>
                 <span>{{ line }}</span>
               </div>
             </div>

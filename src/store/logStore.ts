@@ -37,8 +37,10 @@ export const useLogStore = defineStore("logs", () => {
 	const metadata = ref<ParseMetadata | null>(null);
 	// Líneas que ninguna estrategia convirtió en evento. Es la señal directa de
 	// «te equivocaste de aplicación» o «este formato no está soportado»: sin
-	// mostrarla, el log simplemente sale vacío y el usuario no sabe por qué.
-	const unrecognized = ref(0);
+	// mostrarlas, el log simplemente sale vacío y el usuario no sabe por qué.
+	// Va el texto, no solo la cuenta: es lo que distingue el ruido de un lambda
+	// (START/END/REPORT) de un formato que falta por soportar.
+	const unrecognized = ref<string[]>([]);
 
 	const processedHashes = new Set<string>();
 
@@ -232,7 +234,9 @@ export const useLogStore = defineStore("logs", () => {
 				}
 			}
 
-			unrecognized.value += result.stats.unrecognized;
+			for (const unit of result.unrecognized) {
+				unrecognized.value.push(`Line ${unit.line}: ${unit.content}`);
+			}
 
 			if (result.errors && result.errors.length > 0) {
 				for (const err of result.errors) {
@@ -266,13 +270,13 @@ export const useLogStore = defineStore("logs", () => {
 		}
 
 		parsingErrors.value = [];
-		unrecognized.value = 0;
+		unrecognized.value = [];
 	}
 
 	function clearLogs() {
 		events.value = [];
 		parsingErrors.value = [];
-		unrecognized.value = 0;
+		unrecognized.value = [];
 		processedHashes.clear();
 		search.value = "";
 		outcomeFilter.value = "ALL";
