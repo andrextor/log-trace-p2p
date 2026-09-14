@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.1] - 2026-09-14
+
+### Changed
+- Un fallo HTTP a secas ya no pinta bloque dentro de la tarjeta: repetía el
+  código cuatro veces («400 Bad Request» en el título, «Status: 400», «HTTP
+  Failure», «HTTP 400») y la cabecera ya lo dice en rojo. El bloque queda para
+  lo que aporta algo —rechazo del proveedor con su motivo, excepción con clase
+  y fichero— y ocupa una línea de cabecera (título · código).
+
+### Fixed
+- En un intercambio emparejado el título de la respuesta fallida no salía en
+  rojo: llevaba la clase gris y la roja a la vez y ganaba la gris.
+
 ## [1.12.0] - 2026-09-14
 
 ### Fixed
