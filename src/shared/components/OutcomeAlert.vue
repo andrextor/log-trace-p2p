@@ -24,12 +24,20 @@ const detail = computed(() => {
 	const rejected = !outcome.isError && outcome.status === "REJECTED";
 	if (!outcome.isError && !rejected) return null;
 
+	const code = outcome.code ?? outcome.httpStatus ?? "—";
+	const message = outcome.message ?? "Operation rejected";
+
+	// Un fallo HTTP sin más viene como «HTTP 400»: el código otra vez. La
+	// cabecera ya lo dice en rojo («APPLE_PAY | 400 Bad Request»), así que el
+	// bloque solo aparece cuando hay algo que leer además del código.
+	if (message === `HTTP ${code}` && !outcome.exception) return null;
+
 	return {
 		title: rejected
 			? "Provider Rejection"
 			: (ERROR_TITLES[outcome.kind ?? ""] ?? "Failure"),
-		message: outcome.message ?? "Operation rejected",
-		code: outcome.code ?? outcome.httpStatus ?? "—",
+		message,
+		code,
 		sub: outcome.exception
 			? `${outcome.exception.class ?? ""} · ${outcome.exception.file?.split("/").pop()}:${outcome.exception.line ?? "?"}`
 			: null,
