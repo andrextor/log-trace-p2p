@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-09-14
+
+### Fixed
+- «Copiar Todo» en el modal de errores de lectura no copiaba nada cuando solo
+  había unidades sin reconocer: llegaban como cuenta, sin texto. Con
+  `@andrextor_ia11012/p2p-log-parser` 2.7.0 el modal las lista (línea y
+  contenido recortado) y el botón las copia junto con los errores.
+
 ## [1.11.2] - 2026-09-14
 
 ### Changed
