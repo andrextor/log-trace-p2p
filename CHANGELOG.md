@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lo que aporta algo —rechazo del proveedor con su motivo, excepción con clase
   y fichero— y ocupa una línea de cabecera (título · código).
 
+### Fixed
+- En un intercambio emparejado el título de la respuesta fallida no salía en
+  rojo: llevaba la clase gris y la roja a la vez y ganaba la gris.
+
 ## [1.12.0] - 2026-09-14
 
 ### Fixed

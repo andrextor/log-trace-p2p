@@ -110,9 +110,12 @@ const payloadOf = (event: Exchange["request"]) =>
           </span>
         </div>
 
+        <!-- Una u otra: con las dos clases a la vez ganaba la gris. -->
         <h3
-          class="font-bold text-[14px] sm:text-[15px] leading-tight wrap-anywhere text-slate-800 dark:text-slate-100"
-          :class="{ 'text-rose-600 dark:text-rose-400': isFailure(side.event) }"
+          class="font-bold text-[14px] sm:text-[15px] leading-tight wrap-anywhere"
+          :class="isFailure(side.event)
+            ? 'text-rose-600 dark:text-rose-400'
+            : 'text-slate-800 dark:text-slate-100'"
         >
           {{ side.event.message }}
         </h3>
