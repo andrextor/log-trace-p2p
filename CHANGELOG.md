@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.1] - 2026-09-14
+
+### Changed
+- El bloque de fallo dentro de la tarjeta ocupa una línea (título · código).
+  Un fallo HTTP repetía el código cuatro veces —«400 Bad Request» en el
+  título, «Status: 400», «HTTP Failure» y «HTTP 400»—; ahora el mensaje solo
+  se pinta cuando añade algo (rechazo del proveedor, excepción).
+
 ## [1.12.0] - 2026-09-14
 
 ### Fixed
