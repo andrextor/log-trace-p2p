@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.2] - 2026-09-14
+
+### Changed
+- `@andrextor_ia11012/p2p-log-parser` a 2.6.2: en el export de Bref las
+  llamadas al gateway (`[GW_LIB] HTTP Req/Res`) ya llegan emparejadas y se
+  pintan como un solo intercambio.
+
 ## [1.11.1] - 2026-09-14
 
 ### Changed
