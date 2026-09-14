@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-09-14
+
+### Changed
+- `@andrextor_ia11012/p2p-log-parser` a 2.6.1: lee el export de Grafana de un
+  Checkout desplegado con Bref (columna `LEVEL\tmensaje\t{json}`, hora sin
+  fracción) y corrige los ids repetidos que hacían que el visor perdiera
+  líneas del cierre de la transacción con ese formato.
+
 ## [1.11.0] - 2026-09-11
 
 ### Added
